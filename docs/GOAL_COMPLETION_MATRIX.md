@@ -10,8 +10,8 @@ Statuses are evidence-based: **Implemented**, **Partial**, **Blocked**, or **Not
 | 003 Critical path | Implemented | `CRITICAL_PATH.md` and passing API acceptance test. |
 | 004 Architecture | Implemented | FastAPI/SQLite/React/worker decision recorded. |
 | 005 Data ownership/persistence | Implemented | Migrated schema, workspace foreign keys, isolation test. |
-| 006 Configuration guards | Implemented | Typed env parsing; production HTTPS/secure-cookie fail-safe. |
-| 007 Authentication/session | Implemented | scrypt, opaque expiry, strict cookie, first-run setup/login tests. |
+| 006 Configuration guards | Implemented | Typed env parsing; production HTTPS, explicit hostname, trusted-proxy, and secure-cookie fail-safe. |
+| 007 Authentication/session | Implemented | scrypt, opaque expiry, strict cookie, login throttling, first-run setup/login tests. |
 | 008 Authorization/ownership | Implemented | Roles, owned lookups, cross-workspace test. |
 | 009 API/error envelope | Implemented | Structured code/message/details/request ID; frontend error test. |
 | 010 Frontend architecture | Implemented | React app shell, routes, focused page/components. |
@@ -20,7 +20,7 @@ Statuses are evidence-based: **Implemented**, **Partial**, **Blocked**, or **Not
 | 013 Compliance boundary | Implemented | Current primary sources, owner acknowledgement, activation gate. |
 | 014 No fake success | Implemented | Handoff never marks sent; operator records outcome. |
 | 015 Files/uploads/media | Not applicable | Product exposes no upload/media persistence; CSV parsed in memory. |
-| 016 Background jobs | Implemented | Separate local reminder worker with `--once` and loop. |
+| 016 Background jobs | Implemented | Reminder cleanup, daily verified backups, retention pruning, and optional atomic HAI feed refresh. |
 | 017 Idempotency | Implemented | Required unique handoff key and replay test. |
 | 018 Limits/cooldowns | Implemented | Daily campaign limit and per-prospect cooldown enforced server-side. |
 | 019 Audit history | Implemented | Material events persisted without bodies/credentials. |
@@ -33,10 +33,10 @@ Statuses are evidence-based: **Implemented**, **Partial**, **Blocked**, or **Not
 | 026 Human review/approval | Implemented | Four explicit checks, edit reset, role/compliance/pause guards. |
 | 027 Notifications/reminders | Implemented | User and worker reminders; no external notification claims. |
 | 028 Privacy/deletion | Implemented | Export, prospect deletion, suppression, minimization, retention CLI. |
-| 029 Web security | Implemented | CSP, frame/MIME/referrer/permissions headers and CSRF. |
+| 029 Web security | Implemented | CSP, HSTS, trusted hosts, sanitized request IDs, COOP/CORP, frame/MIME/referrer/permissions headers, CSRF and login throttling. |
 | 030 Secrets/rotation | Blocked | Current tree clean; pre-existing Git-history credential needs owner-coordinated rewrite/rotation. |
 | 031 One-command local dev | Implemented | Docker Compose and `scripts/dev.ps1`. |
-| 032 Docker/deployment | Partial | Dockerfile/Compose/health implemented; live build/run evidence pending. |
+| 032 Docker/deployment | Implemented | Non-root image, Caddy TLS edge, private fixed-proxy network, read-only filesystems, health checks, resource/log limits, and validated Compose. |
 | 033 Migrations/rollback | Implemented | Ordered migration ledger; backup-first restore and rollback runbook. |
 | 034 CLI/doctor | Implemented | migrate/doctor/backup/restore/reconcile/purge/support commands. |
 | 035 Health/readiness | Implemented | Separate liveness and database readiness endpoints. |
@@ -44,19 +44,19 @@ Statuses are evidence-based: **Implemented**, **Partial**, **Blocked**, or **Not
 | 037 Demo mode labelling | Implemented | Visible banner and external handoff hard block. |
 | 038 Fake provider lab | Not applicable | Tests require no fake provider; boundary is verified without network. |
 | 039 Factories/fixtures | Implemented | Isolated owner/foundation fixtures and throwaway database. |
-| 040 Backend tests | Implemented | 8 tests pass across critical/security/worker paths. |
-| 041 Frontend tests | Implemented | 5 tests pass across API/UI/dashboard behavior. |
+| 040 Backend tests | Implemented | 14 tests pass across critical, security, isolation, HAI feed, backup, and worker paths. |
+| 041 Frontend tests | Implemented | 7 tests pass across API/UI/dashboard/startup-failure behavior. |
 | 042 Worker tests | Implemented | Reminder idempotency test passes. |
-| 043 End-to-end tests | Partial | Full API critical path passes; real browser path pending. |
+| 043 End-to-end tests | Implemented | Reproducible real-browser critical path passes without provider navigation. |
 | 044 Acceptance matrix | Implemented | `ACCEPTANCE_TESTS.md` with automated/manual cases. |
 | 045 Adversarial tests | Implemented | Missing CSRF/check/key, unsafe URLs, suppression, invalid CSV. |
 | 046 Cross-user isolation | Implemented | Second-workspace direct-ID test returns 404/no records. |
 | 047 Path traversal | Not applicable | No file path or upload endpoint exists; restore CLI validates explicit `.db` file. |
 | 048 Provider failure | Implemented | Ambiguous/cancelled outcomes and no blind retry; no provider call exists. |
-| 049 Accessibility | Partial | Semantic/focus/reduced-motion code and unit tests; browser audit pending. |
-| 050 Responsive/browser | Partial | Responsive CSS implemented; desktop/mobile browser evidence pending. |
+| 049 Accessibility | Implemented | Automated WCAG A/AA browser scan reports zero violations on the critical dashboard path. |
+| 050 Responsive/browser | Implemented | Desktop and 390x844 mobile path, drawer, screenshots, and browser-console gate pass. |
 | 051 Performance/indexing | Implemented | Domain indexes, bounded queries/imports, production bundle baseline. |
-| 052 Large dataset/pagination | Partial | Limits/indexes/5,000-row import cap implemented; load benchmark pending. |
+| 052 Large dataset/pagination | Implemented | 10,000-prospect/draft benchmark: 0.014s query baseline and 3.7 MB database on the verification machine. |
 | 053 Backup/restore | Implemented | SQLite backup API, integrity/schema-checked restore, backup-first behavior. |
 | 054 Reconciliation/repair | Implemented | Detects orphans/impossible sends; safe explicit repair. |
 | 055 Local analytics | Implemented | Schema is local/event-minimal; no external telemetry. |
@@ -70,10 +70,10 @@ Statuses are evidence-based: **Implemented**, **Partial**, **Blocked**, or **Not
 | 063 Credential verification | Not applicable | Product refuses provider credentials; only approved HTTPS base link stored. |
 | 064 Threat model | Implemented | `SECURITY.md` trust boundaries/threat/control table. |
 | 065 Privacy impact | Implemented | Data categories, minimization, rights and residual risk documented. |
-| 066 Supply chain | Implemented | Pinned Python versions, pnpm lock, non-root container, CI. |
+| 066 Supply chain | Implemented | Pinned patched Python versions, pnpm lock, clean Python/frontend audits, non-root container, CI. |
 | 067 License/services | Partial | Provider/legal sources reviewed; repo has no owner-supplied license. |
 | 068 CI/CD gates | Implemented | Lint/tests/build/secret guard/Docker build workflow. |
-| 069 Release/canary/rollback | Partial | Runbook implemented; no live deployment/canary executed. |
+| 069 Release/canary/rollback | Partial | Runbook, production Compose, ngrok launcher and rollback controls implemented; owner domain/ngrok live canary remains external. |
 | 070 Operator runbook | Implemented | Start, stop, backup, restore, incident and troubleshooting. |
 | 071 User guide/help | Implemented | README plus page-specific safe guidance and empty states. |
 | 072 Error catalog | Implemented | Runbook maps operational error codes to safe action. |
@@ -84,8 +84,8 @@ Statuses are evidence-based: **Implemented**, **Partial**, **Blocked**, or **Not
 | 077 Bug hunt log | Implemented | Worklog records SQLite handle leak and dependency-major issue/fixes. |
 | 078 Red-team loop one | Implemented | Secret/automation and provider-policy review. |
 | 079 Red-team loop two | Implemented | CSRF/URL/isolation/suppression/import adversarial tests. |
-| 080 Red-team loop three | Partial | Browser console/a11y/mobile red-team pending. |
-| 081 Non-technical simulation | Partial | First-run/empty-state flow designed; browser execution pending. |
+| 080 Red-team loop three | Implemented | Browser console, CSP, accessibility, mobile and manual-provider boundary exercised. |
+| 081 Non-technical simulation | Implemented | First-run setup through truthful Not sent outcome executed in a clean browser database. |
 | 082 Autonomy-first review | Implemented | Safe local preparation automated; external decision/action remains human. |
 | 083 Value review | Implemented | Product covers durable workflow rather than automation vanity. |
 | 084 Product realism | Implemented | No fake providers/data/metrics; credentials not claimed. |
@@ -101,13 +101,13 @@ Statuses are evidence-based: **Implemented**, **Partial**, **Blocked**, or **Not
 | 094 No-excuses search | Implemented | Final whitespace, unsafe automation, credential, secret-pattern and placeholder scans passed. |
 | 095 Completion matrix | Implemented | This document. |
 | 096 Final verification | Implemented | Automated, Docker, browser, responsive, fresh-clone and final scan evidence recorded. |
-| 097 Final response | Partial | Required evidence will be supplied after final commit/push. |
+| 097 Final response | Partial | Required evidence will be supplied after this hardening commit is pushed and CI completes. |
 | 098 Maintenance plan | Implemented | Runbook release/backup/restore plus changelog discipline. |
 | 099 Roadmap/blockers | Implemented | Exact remaining gaps listed here/final report. |
 | 100 Provider cleanup/account safety | Blocked | Provider password rotation/session review/history rewrite require owner actions. |
 | 101 Support bundle | Implemented | CLI/API redacted bundle and explicit test. |
 | 102 Retention/archive | Implemented | Configurable retention, purge confirmation, durable suppressions, backup. |
-| 103 Prototype-to-production | Implemented | Production guards/non-root image; external deployment still a separate gate. |
+| 103 Prototype-to-production | Implemented | Production guards, TLS edge, Windows standalone package, ngrok launcher, backups and HAI connector; external credentials/domain remain separate gates. |
 | 104 Safety stop | Implemented | Owner/admin pause blocks approval and handoff. |
 | 105 Onboarding | Implemented | First-owner setup and guided compliance next action. |
 | 106 Roles/team | Implemented | Owner/admin/editor/viewer and local member creation. |

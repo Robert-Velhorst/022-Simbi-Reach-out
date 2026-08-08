@@ -8,6 +8,9 @@
     "build": "tsc -b && vite build",
     "lint": "eslint . --max-warnings=0",
     "test": "vitest run --pool=threads --maxWorkers=1 --no-file-parallelism",
+    "test:e2e": "pnpm build && node ../scripts/e2e.mjs",
+    "test:e2e:run": "node ../scripts/e2e.mjs",
+    "audit": "pnpm audit --audit-level high",
     "test:watch": "vitest"
   },
   "dependencies": {
@@ -26,11 +29,13 @@
     "@types/node": "26.1.2",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.4",
+    "axe-core": "4.13.0",
     "eslint": "10.8.0",
     "eslint-plugin-react-hooks": "7.1.1",
     "eslint-plugin-react-refresh": "0.5.3",
     "globals": "17.9.0",
     "jsdom": "30.0.1",
+    "playwright": "1.62.1",
     "typescript": "5.9.3",
     "typescript-eslint": "8.66.0",
     "vitest": "4.1.10"

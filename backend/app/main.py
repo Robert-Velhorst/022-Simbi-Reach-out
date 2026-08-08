@@ -4,6 +4,7 @@ import csv
 import hashlib
 import io
 import json
+import re
 import sqlite3
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
@@ -15,6 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from .config import ROOT, settings
 from .db import audit, connect, database_size, fetch_all, fetch_one, migrate, now, transaction
@@ -40,6 +42,8 @@ from .security import (
 
 SESSION_COOKIE = "simbi_session"
 CSRF_COOKIE = "simbi_csrf"
+REQUEST_ID_RE = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
+DUMMY_PASSWORD_HASH = hash_password("simbi constant-time credential check")
 
 
 class AppError(Exception):
@@ -188,15 +192,23 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PATCH", "DELETE"],
     allow_headers=["Content-Type", "X-CSRF-Token", "Idempotency-Key"],
 )
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=list(settings.allowed_hosts))
 
 
 @app.middleware("http")
 async def security_and_request_middleware(request: Request, call_next):
-    request_id = request.headers.get("X-Request-ID", session_token()[:16])[:64]
+    supplied_request_id = request.headers.get("X-Request-ID", "")
+    request_id = (
+        supplied_request_id
+        if REQUEST_ID_RE.fullmatch(supplied_request_id)
+        else session_token()[:16]
+    )
     request.state.request_id = request_id
-    if request.method not in {"GET", "HEAD", "OPTIONS"} and not request.url.path.startswith(
-        "/api/auth/"
-    ):
+    csrf_exempt = request.method == "POST" and request.url.path in {
+        "/api/auth/setup",
+        "/api/auth/login",
+    }
+    if request.method not in {"GET", "HEAD", "OPTIONS"} and not csrf_exempt:
         header = request.headers.get("X-CSRF-Token", "")
         cookie = request.cookies.get(CSRF_COOKIE, "")
         if not header or not cookie or header != cookie:
@@ -207,12 +219,16 @@ async def security_and_request_middleware(request: Request, call_next):
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "no-referrer"
     response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+    response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; "
         "script-src 'self'; connect-src 'self' " + settings.frontend_origin
     )
     if request.url.path.startswith("/api/"):
         response.headers["Cache-Control"] = "no-store"
+    if settings.environment == "production":
+        response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"
     return response
 
 
@@ -292,6 +308,60 @@ def issue_session(connection: sqlite3.Connection, user_id: int) -> tuple[str, st
         (token_hash(raw_session), user_id, expires, created),
     )
     return raw_session, raw_csrf
+
+
+def login_fingerprint(request: Request, email: str) -> str:
+    client_host = request.client.host if request.client else "unknown"
+    return hashlib.sha256(f"{client_host}|{email}".encode()).hexdigest()
+
+
+def enforce_login_limit(fingerprint: str) -> None:
+    attempt = fetch_one("SELECT * FROM login_attempts WHERE fingerprint=?", (fingerprint,))
+    if not attempt or not attempt["locked_until"] or attempt["locked_until"] <= now():
+        return
+    retry_after = max(
+        1,
+        int((datetime.fromisoformat(attempt["locked_until"]) - datetime.now(UTC)).total_seconds()),
+    )
+    raise AppError(
+        429,
+        "login_rate_limited",
+        "Too many sign-in attempts. Wait before trying again.",
+        {"retry_after_seconds": retry_after},
+    )
+
+
+def record_login_failure(fingerprint: str) -> None:
+    timestamp = now()
+    window_cutoff = (
+        (datetime.now(UTC) - timedelta(minutes=settings.login_window_minutes))
+        .replace(microsecond=0)
+        .isoformat()
+    )
+    with transaction() as connection:
+        attempt = connection.execute(
+            "SELECT * FROM login_attempts WHERE fingerprint=?", (fingerprint,)
+        ).fetchone()
+        if not attempt or attempt["window_started_at"] <= window_cutoff:
+            failures = 1
+            window_started_at = timestamp
+        else:
+            failures = int(attempt["failures"]) + 1
+            window_started_at = attempt["window_started_at"]
+        locked_until = None
+        if failures >= settings.max_failed_logins:
+            locked_until = (
+                (datetime.now(UTC) + timedelta(minutes=settings.login_lock_minutes))
+                .replace(microsecond=0)
+                .isoformat()
+            )
+        connection.execute(
+            "INSERT INTO login_attempts(fingerprint,failures,window_started_at,locked_until,updated_at) "
+            "VALUES (?,?,?,?,?) ON CONFLICT(fingerprint) DO UPDATE SET failures=excluded.failures,"
+            "window_started_at=excluded.window_started_at,locked_until=excluded.locked_until,"
+            "updated_at=excluded.updated_at",
+            (fingerprint, failures, window_started_at, locked_until, timestamp),
+        )
 
 
 def current_member(
@@ -433,15 +503,20 @@ def setup(body: SetupBody, response: Response):
 
 
 @app.post("/api/auth/login")
-def login(body: LoginBody, response: Response):
+def login(body: LoginBody, request: Request, response: Response):
     try:
         email = validate_email(body.email)
     except ValueError as exc:
         raise AppError(401, "invalid_credentials", "Email or password is incorrect") from exc
+    fingerprint = login_fingerprint(request, email)
+    enforce_login_limit(fingerprint)
     user = fetch_one("SELECT * FROM users WHERE email=?", (email,))
-    if not user or not verify_password(body.password, user["password_hash"]):
+    encoded_password = user["password_hash"] if user else DUMMY_PASSWORD_HASH
+    if not verify_password(body.password, encoded_password) or not user:
+        record_login_failure(fingerprint)
         raise AppError(401, "invalid_credentials", "Email or password is incorrect")
     with transaction() as connection:
+        connection.execute("DELETE FROM login_attempts WHERE fingerprint=?", (fingerprint,))
         connection.execute("DELETE FROM sessions WHERE expires_at<=?", (now(),))
         raw_session, raw_csrf = issue_session(connection, user["id"])
     set_auth_cookies(response, raw_session, raw_csrf)

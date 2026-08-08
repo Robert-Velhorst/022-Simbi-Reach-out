@@ -3,28 +3,31 @@
 ## Trust boundaries
 
 ```text
-Browser -> loopback API -> local SQLite
-                         -> local reminder worker
+Browser -> loopback API -> local SQLite -> verified local backups
+                         -> local maintenance worker -> optional HAI JSON file
+Internet -> ngrok/Caddy TLS -> trusted proxy -> production API (explicit deployment only)
 Browser --explicit click--> configured HTTPS provider page
 ```
 
-The API and worker never call the provider. The provider is a separate trust boundary opened only by the user's browser after an explicit action.
+The API and worker never call the provider. The provider is a separate trust boundary opened only by the user's browser after an explicit action. The HAI boundary is an atomic local file and is metadata-only by default; HAI obtains no Simbi session or send permission.
 
 ## Controls
 
 - Salted scrypt password hashes; no fallback or default password.
 - Random opaque server-side sessions with bounded expiry.
 - `HttpOnly`, `SameSite=Strict` session cookie and double-submit CSRF control.
-- Production startup requires HTTPS origin and secure cookies.
+- Production startup requires an HTTPS origin, explicit public hostname, trusted proxy list, and secure cookies.
+- Failed logins are rate-limited by a one-way client/email fingerprint; unknown users still run a password verification to reduce account enumeration timing signals.
 - Role checks on every material write; workspace ownership on every record lookup.
 - Parameterized SQL for values. Dynamic table/sort identifiers come only from fixed code allowlists.
 - HTTPS-only provider URLs, no embedded credentials, no nonstandard port, and exact configured-host match for handoffs.
-- Content Security Policy, frame denial, MIME sniffing prevention, strict referrer policy, and disabled browser permissions.
+- Content Security Policy, HSTS, trusted-host rejection, sanitized request IDs, COOP/CORP, frame denial, MIME sniffing prevention, strict referrer policy, and disabled browser permissions.
 - No uploads; CSV imports are bounded, parsed in memory, previewed, and committed atomically only when every row is valid.
 - Daily handoff limit, per-prospect cooldown, unique campaign/prospect draft, and idempotent handoff key.
 - Explicit state machine blocks impossible or repeated transitions.
 - Support bundle excludes names, emails, provider handles, tokens, credentials, and message bodies.
 - Runtime database, logs, exports, backups, uploads, and environment files are ignored by Git.
+- Production containers are non-root, capability-free, read-only, resource-limited, log-rotated, and place the trusted Caddy proxy at a fixed private address.
 
 ## Threats reviewed
 
@@ -38,6 +41,9 @@ The API and worker never call the provider. The provider is a separate trust bou
 | Sensitive diagnostics | redacted support shape | A full workspace export intentionally contains personal data and must be protected. |
 | Provider-policy violation | no automation, explicit compliance gate | Operator remains responsible for every manual send. |
 | Local database theft | loopback binding, OS file controls | At-rest encryption is not implemented; use full-disk encryption and protected OS account. |
+| Public tunnel abuse | production-only ngrok launcher, HTTPS, trusted host/proxy, secure cookies, login throttling | An unguessable URL is not authentication; supervise and stop temporary tunnels. |
+| HAI over-disclosure | metadata-only default, explicit content opt-in, local atomic file, HAI privacy/review gate | Enabling content export discloses prospect/message data to HAI storage. |
+| Backup corruption/loss | SQLite backup API, integrity check, daily rotation | Backups share the same machine by default; copy reviewed backups to protected offline storage. |
 
 ## Privacy impact
 

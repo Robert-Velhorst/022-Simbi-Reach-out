@@ -24,5 +24,13 @@ Automated results are updated in `FINAL_VERIFICATION_REPORT.md`. Tests use a thr
 | A18 | Production frontend build | TypeScript and Vite complete without errors. |
 | A19 | Responsive browser | No overflow or clipped primary controls at desktop/mobile widths. |
 | A20 | Full browser critical path | First run through reply/report works using local data only. |
+| A21 | Login abuse | Five failures lock the client/account fingerprint; a correct password is rejected until the lock expires. |
+| A22 | Host/proxy boundary | Untrusted Host is rejected; production requires HTTPS, exact hostname, and trusted forwarded source. |
+| A23 | Backup integrity | Online SQLite backup passes `PRAGMA integrity_check` and preserves records. |
+| A24 | HAI connector default | Actionable items match HAI generic feed format without prospect/message content or send authority. |
+| A25 | HAI content opt-in | Personal content appears only with explicit `--include-content`/environment opt-in. |
+| A26 | Large dataset | 10,000 prospects/drafts remain within the 2-second query and 30 MB database budgets. |
+| A27 | Dependency audits | Python and pnpm report no known vulnerabilities. |
+| A28 | Windows standalone | Bundled executable starts on loopback, serves compiled UI, migrates local data, and stops cleanly. |
 
-Manual A19/A20 evidence must include screenshots and browser-console review. They cannot be replaced by a green unit suite.
+A19/A20 evidence includes reproducible screenshots, accessibility results, and browser-console review. A dedicated screen-reader audit and a live ngrok/domain canary remain manual gates for broad hosted release.

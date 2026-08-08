@@ -111,3 +111,26 @@ def audit(
 def database_size() -> int:
     path = Path(settings.database_path)
     return path.stat().st_size if path.exists() else 0
+
+
+def create_backup(destination: Path | None = None) -> Path:
+    migrate()
+    folder = (destination or settings.backup_path).resolve()
+    folder.mkdir(parents=True, exist_ok=True)
+    target = folder / f"simbi-{datetime.now(UTC).strftime('%Y%m%dT%H%M%SZ')}.db"
+    source = connect()
+    try:
+        output = sqlite3.connect(target)
+        try:
+            source.backup(output)
+            integrity = output.execute("PRAGMA integrity_check").fetchone()[0]
+            if integrity != "ok":
+                raise sqlite3.DatabaseError("Backup integrity check failed")
+        finally:
+            output.close()
+    except Exception:
+        target.unlink(missing_ok=True)
+        raise
+    finally:
+        source.close()
+    return target

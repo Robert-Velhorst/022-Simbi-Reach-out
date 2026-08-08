@@ -1,6 +1,6 @@
 # Final verification report
 
-Verification date: 2026-08-08
+Verification date: 2026-08-09
 Starting commit: `6c3c7cbd23a4aa8edd3e1b0f6eb2fb8f13b3e44d`
 Working branch: `codex/implement-simbi-reach-out`
 
@@ -10,12 +10,15 @@ Working branch: `codex/implement-simbi-reach-out`
 |---|---|---|
 | Repository/history audit | Pass | Remote default and existing history inspected; critical legacy risks recorded. |
 | Backend lint | Pass | Ruff reports no findings after safe allowlist annotations/config. |
-| Backend tests | Pass | 8 tests across critical path, security, isolation, import, suppression, and worker. |
+| Backend tests | Pass | 14 tests across critical path, security, isolation, import, suppression, HAI connector, backup, and worker. |
 | Frontend lint/type/build | Pass | ESLint with zero warnings, TypeScript, and Vite production build; 1,804 modules transformed. |
-| Frontend tests | Pass | 5 tests across API CSRF/errors, shared UI, and dashboard truthfulness. |
+| Frontend tests | Pass | 7 tests across API CSRF/network errors, shared UI, startup recovery, and dashboard truthfulness. |
+| Dependency audits | Pass | Python and pnpm report no known vulnerabilities after upgrading FastAPI, Starlette, pytest, and the TestClient transport. |
 | Docker configuration | Pass | Multi-stage image built; non-root container healthy on loopback; readiness returned database reachable; worker `--once` completed. |
 | Browser critical path | Pass | Real first-run through cancelled manual handoff completed without provider navigation or send. |
-| Browser desktop/mobile | Pass | 1440x1000 and 390x844; responsive drawer verified; no unexpected console/page errors. |
+| Browser desktop/mobile | Pass | 1440x1000 and 390x844; responsive drawer verified; zero WCAG A/AA violations and no console/page errors. |
+| Capacity | Pass | 10,000 prospects plus 10,000 drafts loaded; indexed summary/page query 0.014s and database 3.7 MB on the verification machine. |
+| Windows standalone | Pass | PyInstaller one-folder artifact built on Windows 11 with bundled frontend, migrations, runtime, loopback launcher, maintenance, and backups. |
 | Fresh-clone dry run | Pass | Local no-hardlink clone; clean Python/frontend installs; lint, 8 backend tests, 5 frontend tests, build and doctor all passed. |
 | Final no-excuses scan | Pass | Diff whitespace, unsafe automation, historic credential strings, secret patterns and placeholder-copy scans completed. |
 | Git branch/draft PR | Pass | Branch `codex/implement-simbi-reach-out` pushed; draft PR #1 targets `main`; GitHub Actions verification passed. |
@@ -45,8 +48,7 @@ CSRF failure, security headers, unsafe provider URLs, cross-workspace access, su
 - No official provider API integration is enabled; this is deliberate until written authorization and an official compliant API exist.
 - No at-rest application-layer encryption; rely on OS full-disk encryption and local account controls.
 - Internationalization catalog is not yet implemented.
-- Large-dataset performance is bounded and indexed but not benchmarked at the 5,000-row import ceiling.
 - Automated semantic/accessibility coverage and browser keyboard-capable controls are present; a dedicated screen-reader audit is still recommended before a broad public release.
-- External provider authorization and a dedicated screen-reader audit remain release gates for any broader hosted deployment.
+- Live ngrok/domain deployment, external provider authorization, and a dedicated screen-reader audit remain gates for broader hosted use.
 
 The local product and repository release gates pass. Publication status is recorded by the branch and pull request; this report intentionally does not claim an authorized provider integration.

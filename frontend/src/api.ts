@@ -25,7 +25,23 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
   if (!['GET', 'HEAD', 'OPTIONS'].includes(method.toUpperCase())) {
     headers.set('X-CSRF-Token', decodeURIComponent(cookie('simbi_csrf')))
   }
-  const response = await fetch(`/api${path}`, { ...options, headers, credentials: 'include' })
+  const controller = new AbortController()
+  const timeout = window.setTimeout(() => controller.abort(), 20_000)
+  if (options.signal) {
+    if (options.signal.aborted) controller.abort()
+    else options.signal.addEventListener('abort', () => controller.abort(), { once: true })
+  }
+  let response: Response
+  try {
+    response = await fetch(`/api${path}`, { ...options, headers, credentials: 'include', signal: controller.signal })
+  } catch (cause) {
+    const message = controller.signal.aborted
+      ? 'The request timed out. Check the service and try again.'
+      : 'The local service is unavailable. Check that it is running and try again.'
+    throw new ApiError(controller.signal.aborted ? 'request_timeout' : 'network_unavailable', message, cause)
+  } finally {
+    window.clearTimeout(timeout)
+  }
   const payload = await response.json().catch(() => ({}))
   if (!response.ok) {
     const error = payload.error ?? {}

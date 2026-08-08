@@ -2,7 +2,7 @@
 
 ## Daily start
 
-1. Start with `docker compose up --build` or `scripts/dev.ps1`.
+1. Start with `docker compose up --build`, `scripts/dev.ps1`, or the built Windows executable.
 2. Confirm `/api/health/ready` returns `ready`.
 3. Open the dashboard and confirm the environment banner says `LOCAL ASSISTED MODE` (or explicitly labelled demo mode).
 4. Resolve ambiguous handoffs before preparing new outreach.
@@ -23,6 +23,8 @@
 Settings -> Emergency safety stop blocks approvals and new handoffs while preserving local investigation, export, reply recording, and audit access. Resume only after the incident is understood and recorded.
 
 ## Backup and restore
+
+Production and Windows standalone modes create one integrity-checked backup per day and retain 30 days by default. Manual backups remain appropriate before upgrades or imports.
 
 Create a backup before upgrades, restore tests, or bulk imports:
 
@@ -57,11 +59,28 @@ The generated JSON is ignored by Git and excludes personal content. Review it be
 
 ## Release and rollback
 
-1. Run `scripts/verify.ps1` and Docker build.
+1. Run `scripts/verify.ps1`, build the Windows artifact, and build the container.
 2. Back up the database.
 3. Apply migrations with `simbi migrate`; migrations are forward-only and idempotently recorded.
 4. Deploy one local/canary workspace first and run the critical path without sending.
 5. Roll back application image only after checking schema compatibility. Restore the pre-release backup if a migration must be reversed.
+
+## HAI feed
+
+HAI integration is local, pull-based, and read-only. Export once with `simbi hai-export <path>` or configure `SIMBI_HAI_FEED_PATH` for worker refresh. Leave `SIMBI_HAI_INCLUDE_CONTENT=false` unless the owner has reviewed the prospect and draft disclosure. HAI receives no cookie, provider credential, or send authority.
+
+HAI configuration:
+
+```text
+HAI_PHASE2_FEEDS_DIR=<parent folder of the Simbi feed>
+HAI_PHASE2_FEED_FILES=simbi.json
+```
+
+The file is written atomically. A repeated unchanged export does not rewrite it. If HAI is unavailable, Simbi continues normally and no outreach action is attempted.
+
+## ngrok incident boundary
+
+The ngrok launcher is for temporary, explicitly supervised access. It must not expose HAI or a development-mode Simbi process. Stop the launcher to stop both the app and tunnel. If the URL was disclosed unexpectedly, stop it immediately, review audit events, expire sessions by restarting after deleting them through a reviewed maintenance step, and rotate the ngrok credential if compromise is suspected.
 
 ## Troubleshooting
 

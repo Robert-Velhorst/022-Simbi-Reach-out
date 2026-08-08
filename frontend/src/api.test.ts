@@ -1,10 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { api, post } from './api'
 
 describe('API client', () => {
   beforeEach(() => {
     document.cookie = 'simbi_csrf=test-token; path=/'
   })
+  afterEach(() => vi.unstubAllGlobals())
 
   it('adds the CSRF header to writes', async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ status: 'ok' }), {
@@ -28,5 +29,13 @@ describe('API client', () => {
     await expect(api('/drafts/1/handoff', { method: 'POST' })).rejects.toEqual(
       expect.objectContaining({ code: 'workspace_paused', message: 'Outreach is paused' }),
     )
+  })
+
+  it('turns a network failure into an actionable API error', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('connection refused')))
+    await expect(api('/health/ready')).rejects.toEqual(expect.objectContaining({
+      code: 'network_unavailable',
+      message: expect.stringMatching(/service is unavailable/i),
+    }))
   })
 })

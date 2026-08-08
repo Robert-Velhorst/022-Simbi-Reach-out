@@ -36,6 +36,11 @@ h3 { font-size: 0.96rem; }
 small { color: var(--muted); }
 
 .app-loading { min-height: 100vh; display: grid; place-content: center; justify-items: center; gap: 16px; color: var(--muted); }
+.boot-failure { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px; text-align: center; background: var(--surface-soft); }
+.boot-failure h1 { font-size: 2rem; }
+.boot-failure p { max-width: 560px; color: var(--muted); line-height: 1.55; }
+.boot-failure .brand-mark { color: var(--red); border-color: #e6a2a5; font-size: 1.35rem; font-weight: 800; }
+.boot-failure small { margin-top: 16px; }
 .loading-mark { width: 34px; height: 34px; border: 3px solid var(--blue-soft); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 

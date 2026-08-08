@@ -8,6 +8,11 @@ htmlcov/
 .venv/
 node_modules/
 frontend/dist/
+.e2e-runtime/
+.benchmark-runtime/
+.standalone-qa/
+build/
+dist/
 *.tsbuildinfo
 data/
 backups/
@@ -18,6 +23,7 @@ support-bundles/
 .env
 .env.*
 !.env.example
+!.env.production.example
 *.log
 uploads/
 .DS_Store

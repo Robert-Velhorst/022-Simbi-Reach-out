@@ -21,6 +21,37 @@ def test_csrf_and_security_headers(client):
     assert response.headers["x-frame-options"] == "DENY"
     assert response.headers["x-content-type-options"] == "nosniff"
     assert "default-src 'self'" in response.headers["content-security-policy"]
+    assert response.headers["cross-origin-opener-policy"] == "same-origin"
+    assert response.headers["cross-origin-resource-policy"] == "same-origin"
+
+
+def test_logout_requires_csrf_and_untrusted_hosts_are_rejected(client):
+    setup_owner(client)
+    rejected_logout = client.post("/api/auth/logout", json={})
+    assert rejected_logout.status_code == 403
+    rejected_host = client.get("/api/health/live", headers={"Host": "attacker.example"})
+    assert rejected_host.status_code == 400
+    signed_out = client.post("/api/auth/logout", headers=csrf_headers(client), json={})
+    assert signed_out.status_code == 200
+
+
+def test_login_is_rate_limited_without_account_enumeration(client):
+    setup_owner(client)
+    client.post("/api/auth/logout", headers=csrf_headers(client), json={})
+    for _ in range(5):
+        failed = client.post(
+            "/api/auth/login",
+            json={"email": "owner@example.test", "password": "incorrect password value"},
+        )
+        assert failed.status_code == 401
+        assert failed.json()["error"]["code"] == "invalid_credentials"
+    limited = client.post(
+        "/api/auth/login",
+        json={"email": "owner@example.test", "password": "correct horse battery staple"},
+    )
+    assert limited.status_code == 429
+    assert limited.json()["error"]["code"] == "login_rate_limited"
+    assert limited.json()["error"]["details"]["retry_after_seconds"] >= 1
 
 
 def test_provider_urls_reject_credentials_http_and_host_mismatch(client):

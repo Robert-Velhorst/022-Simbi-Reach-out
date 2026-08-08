@@ -8,7 +8,8 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from .config import ROOT, settings
-from .db import connect, database_size, fetch_all, fetch_one, migrate, now, transaction
+from .db import create_backup, database_size, fetch_all, fetch_one, migrate, now, transaction
+from .hai import export_hai_feed
 
 
 def doctor() -> int:
@@ -48,19 +49,8 @@ def doctor() -> int:
 
 
 def backup(destination: str | None = None) -> Path:
-    migrate()
-    folder = Path(destination).resolve() if destination else (ROOT / "backups").resolve()
-    folder.mkdir(parents=True, exist_ok=True)
-    target = folder / f"simbi-{datetime.now(UTC).strftime('%Y%m%dT%H%M%SZ')}.db"
-    source = connect()
-    try:
-        output = sqlite3.connect(target)
-        try:
-            source.backup(output)
-        finally:
-            output.close()
-    finally:
-        source.close()
+    folder = Path(destination).resolve() if destination else None
+    target = create_backup(folder)
     print(f"Backup created: {target} ({target.stat().st_size} bytes)")
     return target
 
@@ -139,7 +129,7 @@ def purge_retention(confirm: bool) -> int:
 
 def support_bundle() -> Path:
     migrate()
-    output = ROOT / "support-bundles"
+    output = settings.database_path.parent / "support-bundles"
     output.mkdir(parents=True, exist_ok=True)
     target = output / f"support-{datetime.now(UTC).strftime('%Y%m%dT%H%M%SZ')}.json"
     payload = {
@@ -172,6 +162,16 @@ def main() -> None:
     purge_parser = subparsers.add_parser("purge-retention")
     purge_parser.add_argument("--confirm", action="store_true")
     subparsers.add_parser("support-bundle")
+    hai_parser = subparsers.add_parser(
+        "hai-export", help="Write a privacy-scoped generic JSON feed for HAI"
+    )
+    hai_parser.add_argument("destination")
+    hai_parser.add_argument("--workspace-id", type=int)
+    hai_parser.add_argument(
+        "--include-content",
+        action="store_true",
+        help="Explicitly include prospect names and draft text in the HAI feed",
+    )
     args = parser.parse_args()
     if args.command == "doctor":
         raise SystemExit(doctor())
@@ -187,6 +187,22 @@ def main() -> None:
         raise SystemExit(purge_retention(args.confirm))
     elif args.command == "support-bundle":
         support_bundle()
+    elif args.command == "hai-export":
+        target, count, changed = export_hai_feed(
+            Path(args.destination), args.workspace_id, args.include_content
+        )
+        print(
+            json.dumps(
+                {
+                    "destination": str(target),
+                    "items": count,
+                    "updated": changed,
+                    "content_included": args.include_content,
+                    "automatic_sending_allowed": False,
+                },
+                indent=2,
+            )
+        )
 
 
 if __name__ == "__main__":
