@@ -1,0 +1,31 @@
+services:
+  app:
+    build: .
+    environment:
+      SIMBI_ENV: local
+      SIMBI_DATABASE_PATH: /app/data/simbi.db
+      SIMBI_FRONTEND_ORIGIN: http://127.0.0.1:8000
+      SIMBI_COOKIE_SECURE: "false"
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - simbi-data:/app/data
+    restart: unless-stopped
+
+  worker:
+    build: .
+    command: ["python", "-m", "app.worker", "--interval", "300"]
+    environment:
+      SIMBI_ENV: local
+      SIMBI_DATABASE_PATH: /app/data/simbi.db
+      SIMBI_FRONTEND_ORIGIN: http://127.0.0.1:8000
+      SIMBI_COOKIE_SECURE: "false"
+    volumes:
+      - simbi-data:/app/data
+    depends_on:
+      app:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  simbi-data:

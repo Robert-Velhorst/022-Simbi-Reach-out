@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "codex/**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.16.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - name: Install backend
+        run: pip install -e ".[dev]"
+      - name: Backend lint
+        run: ruff check backend
+      - name: Backend tests
+        run: pytest
+      - name: Install frontend
+        run: pnpm --dir frontend install --frozen-lockfile
+      - name: Frontend tests
+        run: pnpm --dir frontend test
+      - name: Frontend lint
+        run: pnpm --dir frontend lint
+      - name: Frontend build
+        run: pnpm --dir frontend build
+      - name: Secret and unsafe automation guard
+        shell: bash
+        run: |
+          ! grep -RniE "selenium|webdriver_manager|send_message\(|login_password|plaintext_password|password[[:space:]]*=[[:space:]]*['\"][^'\"]+" \
+            --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=docs .
+      - name: Docker build
+        run: docker build -t simbi-reach-out:ci .

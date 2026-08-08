@@ -1,0 +1,14 @@
+.git
+.github
+.venv
+frontend/node_modules
+frontend/dist
+data
+backups
+support-bundles
+backend/tests
+**/__pycache__
+*.db
+*.log
+.env*
+!.env.example
