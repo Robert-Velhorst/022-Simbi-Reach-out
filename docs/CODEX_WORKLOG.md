@@ -19,5 +19,6 @@
 15. Added frontend lint to the repeatable verification script and reached zero lint warnings.
 16. Cloned the committed tree without hardlinks, installed both dependency sets from scratch, and reran the complete verification script successfully.
 17. Completed the final whitespace, unsafe-runtime, secret-pattern, historic-credential and placeholder-copy scans.
+18. Pushed the feature branch and opened draft PR #1; narrowed a self-matching CI grep guard to executable source/config paths after inspecting the Actions logs.
 
-The only remaining checkpoint is remote publication and CI review on GitHub.
+The feature branch and draft PR are published; GitHub Actions is the remaining remote review signal.

@@ -44,6 +44,6 @@ jobs:
         shell: bash
         run: |
           ! grep -RniE "selenium|webdriver_manager|send_message\(|login_password|plaintext_password|password[[:space:]]*=[[:space:]]*['\"][^'\"]+" \
-            --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=docs .
+            backend frontend/src scripts Dockerfile docker-compose.yml pyproject.toml
       - name: Docker build
         run: docker build -t simbi-reach-out:ci .
