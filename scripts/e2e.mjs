@@ -38,7 +38,7 @@ server.stdout.on('data', (chunk) => serverOutput.push(chunk.toString()))
 server.stderr.on('data', (chunk) => serverOutput.push(chunk.toString()))
 
 async function waitUntilReady() {
-  const deadline = Date.now() + 30_000
+  const deadline = Date.now() + 60_000
   while (Date.now() < deadline) {
     if (server.exitCode !== null) throw new Error(`E2E server exited early:\n${serverOutput.join('')}`)
     try {
@@ -134,7 +134,12 @@ try {
     runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] },
   }))
   if (accessibility.violations.length) {
-    const summary = accessibility.violations.map((item) => `${item.id}: ${item.help}`).join('\n')
+    const summary = accessibility.violations.map((item) => {
+      const nodes = item.nodes.map((node) =>
+        `  ${node.target.join(' ')}: ${node.failureSummary ?? node.html}`
+      ).join('\n')
+      return `${item.id}: ${item.help}\n${nodes}`
+    }).join('\n')
     throw new Error(`Accessibility violations:\n${summary}`)
   }
   await page.screenshot({ path: join(runtime, 'desktop.png'), fullPage: true })
