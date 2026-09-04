@@ -1,0 +1,50 @@
+[project]
+name = "simbi-reach-out"
+version = "1.0.0"
+description = "Local-first, review-gated outreach workflow"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi==0.139.2",
+  "starlette==1.3.1",
+  "uvicorn[standard]==0.35.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "httpx2==2.7.0",
+  "pytest==9.1.1",
+  "pytest-cov==6.2.1",
+  "pip-audit==2.10.1",
+  "pyinstaller==6.16.0",
+  "ruff==0.12.8",
+]
+
+[project.scripts]
+simbi = "app.cli:main"
+simbi-worker = "app.worker:main"
+simbi-server = "app.server:main"
+simbi-windows = "app.windows:main"
+
+[tool.pytest.ini_options]
+testpaths = ["backend/tests"]
+addopts = "-q --strict-markers"
+pythonpath = ["backend"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S"]
+ignore = [
+  "E501", # Long SQL and error strings are clearer when kept intact.
+  "S101", # Assertions are expected in the test suite.
+  "S608", # Dynamic identifiers are selected exclusively from local allowlists.
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["backend/app"]

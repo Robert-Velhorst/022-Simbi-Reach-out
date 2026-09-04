@@ -1,0 +1,109 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "codex/**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.16.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - name: Install backend
+        run: pip install -e ".[dev]"
+      - name: Backend lint
+        run: ruff check backend
+      - name: Backend tests
+        run: pytest
+      - name: Backend dependency audit
+        run: pip-audit --skip-editable
+      - name: Capacity benchmark
+        run: python scripts/benchmark.py
+      - name: Install frontend
+        run: pnpm --dir frontend install --frozen-lockfile
+      - name: Frontend tests
+        run: pnpm --dir frontend test
+      - name: Frontend lint
+        run: pnpm --dir frontend lint
+      - name: Frontend build
+        run: pnpm --dir frontend build
+      - name: Frontend dependency audit
+        run: pnpm --dir frontend audit --audit-level high
+      - name: Install browser runtime
+        run: pnpm --dir frontend exec playwright install --with-deps chromium
+      - name: Browser, responsive, and accessibility acceptance
+        run: pnpm --dir frontend test:e2e:run
+      - name: Secret and unsafe automation guard
+        shell: bash
+        run: |
+          ! grep -RniE "selenium|webdriver_manager|send_message\(|login_password|plaintext_password|password[[:space:]]*=[[:space:]]*['\"][^'\"]+" \
+            backend frontend/src scripts Dockerfile docker-compose.yml pyproject.toml
+      - name: Docker build
+        run: docker build -t simbi-reach-out:ci .
+      - name: Validate deployment configuration
+        run: |
+          docker compose config --quiet
+          docker compose -f compose.production.yaml --env-file .env.production.example config --quiet
+      - name: Container runtime smoke
+        shell: bash
+        run: |
+          docker compose up -d --build
+          for attempt in {1..60}; do
+            if curl --fail --silent http://127.0.0.1:8000/api/health/ready; then
+              exit 0
+            fi
+            sleep 1
+          done
+          docker compose logs
+          exit 1
+      - name: Stop smoke environment
+        if: always()
+        run: docker compose down --volumes
+
+  windows-standalone:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.16.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - name: Create build environment
+        shell: pwsh
+        run: |
+          python -m venv .venv
+          .\.venv\Scripts\python.exe -m pip install -e ".[dev]"
+      - name: Build Windows standalone app
+        shell: pwsh
+        run: .\scripts\build-windows.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: simbi-reach-out-windows
+          path: dist/Simbi Reach-Out
+          if-no-files-found: error

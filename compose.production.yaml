@@ -1,0 +1,103 @@
+name: simbi-reach-out
+
+x-app-environment: &app-environment
+  SIMBI_ENV: production
+  SIMBI_DATABASE_PATH: /app/data/simbi.db
+  SIMBI_FRONTEND_ORIGIN: https://${SIMBI_DOMAIN:?Set SIMBI_DOMAIN in .env.production}
+  SIMBI_COOKIE_SECURE: "true"
+  SIMBI_ALLOWED_HOSTS: ${SIMBI_DOMAIN:?Set SIMBI_DOMAIN in .env.production}
+  SIMBI_FORWARDED_ALLOW_IPS: 172.30.0.3
+  SIMBI_SESSION_HOURS: ${SIMBI_SESSION_HOURS:-12}
+  SIMBI_RETENTION_DAYS: ${SIMBI_RETENTION_DAYS:-365}
+  SIMBI_AUTO_BACKUP: "true"
+  SIMBI_BACKUP_PATH: /app/backups
+  SIMBI_BACKUP_RETENTION_DAYS: ${SIMBI_BACKUP_RETENTION_DAYS:-30}
+
+x-runtime: &runtime
+  image: simbi-reach-out:${SIMBI_IMAGE_TAG:-1.0.0}
+  environment: *app-environment
+  volumes:
+    - simbi-data:/app/data
+    - simbi-backups:/app/backups
+  read_only: true
+  tmpfs:
+    - /tmp:size=64m,mode=1777
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  init: true
+  restart: unless-stopped
+  stop_grace_period: 30s
+  mem_limit: 512m
+  cpus: 1.0
+  logging:
+    driver: json-file
+    options:
+      max-size: 10m
+      max-file: "5"
+  networks:
+    simbi-internal:
+
+services:
+  app:
+    <<: *runtime
+    build: .
+    expose:
+      - "8000"
+    networks:
+      simbi-internal:
+        ipv4_address: 172.30.0.2
+
+  worker:
+    <<: *runtime
+    command: ["python", "-m", "app.worker", "--interval", "300"]
+    depends_on:
+      app:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "from pathlib import Path; assert b'app.worker' in Path('/proc/1/cmdline').read_bytes()"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      simbi-internal:
+        ipv4_address: 172.30.0.4
+
+  caddy:
+    image: caddy:2.10.2-alpine
+    environment:
+      SIMBI_DOMAIN: ${SIMBI_DOMAIN:?Set SIMBI_DOMAIN in .env.production}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      app:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "5"
+    networks:
+      simbi-internal:
+        ipv4_address: 172.30.0.3
+
+volumes:
+  simbi-data:
+  simbi-backups:
+  caddy-data:
+  caddy-config:
+
+networks:
+  simbi-internal:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
