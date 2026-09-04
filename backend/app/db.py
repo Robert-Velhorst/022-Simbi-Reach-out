@@ -173,10 +173,15 @@ def _execute_migration(connection: sqlite3.Connection, script: str) -> None:
 
 
 def _apply_migrations(connection: sqlite3.Connection) -> list[str]:
+    paths = sorted((ROOT / "backend" / "migrations").glob("*.sql"))
+    if not paths:
+        raise RuntimeError(
+            "Required migration assets are missing; check the installed application root"
+        )
     applied: list[str] = []
     connection.execute(MIGRATION_TABLE)
     known = {row[0] for row in connection.execute("SELECT name FROM schema_migrations")}
-    for path in sorted((ROOT / "backend" / "migrations").glob("*.sql")):
+    for path in paths:
         if path.name in known:
             continue
         _execute_migration(connection, path.read_text(encoding="utf-8"))

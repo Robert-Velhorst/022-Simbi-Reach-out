@@ -13,6 +13,12 @@ import pytest
 from app import cli, db
 
 
+def test_missing_migration_assets_fail_closed(tmp_path, monkeypatch):
+    monkeypatch.setattr(db, "ROOT", tmp_path / "missing-assets")
+    with pytest.raises(RuntimeError, match="migration assets"):
+        db.migrate()
+
+
 @pytest.fixture(autouse=True)
 def isolated_database(tmp_path, monkeypatch):
     settings = replace(

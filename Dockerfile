@@ -12,6 +12,7 @@ LABEL org.opencontainers.image.title="Simbi Reach-Out" \
       org.opencontainers.image.source="https://github.com/Robert-Velhorst/022-Simbi-Reach-out"
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app/backend \
     SIMBI_ENV=production \
     SIMBI_DATABASE_PATH=/app/data/simbi.db \
     SIMBI_COOKIE_SECURE=true \

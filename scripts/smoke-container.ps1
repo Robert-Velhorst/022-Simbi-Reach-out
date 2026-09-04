@@ -16,6 +16,8 @@ try {
     $Token = [guid]::NewGuid().ToString('N')
     $Runtime = @('--read-only', '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges:true', '--tmpfs', '/tmp:size=64m,mode=1777', '--mount', "type=volume,src=$($Volumes[0]),dst=/app/data", '--mount', "type=volume,src=$($Volumes[1]),dst=/app/backups", '--mount', "type=volume,src=$($Volumes[2]),dst=/app/hai")
     foreach ($value in @('SIMBI_ENV=production', 'SIMBI_DATABASE_PATH=/app/data/simbi.db', 'SIMBI_FRONTEND_ORIGIN=https://smoke.example.test', 'SIMBI_ALLOWED_HOSTS=smoke.example.test', 'SIMBI_COOKIE_SECURE=true', 'SIMBI_AUTO_BACKUP=true', 'SIMBI_BACKUP_PATH=/app/backups', 'SIMBI_REQUIRE_MAINTENANCE=true', 'SIMBI_HAI_FEED_PATH=/app/hai/simbi.json', 'SIMBI_HAI_INCLUDE_CONTENT=false', "SIMBI_SETUP_TOKEN=$Token")) { $Runtime += @('--env', $value) }
+    # Exercise the image's actual import resolution before starting any services.
+    Invoke-SimbiNative docker (@('run', '--rm', '--network', 'none') + $Runtime + @($Image, 'python', '-c', "from pathlib import Path; from app.config import ROOT; assert ROOT == Path('/app'), str(ROOT); assert list((ROOT/'backend/migrations').glob('*.sql')), 'Missing image migrations'; assert (ROOT/'frontend/dist/index.html').is_file(), 'Missing image frontend'; print('Image imports resolve to /app with migrations and frontend assets')"))
     Invoke-SimbiNative docker (@('run', '-d', '--name', $WorkerName, '--network', 'none') + $Runtime + @($Image, 'python', '-m', 'app.worker', '--interval', '30')) | Out-Null
     $CreatedContainers += $WorkerName
     Invoke-SimbiNative docker (@('run', '-d', '--name', $AppName, '-p', '127.0.0.1::8000') + $Runtime + @($Image)) | Out-Null
@@ -47,6 +49,16 @@ try {
     $notReady = Invoke-WebRequest "$BaseUrl/api/health/ready" -Headers $Headers -SkipHttpErrorCheck -TimeoutSec 3
     if ($notReady.StatusCode -ne 503) { throw 'Readiness stayed healthy after maintenance stopped.' }
     Write-Host 'PASS: production containers, HAI bootstrap/export permissions, backup integrity, cross-container singleton lock and fail-closed maintenance readiness.'
+} catch {
+    $Failure = $_
+    foreach ($name in $CreatedContainers) {
+        Write-Host "Bounded diagnostics for owned container $name (no configuration/environment dump):"
+        try {
+            & docker inspect --format '{{json .State}}' $name 2>&1 | ForEach-Object { "$($_)".Substring(0, [Math]::Min(4000, "$($_)".Length)) }
+            & docker logs --tail 60 $name 2>&1
+        } catch { Write-Warning "Container diagnostics unavailable for $name." }
+    }
+    throw $Failure
 } finally {
     foreach ($name in $CreatedContainers) { Invoke-SimbiNative docker @('rm', '-f', $name) | Out-Null }
     foreach ($name in $CreatedVolumes) { Invoke-SimbiNative docker @('volume', 'rm', $name) | Out-Null }
