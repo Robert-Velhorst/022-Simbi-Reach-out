@@ -29,7 +29,16 @@ class DomainError(ValueError):
 
 
 def template_fields(body: str) -> set[str]:
-    fields = {field for _, field, _, _ in Formatter().parse(body) if field}
+    try:
+        parts = list(Formatter().parse(body))
+        if any(
+            field is not None and (not field or spec or conversion)
+            for _, field, spec, conversion in parts
+        ):
+            raise DomainError("Use plain named placeholders without formatting or conversions")
+        fields = {field for _, field, _, _ in parts if field}
+    except ValueError as exc:
+        raise DomainError("Template syntax is invalid") from exc
     unsupported = fields - ALLOWED_TEMPLATE_FIELDS
     if unsupported:
         raise DomainError(f"Unsupported template fields: {', '.join(sorted(unsupported))}")

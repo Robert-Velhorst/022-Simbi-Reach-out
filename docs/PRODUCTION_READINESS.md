@@ -1,0 +1,41 @@
+# Production readiness acceptance ledger
+
+Objective: **Make it production-ready, go to Simbi.com if necessary to ensure the tool works.**
+
+Started 2026-09-05 against `c0e7aef` on `main`. The preceding merge/README work was progress, but did not establish production readiness. This goal remains incomplete until the following acceptance evidence exists. A green narrow test or the older completion matrix is insufficient by itself.
+
+| Requirement | Evidence needed | Current work / remaining gate |
+|---|---|---|
+| Full operator journey | Real browser setup, team access, campaigns, prospect intake, template/draft editing, approval, provider handoff, accurate outcomes/replies, reminders and reports | Browser passes setup, campaign/prospect/template, dirty-edit block, save/re-review, preparation, interrupted recovery, cancellation, Stop contact, password change/relogin, dashboard and mobile navigation. API/UI suites cover role, reply, reminder, report and page contracts. Actual provider action remains separate. |
+| Durable contact restrictions | Manual and CSV intake cannot bypass an earlier opt-out; every approval and handoff path rechecks it | Regression tests pass for manual/CSV restrictions, duplicate imports, delete/recreate with canonical URL, and legacy inconsistent prospect status. UI Stop contact is wired and browser-tested. Alias identity across different URLs remains operator responsibility. |
+| Accurate state and retries | Stale outcomes cannot overwrite suppression/reply; idempotency is bound to request and current permission; concurrent transitions remain atomic | Tests pass for stale outcomes, key/draft mismatch, completed replay, current pause/provider/archive/opt-out checks, exact saved-content approval and dirty-editor gates. Copy/open revalidates current permission. |
+| Hosted account administration | Protected first-owner setup, atomic bootstrap, password/session lifecycle, role and workspace isolation, lockout/recovery | Setup-token, simultaneous setup, password/session revocation and old-password racing-login regressions pass. Forgotten-password recovery, member removal/role editing, MFA/SSO and self-service workspace provisioning remain unimplemented; unrestricted multi-tenant hosting is not accepted. |
+| Data integrity and recovery | Transactional migrations, collision-free consistent backups, restore failures preserve target, active writers prevent restore | 19 isolated recovery tests pass, including process locks, source WAL, malformed schema, staged migration failure, missing migration assets and safety backup. Ordinary restore rejects corrupt targets unable to produce a safety snapshot. Backup destination requires hard-link support. |
+| Runtime reliability | App/worker share correct settings; command failures fail launch; maintenance supervised; no duplicate worker/reminders; health checks detect failure | Native command/owned-process launcher checks and 3 isolated worker/standalone process tests pass. Supervised launchers run one worker; readiness checks live lock and recent successful cycle. Completed worker reminders are not regenerated. |
+| Deployment | Clean Docker and Windows builds plus actual runtime smoke; production origin/TLS/bootstrap controls; correct tunnel ownership and shutdown; feed mount works | Windows local and GitHub executable build/readiness/frontend/backup/shutdown smoke pass. GitHub clean Docker build passed, then production smoke exposed an installed import-root defect; source path corrected and missing assets now fail closed. Corrected container runtime CI remains pending. Live ngrok/hosted TLS are unverified. |
+| Usable larger datasets | Bounded page/search controls and selectors can reach records beyond the first batch; errors recover in UI | Resources/drafts/replies/reminders/audit/selectors have 50-record navigation and tested retry/stale-request handling. 10,000-row database benchmark: 0.015 s query, 3,690,496-byte database on this machine; not a concurrency/SLA claim. |
+| Provider reality | Current Simbi site/rules checked; public navigation works; any account-level or outbound acceptance is expressly authorized and observed | Public terms accessed 2026-09-05. No account login, messaging API authorization, or external send is evidenced. |
+| HAI integration | Correct bounded snapshot, privacy selection, workspace scope, deletion/staleness contract and receiving-side acceptance | Export tests exist; actual receiving HAI ingestion remains unverified. |
+| Security/privacy and accessibility | Broad regression coverage, current dependency audits, retained-data controls, diagnostics without secrets, keyboard/mobile/browser acceptance | 75 backend and 34 frontend tests pass; lint/build and both dependency audits pass. Browser automated WCAG selection has zero violations, no unexpected browser errors, and one explicitly expected signed-out session probe. Historical credential rotation, license choice, broader retention/account administration and dedicated screen-reader acceptance remain unresolved. |
+| Release and documentation | Requirements reconciled with source; clean build/test/CI at exact release revision; operator instructions match actual launch/recovery behavior | Pending integration of this work. No full production-ready claim yet. |
+
+## Provider evidence
+
+- [Simbi homepage](https://simbi.com/) and [current terms](https://simbi.com/terms-and-conditions) read on 2026-09-05. Section 3.4(b) restricts automated queries/agents/scraping and unsolicited messages. The terms also address non-consensual collection and manufactured credit transactions.
+- A read of `https://simbi.com/rules` did not return usable content through the research tool. Do not treat that page as verified.
+- Existing assisted operation is an application boundary, not proof of a provider integration. Account-level acceptance and any future official integration must be recorded separately; never infer that a prepared handoff sent anything.
+
+## Scope and verification practice
+
+Tests use isolated fixture databases. Do not contact real prospects, import scraped data, mutate another project, expose an uninitialized deployment, or rewrite shared history during diagnostic work. Record actual failures and fixes here as they become verified. Do not mark the goal complete while required runtime, provider, recovery, or integration evidence is missing.
+
+## Review and evidence (2026-09-05)
+
+- Regression work followed observed failures before fixes: outreach invariants, bootstrap/password races, operation paging, unsafe template formatting, database recovery, launcher errors and frontend recovery.
+- An independent code review found additional intake, password-race, recovered-permission, exact-approval, missing opt-out UI and selector-retry defects. These were repaired and re-reviewed; isolated reproductions passed. No critical/important code finding remained in those reviewed repairs. This is not a full external security certification.
+- Browser environment: Chromium, `http://127.0.0.1:4173`, 1440×1000 desktop and 390×844 mobile. The repository Playwright workflow was used because the Browser plugin was unavailable. Page identity/content, no framework overlay, interaction results, console health and desktop/mobile screenshots were checked. It never clicked a provider send/open action.
+- The existing README was already published on main before this hardening pass. This ledger and revised README must be published together with the corresponding code so documented contracts match the release.
+
+## Outstanding acceptance
+
+Do not label this an unrestricted production-ready service. Beyond final release CI/runtime evidence, the operator must confirm actual hosting/TLS/ngrok access, actual receiving HAI ingestion if enabled, appropriate provider account/navigation/manual-use acceptance without unauthorized sending, and historical credential rotation. Wider public/team hosting also needs the unimplemented account/recovery workflows and a deployment-specific privacy/retention/accessibility review. These gates are not replaced by local tests or a compliant assisted-only design.

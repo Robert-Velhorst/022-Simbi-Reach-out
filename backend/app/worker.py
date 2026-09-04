@@ -4,13 +4,14 @@ import argparse
 import signal
 import time
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 from .config import settings
-from .db import audit, create_backup, fetch_one, migrate, now, transaction
+from .db import audit, create_backup, fetch_one, file_lock, migrate, now, runtime_guard, transaction
 from .hai import export_hai_feed
 
 
-def run_once() -> dict[str, int]:
+def _run_once() -> dict[str, int]:
     created = 0
     expired_sessions = 0
     expired_login_attempts = 0
@@ -31,7 +32,8 @@ def run_once() -> dict[str, int]:
             "SELECT d.id,d.workspace_id,p.name FROM drafts d JOIN prospects p ON p.id=d.prospect_id "
             "WHERE d.state='sent' AND d.sent_at<=? "
             "AND NOT EXISTS (SELECT 1 FROM replies r WHERE r.draft_id=d.id) "
-            "AND NOT EXISTS (SELECT 1 FROM reminders m WHERE m.draft_id=d.id AND m.status='open')",
+            "AND NOT EXISTS (SELECT 1 FROM reminders m WHERE m.draft_id=d.id "
+            "AND (m.status='open' OR m.created_by='worker'))",
             (cutoff,),
         ).fetchall()
         for draft in candidates:
@@ -77,7 +79,8 @@ def run_once() -> dict[str, int]:
                 if resolved.parent == backup_root and modified < backup_cutoff:
                     candidate.unlink()
                     backups_deleted += 1
-    if settings.hai_feed_path:
+    # First-time setup has no workspace yet. Do not fabricate a feed or block bootstrap.
+    if settings.hai_feed_path and fetch_one("SELECT id FROM workspaces LIMIT 1"):
         _, _, changed = export_hai_feed(
             settings.hai_feed_path, include_content=settings.hai_include_content
         )
@@ -92,17 +95,79 @@ def run_once() -> dict[str, int]:
     }
 
 
+def _record_state(name: str, value: str) -> None:
+    with transaction() as connection:
+        connection.execute(
+            "INSERT INTO maintenance_state(name,value,updated_at) VALUES (?,?,?) "
+            "ON CONFLICT(name) DO UPDATE SET value=excluded.value,updated_at=excluded.updated_at",
+            (name, value, datetime.now(UTC).isoformat()),
+        )
+
+
+def run_once() -> dict[str, int]:
+    try:
+        result = _run_once()
+    except Exception:
+        # Health stores only timestamps, never exception text or private feed paths.
+        _record_state("last_maintenance_error", datetime.now(UTC).isoformat())
+        raise
+    _record_state("last_maintenance_success", datetime.now(UTC).isoformat())
+    return result
+
+
+def worker_lock():
+    return file_lock(Path(str(settings.database_path.resolve()) + ".worker.lock"))
+
+
+def healthcheck() -> bool:
+    try:
+        with worker_lock():
+            return False  # An old success cannot stand in for a running worker.
+    except RuntimeError:
+        pass
+    try:
+        success = fetch_one(
+            "SELECT value FROM maintenance_state WHERE name='last_maintenance_success'"
+        )
+        error = fetch_one("SELECT value FROM maintenance_state WHERE name='last_maintenance_error'")
+        interval = fetch_one(
+            "SELECT value FROM maintenance_state WHERE name='last_maintenance_interval'"
+        )
+        if not success or not interval:
+            return False
+        timestamp = datetime.fromisoformat(success["value"])
+        age = (datetime.now(UTC) - timestamp).total_seconds()
+        return 0 <= age <= int(interval["value"]) + 60 and (
+            not error or datetime.fromisoformat(error["value"]) < timestamp
+        )
+    except (ValueError, TypeError, OSError):
+        return False
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run local reminder maintenance")
     parser.add_argument("--once", action="store_true", help="Run one maintenance cycle and exit")
     parser.add_argument("--interval", type=int, default=300, help="Loop interval in seconds")
+    parser.add_argument(
+        "--healthcheck",
+        action="store_true",
+        help="Check live worker and recent successful maintenance",
+    )
     args = parser.parse_args()
     if args.interval < 30:
         parser.error("--interval must be at least 30 seconds")
-    migrate()
-    if args.once:
-        print(run_once())
-        return
+    if args.healthcheck:
+        raise SystemExit(0 if healthcheck() else 1)
+    with runtime_guard(), worker_lock():
+        migrate()
+        _record_state("last_maintenance_interval", str(args.interval))
+        if args.once:
+            print(run_once())
+            return
+        _run_loop(args.interval)
+
+
+def _run_loop(interval: int) -> None:
     running = True
 
     def stop(*_: object) -> None:
@@ -113,7 +178,7 @@ def main() -> None:
     signal.signal(signal.SIGTERM, stop)
     while running:
         print(run_once(), flush=True)
-        for _ in range(args.interval):
+        for _ in range(interval):
             if not running:
                 break
             time.sleep(1)

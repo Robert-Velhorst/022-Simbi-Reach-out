@@ -59,6 +59,8 @@ def clean_text(value: str, field: str, maximum: int, minimum: int = 0) -> str:
 
 
 def validate_provider_url(value: str, allowed_hosts: set[str] | None = None) -> str:
+    if "\\" in value or any(ord(character) < 32 or ord(character) == 127 for character in value):
+        raise ValueError("Provider links cannot contain backslashes or control characters")
     url = value.strip()
     parsed = urlparse(url)
     if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
@@ -67,4 +69,4 @@ def validate_provider_url(value: str, allowed_hosts: set[str] | None = None) -> 
         raise ValueError("Provider links may only use the standard HTTPS port")
     if allowed_hosts and parsed.hostname.lower() not in allowed_hosts:
         raise ValueError("Provider link host is not approved for this workspace")
-    return url
+    return parsed._replace(netloc=parsed.hostname.lower(), fragment="").geturl()

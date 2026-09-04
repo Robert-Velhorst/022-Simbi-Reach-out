@@ -5,7 +5,7 @@ from datetime import UTC, datetime, timedelta
 
 from app.db import create_backup, transaction
 from app.worker import run_once
-from conftest import csrf_headers, setup_owner
+from conftest import csrf_headers, draft_hash, setup_owner
 from test_critical_path import APPROVAL_CHECKS, create_foundation
 
 
@@ -25,7 +25,11 @@ def test_worker_creates_one_followup_reminder(client):
     client.post(
         f"/api/drafts/{draft_id}/review",
         headers=headers,
-        json={"decision": "approve", "acknowledged_checks": APPROVAL_CHECKS},
+        json={
+            "decision": "approve",
+            "acknowledged_checks": APPROVAL_CHECKS,
+            "expected_content_hash": draft_hash(draft_id),
+        },
     )
     handoff = client.post(
         f"/api/drafts/{draft_id}/handoff",
@@ -45,6 +49,9 @@ def test_worker_creates_one_followup_reminder(client):
     reminders = client.get("/api/reminders").json()["items"]
     assert len(reminders) == 1
     assert reminders[0]["created_by"] == "worker"
+    with transaction() as connection:
+        connection.execute("UPDATE reminders SET status='done' WHERE id=?", (reminders[0]["id"],))
+    assert run_once()["reminders_created"] == 0
 
 
 def test_consistent_backup_passes_integrity_check(client, tmp_path):

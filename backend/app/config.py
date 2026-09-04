@@ -62,6 +62,8 @@ class Settings:
     backup_retention_days: int
     hai_feed_path: Path | None
     hai_include_content: bool
+    setup_token: str = ""
+    require_maintenance: bool = False
 
     @property
     def demo_mode(self) -> bool:
@@ -97,6 +99,9 @@ def load_settings() -> Settings:
     forwarded_allow_ips = os.getenv("SIMBI_FORWARDED_ALLOW_IPS", "127.0.0.1").strip()
     if not forwarded_allow_ips:
         raise RuntimeError("SIMBI_FORWARDED_ALLOW_IPS must not be empty")
+    setup_token = os.getenv("SIMBI_SETUP_TOKEN", "")
+    if setup_token and not 32 <= len(setup_token) <= 200:
+        raise RuntimeError("SIMBI_SETUP_TOKEN must contain between 32 and 200 characters")
     return Settings(
         environment=environment,
         database_path=database_path,
@@ -119,6 +124,8 @@ def load_settings() -> Settings:
             else None
         ),
         hai_include_content=_bool("SIMBI_HAI_INCLUDE_CONTENT", False),
+        setup_token=setup_token,
+        require_maintenance=_bool("SIMBI_REQUIRE_MAINTENANCE", False),
     )
 
 

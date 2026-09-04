@@ -1,4 +1,5 @@
 $ErrorActionPreference = "Stop"
+. "$PSScriptRoot/common.ps1"
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
 $Python = Join-Path $ProjectRoot ".venv\Scripts\python.exe"
 
@@ -10,13 +11,13 @@ Push-Location $ProjectRoot
 try {
     Push-Location (Join-Path $ProjectRoot "frontend")
     try {
-        pnpm.cmd install --frozen-lockfile
-        pnpm.cmd build
+        Invoke-SimbiNative pnpm.cmd @('install', '--frozen-lockfile')
+        Invoke-SimbiNative pnpm.cmd @('build')
     } finally {
         Pop-Location
     }
-    & $Python -m pip install -e ".[dev]"
-    & $Python -m PyInstaller --noconfirm --clean simbi-windows.spec
+    Invoke-SimbiNative $Python @('-m', 'pip', 'install', '-e', '.[dev]')
+    Invoke-SimbiNative $Python @('-m', 'PyInstaller', '--noconfirm', '--clean', 'simbi-windows.spec')
     $Output = Join-Path $ProjectRoot "dist\Simbi Reach-Out\Simbi Reach-Out.exe"
     if (-not (Test-Path -LiteralPath $Output -PathType Leaf)) {
         throw "Windows build did not produce the expected executable."

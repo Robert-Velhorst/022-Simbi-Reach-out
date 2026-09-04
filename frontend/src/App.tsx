@@ -5,7 +5,7 @@ import AppShell from './components/AppShell'
 import { Button } from './components/ui'
 import type { Member } from './types'
 
-type AuthStatus = { setup_required: boolean; environment: string; demo_mode: boolean }
+type AuthStatus = { setup_required: boolean; setup_token_required?: boolean; environment: string; demo_mode: boolean }
 
 export default function App() {
   const [status, setStatus] = useState<AuthStatus | null>(null)
@@ -39,7 +39,7 @@ export default function App() {
 
   if (loading) return <div className="app-loading"><div className="loading-mark" />Loading Simbi Reach-Out…</div>
   if (bootError) return <main className="boot-failure" role="alert"><div className="brand-mark"><span aria-hidden="true">!</span></div><h1>Service unavailable</h1><p>{bootError}</p><Button onClick={() => void refresh()}>Try again</Button><small>No outreach action was attempted.</small></main>
-  if (status?.setup_required) return <SetupScreen onComplete={refresh} />
+  if (status?.setup_required) return <SetupScreen onComplete={refresh} setupTokenRequired={status.setup_token_required} />
   if (!member) return <LoginScreen onComplete={refresh} />
   return <AppShell member={member} onMemberChange={setMember} onSignedOut={refresh} />
 }

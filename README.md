@@ -74,7 +74,9 @@ Records start empty. The app does not populate live contacts, import a provider 
 4. Check **Provider handoff** in Settings. Initial setup creates a Simbi base link at `https://simbi.com/`. Saving a link configures URL validation; it does not authenticate with or verify an account at the provider.
 5. Add local team members as needed.
 
-Complete first-owner setup while access is restricted to you. The setup endpoint creates the owner when the database has no users; initialize it before exposing a new installation publicly.
+Complete first-owner setup while access is restricted to you. In production, the setup form also requires the operator's `SIMBI_SETUP_TOKEN` (a unique random secret of 32–200 characters). With no configured token, production setup refuses every request; there is no default token. Setup is serialized so concurrent requests cannot create two owners. Remove the token from the runtime environment after bootstrap and keep the owner password in a password manager.
+
+Use **Settings → Change password** to replace your application password. You must enter the current password; a successful change revokes every session for that user and requires sign-in again. This does not change your Simbi account password and is not a forgotten-password recovery service.
 
 ### Prepare and track a conversation
 
@@ -83,11 +85,11 @@ Complete first-owner setup while access is restricted to you. The setup endpoint
 3. **Create a template.** Supported body placeholders are `{name}`, `{organization}`, `{campaign}`, and `{notes}`. Unsupported fields are rejected. Subjects are copied as entered; substitution applies to the body.
 4. **Create a draft in the review queue.** Select a campaign, prospect, and template. The database permits one draft per campaign/prospect pair.
 5. **Review and edit.** Check the source and recipient context, then save explicitly. The 0–100 quality score flags missing personalization, short/long text, promotional wording, and missing decline language. It is an English-oriented heuristic, not AI, permission to send, or a success probability.
-6. **Approve.** Confirm authorized source, personalized message, policy review, and understanding that sending is manual. Owner/admin/editor roles can approve their own drafts; a second reviewer is not enforced.
+6. **Approve.** Confirm authorized source, personalized message, policy review, and understanding that sending is manual. Unsaved edits block approval; saving resets the checks. The backend binds approval to the exact saved subject/body and rejects a stale view if another editor changed it. Owner/admin/editor roles can approve their own drafts; a second reviewer is not enforced.
 7. **Activate the campaign and prepare the handoff.** The backend checks approval, campaign status, workspace pause, prospect status, provider hostname, limits, cooldown, and an idempotency key. Daily limits count prepared handoffs on the UTC date, including later cancellations, rather than confirmed sends.
-8. **Perform any external action yourself.** Copy the approved text, open the provider if appropriate, and send manually there.
+8. **Perform any external action yourself.** Copy the approved text, open the provider if appropriate, and send manually there. Copy/open recheck the current handoff permission. Opening navigates the same browser tab; use Back to return and recover the handoff. A page refresh does not imply a send or prepare a second handoff.
 9. **Record the result.** Choose **Sent** after checking the provider, **Not sent** when you did not send, or **Ambiguous** when uncertain. Verify ambiguous results before retrying or resolving them.
-10. **Record the reply or next decision.** Enter the necessary reply/summary, manage reminders, and record any opt-out promptly.
+10. **Record the reply or next decision.** Enter the necessary reply/summary and manage reminders. To record an objection, use **Prospects → Stop contact**, enter the reason, and confirm. This blocks further outreach, cancels open reminders/pending handoffs, and retains the restriction even if the prospect is later deleted and re-imported. A later stale outcome cannot overwrite the restriction or an already recorded reply.
 
 ### Draft states
 
@@ -115,7 +117,7 @@ name,source_url,organization,provider,contact_handle,notes,consent_status
 Example Person,https://example.org/request/example,Example Group,example,,Context to verify before contact,unknown
 ```
 
-The default text limit is 1 MiB of UTF-8 data, with a separate 5,000-row maximum. Invalid rows block commitment; preview returns at most 50 errors. A successful import inserts in one transaction and skips duplicates by workspace/provider/source URL. It does not update existing records, fetch source URLs, or infer consent. Status values are `unknown`, `contextual`, `consented`, `opted_out`, and `blocked`.
+The default text limit is 1 MiB of UTF-8 data, with a separate 5,000-row maximum. Invalid rows block commitment; preview returns at most 50 errors. A successful import inserts in one transaction and skips duplicate content by workspace/provider/source URL. The safety exception is an imported `opted_out` or `blocked` restriction: it is persisted and applied even to an existing duplicate. Other fields are not updated; no source URL is fetched and no consent is inferred. Status values are `unknown`, `contextual`, `consented`, `opted_out`, and `blocked`. Existing durable restrictions override a newly claimed consent status. URL normalization covers host case, default HTTPS port and fragments; it cannot determine that two genuinely different provider URLs identify the same person.
 
 ## Roles and access
 
@@ -128,7 +130,7 @@ The default text limit is 1 MiB of UTF-8 data, with a separate 5,000-row maximum
 | Add local members | Yes | No | No |
 | JSON export, support data, API prospect deletion | Yes | No | No |
 
-The backend enforces access even where a restricted role still sees a control in the interface. The first account is owner; new members can be admin, editor, or viewer. Email is a login identifier, not an invitation service. Password reset/change, member removal, and role editing are not exposed workflows.
+The backend enforces access even where a restricted role still sees a control in the interface. The first account is owner; new members can be admin, editor, or viewer. Email is a login identifier, not an invitation service. Authenticated password change is available; forgotten-password reset, member removal, and role editing are not exposed workflows.
 
 The schema supports workspace memberships and isolation, but shipped onboarding creates one workspace. There is no self-service workspace selector or organization provisioning. CLI commands use the filesystem authority of the person running them and do not use browser roles.
 
@@ -137,9 +139,9 @@ The schema supports workspace memberships and isolation, but shipped onboarding 
 | Mode | Requirements | Default address | Worker | Automatic backups by default |
 |---|---|---|---|---|
 | Local Docker | Docker with Compose | `http://127.0.0.1:8000` | Separate Compose service | No |
-| Windows development | Python, Node, pnpm | UI `:5173`, API `:8000`, on loopback | Start separately | No |
+| Windows development | Python, Node, pnpm, PowerShell 7.2+ | UI `:5173`, API `:8000`, on loopback | Supervised by launcher | No, unless enabled |
 | Windows standalone | Built package and browser | `http://127.0.0.1:8765` | Included in executable | Yes, while running |
-| ngrok | Source installation, compiled UI, authenticated ngrok | Reported HTTPS URL | Start separately | Setting enabled; worker still required |
+| ngrok | Source installation, compiled UI, authenticated ngrok, PowerShell 7.2+ | Reported HTTPS URL | Supervised by launcher | Yes, while running |
 | Docker + Caddy | Docker host, domain, available TLS ports | Your HTTPS domain | Separate Compose service | Yes, while running |
 
 `127.0.0.1` means the computer on which the browser is running. Local URLs are not remotely accessible without deliberate deployment. ngrok exposes an app on your computer; it does not move it into a cloud server or keep it running during sleep.
@@ -204,7 +206,7 @@ The convenience script installs dependencies and starts API and Vite servers:
 .\scripts\dev.ps1
 ```
 
-Open [the development interface](http://127.0.0.1:5173). Vite forwards `/api` to `http://127.0.0.1:8000`. The script stops its API child when the frontend exits. It does not start maintenance.
+Open [the development interface](http://127.0.0.1:5173). Vite forwards `/api` to `http://127.0.0.1:8000`. The launcher supervises frontend, API, and maintenance together, with matching child-only environment settings. A required process exiting stops the other owned processes. Do not start a second worker for this database. The scripts require PowerShell 7.2 or newer (`pwsh`), not Windows PowerShell 5.1.
 
 If PowerShell selects a blocked `pnpm.ps1` shim, use these explicit commands in separate terminals after installing dependencies:
 
@@ -250,7 +252,7 @@ On Windows, install the development prerequisites and create `.venv`, then run:
 
 PyInstaller creates `dist/Simbi Reach-Out/` with the executable, Python runtime, libraries, migrations, and compiled UI. Distribute **the entire folder**, including `_internal`, not just the executable. The destination needs a compatible Windows system and browser, but no Python, Node, pnpm, or Docker.
 
-Successful Windows [Actions runs](https://github.com/Robert-Velhorst/022-Simbi-Reach-out/actions/workflows/ci.yml) upload a `simbi-reach-out-windows` artifact. Download it while GitHub retains it; sign-in may be required. There is no signed installer, automatic updater, or Windows service. Windows CI builds the package; it does not launch-test the executable.
+Successful Windows [Actions runs](https://github.com/Robert-Velhorst/022-Simbi-Reach-out/actions/workflows/ci.yml) upload a `simbi-reach-out-windows` artifact. Download it while GitHub retains it; sign-in may be required. There is no signed installer, automatic updater, or Windows service. Windows CI builds the package and runs an isolated executable smoke test covering readiness, packaged frontend serving, automatic backup creation, shutdown, and port release. A maintenance failure stops the standalone server rather than continuing with misleading readiness.
 
 ### Run and store data
 
@@ -271,7 +273,7 @@ Before launching:
 1. Install source dependencies and build with `pnpm.cmd --dir frontend build`.
 2. Complete owner setup locally against the database to expose, then stop that API.
 3. Install a real authenticated ngrok executable on `PATH`. A zero-byte WindowsApps alias is insufficient.
-4. Choose an unused origin port and stop other ngrok agents. The script uses ngrok's local API at `127.0.0.1:4040` and is intended for one supervised tunnel.
+4. Choose an unused origin port. The launcher refuses occupied ports before starting a tunnel. It identifies its own HTTPS tunnel from that ngrok process's JSON startup logs and exact loopback upstream; it does not select an arbitrary tunnel from the shared port-4040 API.
 
 From a fresh PowerShell window:
 
@@ -279,16 +281,9 @@ From a fresh PowerShell window:
 .\scripts\start-ngrok.ps1 -Port 8000
 ```
 
-The launcher configures production mode, exact public origin/hostname, secure cookies, loopback proxy trust, and the backup setting. It waits for public readiness and opens a browser unless `-NoBrowser` is supplied. Cleanup stops its app and ngrok children when the launcher exits. The tunnel exposes Simbi, not HAI.
+The launcher configures production mode, exact public origin/hostname, secure cookies, loopback proxy trust, backups, and required maintenance in its child processes. It waits for local app/worker readiness using the public host header, then opens the reported HTTPS URL unless `-NoBrowser` is supplied. This is not an independent public-edge/TLS acceptance test. Cleanup stops only its owned app, worker, and ngrok process trees. The tunnel exposes Simbi, not HAI.
 
-**The launcher does not start maintenance.** For reminders, backups, cleanup, or HAI refresh, run a worker against the same database. For the default source database, use a separate local terminal:
-
-```powershell
-$env:SIMBI_AUTO_BACKUP = 'true'
-.\.venv\Scripts\python.exe -m app.worker --interval 300
-```
-
-Supply matching custom database/backup/HAI settings if used and stop this worker separately. It does not expose an HTTP server. Setting backup configuration without a worker does not schedule backups.
+**The launcher includes maintenance.** Supply custom database/backup/HAI settings in the calling environment before launch; both child processes inherit them consistently. Do not run another worker against the same database. An OS lock rejects duplicate workers. Closing the launcher stops maintenance; backups and feed refresh do not continue while the computer sleeps or the app is stopped.
 
 The public URL is an Internet entry point protected by the application's login, not a secret that replaces authentication. This launcher is for supervised access; it is not a service manager or verified unattended cloud deployment.
 
@@ -298,20 +293,20 @@ Production Compose provides a Caddy HTTPS edge, app, worker, persistent storage,
 
 ```powershell
 Copy-Item .env.production.example .env.production
-# Edit .env.production: replace reachout.example.com with your actual domain.
+# Edit .env.production: set your domain and a unique random SIMBI_SETUP_TOKEN.
 docker compose --env-file .env.production -f compose.production.yaml config --quiet
 docker compose --env-file .env.production -f compose.production.yaml up -d --build
 ```
 
-Open your configured HTTPS domain and verify `/api/health/ready`. For local bootstrap, keep public ingress restricted and temporarily serve the app locally against the same volume. A new publicly reachable database with no users exposes first-owner setup.
+Open your configured HTTPS domain and verify `/api/health/ready`. Keep ingress restricted during bootstrap, enter your configured setup token, and create the owner. Missing or incorrect tokens are rejected. Generate a high-entropy token with a password manager; do not use a sample value from documentation. After setup, remove the token from `.env.production` and recreate the app service. Protect that untracked file and never commit it.
 
 Deployment properties:
 
 - Only Caddy publishes host ports. App and worker use a dedicated bridge network. It is not an `internal: true` network or a blanket outbound-network block.
 - App/worker run non-root, with read-only filesystems, 64 MiB temporary filesystems, dropped capabilities, and no privilege escalation. Each is capped at 1 CPU and 512 MiB memory; these are limits, not measured idle requirements.
-- Volumes persist SQLite, backups, and Caddy state. App and worker share SQLite.
+- Volumes persist SQLite, backups, the optional private HAI feed, and Caddy state. App and worker share SQLite. The optional container HAI path is `/app/hai/simbi.json`; its volume is writable by the non-root app user and is not published over HTTP.
 - The fixed subnet is `172.30.0.0/24`; Caddy is trusted at `172.30.0.3`. If it conflicts with your network, change the subnet, addresses, and proxy trust together.
-- The worker cycles every 300 seconds. Daily backups and 30-day backup retention are enabled by default while it runs. Its health check verifies process presence, not successful maintenance; inspect logs and backup timestamps.
+- The worker cycles every 300 seconds. Daily backups and 30-day backup retention are enabled by default while it runs. Health requires the singleton worker lock and a successful cycle no older than the configured interval plus 60 seconds, with no later failure. App readiness also checks maintenance in supervised/production modes. Initial HAI export waits for first-owner setup; a database with multiple workspaces needs explicit export selection and is not silently merged.
 - `SIMBI_IMAGE_TAG` names the locally built image. No published image registry or managed hosting is implied.
 
 ```powershell
@@ -397,6 +392,8 @@ These affect that terminal and its children. Copying `.env.example` to `.env` do
 | `SIMBI_BACKUP_RETENTION_DAYS` | `30` | 7–3,650 days; old matching backups are pruned after a successful new daily backup. |
 | `SIMBI_HAI_FEED_PATH` | Unset | Optional worker JSON destination. |
 | `SIMBI_HAI_INCLUDE_CONTENT` | `false` | Explicit personal-content opt-in for worker exports. |
+| `SIMBI_SETUP_TOKEN` | Unset | Unique operator secret, 32–200 characters. Required for first-owner setup in production; configuring it also protects setup in other modes. Remove after bootstrap. |
+| `SIMBI_REQUIRE_MAINTENANCE` | `false` | Include live-worker/successful-cycle checks in API readiness. Enabled by supervised launchers, standalone, and production Compose. |
 
 Additional tool settings: `SIMBI_WINDOWS_PORT` defaults to `8765`; `SIMBI_E2E_PYTHON` selects the browser harness's Python interpreter. Compose uses `SIMBI_DOMAIN` and `SIMBI_IMAGE_TAG` (default `1.0.0`). Boolean settings accept `true`, `false`, `1`, and `0`.
 
@@ -418,7 +415,7 @@ Provider URLs must use HTTPS, have no embedded credentials or unsupported ports,
 | Prospect deletion | Owner/admin API action; related records cascade per schema. Suppression identifiers remain for opt-out history. |
 | Retention purge | Deletes old `analytics_events` and expired sessions only. It does not erase prospects, messages, replies, audit events, or suppressions. |
 
-Opt-out handling marks the existing prospect `opted_out`, records a suppression, and suppresses its drafts except those already replied/suppressed. **Creation/import does not automatically reapply retained suppressions to newly recreated prospects after deletion.** Retain opted-out prospect records and review suppression history before reimporting; deletion/recreation does not automatically preserve the block.
+Opt-out handling marks the existing prospect `opted_out`, records a durable suppression, suppresses drafts except those already replied/suppressed, and cancels pending handoffs/open reminders. Creation/import rechecks retained restrictions, including after deletion. Intake restrictions are persisted even for duplicate CSV records. Approval, preparation and recovery recheck the restriction rather than trusting a possibly inconsistent prospect status. Restrictions identify the normalized provider/source URL; operators must still recognize alternate URLs belonging to the same person.
 
 Audit events normally contain action metadata instead of bodies, but suppression reasons are free text; avoid unnecessary personal details there. The audit UI has no edit/delete action, but the database is not cryptographically tamper-proof against a filesystem administrator.
 
@@ -460,7 +457,9 @@ Before restoring, confirm the database path and backup, preserve current data, a
 .\.venv\Scripts\python.exe -m app.cli restore 'C:\SimbiBackups\simbi-YYYYMMDDTHHMMSSZ.db' --confirm
 ```
 
-Replace the example with an existing `.db` file. Restore validates integrity and the migration table, backs up the current target, copies the candidate, and applies pending migrations. Use the correct environment for source, standalone, or container storage. Container restore requires controlled access to the volume while writers are stopped. A workspace JSON export cannot replace this process. Downgrading the app also requires schema compatibility checks or a compatible pre-upgrade backup.
+Replace the example with an existing `.db` file; actual backup names include a unique suffix to avoid collisions. Stop the app and worker first. Restore acquires an exclusive runtime lease, stages the candidate using SQLite's backup API (including committed WAL content), validates integrity, foreign keys, exact schema and known migration history, and applies pending migrations to the staging copy. It creates a validated safety backup of the existing target before restoring through SQLite's atomic backup transaction. Invalid candidates, active managed runtimes, and unsupported schemas are refused.
+
+Use the correct environment for source, standalone, or container storage. Container restore requires controlled access to the volume while all writers are stopped. The lock cannot control unrelated external database tools. A corrupt existing target that cannot produce the required safety snapshot is refused and needs a separate, explicitly planned recovery procedure. Backup publication requires filesystem hard-link support (for example NTFS); unsupported destinations fail rather than overwrite another backup. A workspace JSON export cannot replace a database backup. Downgrading requires schema compatibility checks or a compatible pre-upgrade backup.
 
 ## Architecture and repository map
 
@@ -504,13 +503,14 @@ Vite provides development serving and compilation. In compiled/package/container
 
 The API is under `/api`; interactive documentation is `/api/docs` outside production. FastAPI's schema remains at `/openapi.json`; disabling the production docs UI does not disable that schema route.
 
-Authenticated requests use the `simbi_session` cookie. After setup/login, send the `simbi_csrf` cookie value in `X-CSRF-Token` on writes. Setup/login are exempt; logout is not. There is no bearer-token API or provider OAuth flow. Handoff keys must be 12–120 characters and unique per action. Reuse an `Idempotency-Key` only for retrying that same action: replay returns the earlier workspace-scoped handoff, so never reuse a key for another draft.
+Authenticated requests use the `simbi_session` cookie. After setup/login, send the `simbi_csrf` cookie value in `X-CSRF-Token` on writes. Setup/login are exempt; logout and password changes are not. There is no bearer-token API or provider OAuth flow. Approvals must include `expected_content_hash` from the current draft list response; the server rejects missing or stale hashes, ensuring the saved subject/body match what was reviewed. Handoff keys must be 12–120 characters and unique per action. Reuse an `Idempotency-Key` only for retrying the same still-pending handoff: replay is bound to its draft, exact content and current permission. Finalized or superseded handoffs cannot be replayed. Recovery responses include `can_open_provider`; historical records are not permission to initiate renewed contact.
 
 | Endpoint | Operations |
 |---|---|
-| `/api/health/live`, `/api/health/ready` | GET liveness and database readiness. |
+| `/api/health/live`, `/api/health/ready` | GET liveness and database readiness; readiness also requires healthy maintenance when configured. |
 | `/api/auth/status`, `/api/me` | GET setup/session information. |
 | `/api/auth/setup`, `/api/auth/login`, `/api/auth/logout` | POST account setup and session actions. |
+| `/api/auth/password` | POST current/new password; successful change revokes all sessions and requires sign-in again. |
 | `/api/overview` | GET dashboard data. |
 | `/api/campaigns`, `/api/campaigns/{id}/status` | GET/POST campaigns; PATCH status. |
 | `/api/prospects`, `/api/prospects/import`, `/api/prospects/{id}` | GET/POST prospects; POST import; owner/admin DELETE. |
@@ -526,7 +526,7 @@ Authenticated requests use the `simbi_session` cookie. After setup/login, send t
 | `/api/settings/compliance`, `/api/settings/provider`, `/api/settings/pause`, `/api/settings/team` | Owner/admin POST administration. |
 | `/api/export`, `/api/support-bundle` | Owner/admin GET data export and diagnostics. |
 
-Campaign/prospect/template list APIs support `limit`, `offset`, `search`, and allowlisted `order`; drafts support filtering and pagination. Most list limits cap at 100, audit at 500. The UI is narrower: several pages show their first requested batch without pagination controls.
+Campaign/prospect/template list APIs support `limit`, `offset`, `search`, and allowlisted `order`; drafts support filtering and pagination. Replies, reminders, and audit provide `items`, `total`, `limit`, and `offset`. Most list limits cap at 100, audit at 500. Resource, review, reply, reminder, audit and conversation/resource selector interfaces navigate bounded 50-record pages and expose retryable errors. The aggregate report is not a paged list.
 
 Handled app errors return `error.code`, `error.message`, `error.details`, and `error.request_id`. Common responses include 409 for state/duplicate conflicts, 422 for validation, 401/403 for authentication/access/CSRF, and 429 for throttling/limits. Framework/proxy failures may use another response shape. Include a redacted request ID when reporting issues. See the running schema/source for exact fields and the [API usage audit](docs/API_USAGE_AUDIT.md) for existing consumer/test mappings. No endpoint sends an external message.
 
@@ -534,7 +534,7 @@ Handled app errors return `error.code`, `error.message`, `error.details`, and `e
 
 Use [commit-specific Actions results](https://github.com/Robert-Velhorst/022-Simbi-Reach-out/actions/workflows/ci.yml) for current checks. The [2026-08-09 verification report](docs/FINAL_VERIFICATION_REPORT.md) records earlier tests, browser runs, container and Windows executable startup, and a fresh-clone exercise. These are dated results, not a promise that dependencies or deployment conditions remain unchanged.
 
-The suites currently contain 14 backend tests and 7 frontend tests covering the assisted path, isolation/security, import, suppression, worker, HAI, backup, and selected interface behavior. Browser acceptance covers setup through a cancelled handoff without provider navigation, responsive navigation, selected automated WCAG checks, and browser errors. It is not exhaustive security or accessibility certification.
+The suites cover the assisted path, isolation/security, exact-content approval, durable restrictions, stale handoffs, account races, bounded pagination, worker lifecycle, HAI, and backup/restore. Browser acceptance covers setup through an interrupted/recovered and cancelled handoff without provider navigation, password change and reauthentication, responsive navigation, selected automated WCAG checks, and browser errors. See the [production acceptance ledger](docs/PRODUCTION_READINESS.md) for current evidence and outstanding release gates rather than treating an older test count as a current guarantee. These checks are not exhaustive security or accessibility certification.
 
 ### Run checks
 
@@ -563,7 +563,7 @@ docker compose -f compose.production.yaml --env-file .env.production.example con
 
 Build before `test:e2e:run`; it does not build automatically. Linux CI uses browser installation with `--with-deps`. Browser tests use port 4173 and recreate `.e2e-runtime`; the benchmark recreates `.benchmark-runtime`; backend tests use `backend/tests/.runtime`. Keep real data out of test folders and avoid concurrent suites sharing their fixture storage.
 
-Linux CI includes lint, tests, dependency audits, build, capacity checks, browser acceptance, a source guard, Docker build, Compose validation, and container readiness. Windows CI builds/uploads the package. Neither proves live ngrok, public-domain, HAI, or provider acceptance.
+Linux CI includes lint, tests, dependency audits, build, capacity checks, browser acceptance, a source guard, Docker build, Compose validation, worker lifecycle checks, and container readiness. Windows CI checks launcher/worker process contracts, builds the package, runs an isolated executable smoke, and uploads the artifact. The local `verify.ps1` does not itself build/launch-test the executable or perform a clean container build: run the separate smoke scripts or inspect commit-specific CI. Neither local checks nor CI prove live ngrok, public-domain, receiving-side HAI, or provider acceptance.
 
 ### Performance scope
 
@@ -586,9 +586,9 @@ Indexes, bounded API lists, compiled assets, and one maintenance loop keep the a
 | Idempotency required | Supply a stable unique 12–120-character key for one action, reused only for its retry. |
 | Ambiguous outcome | Inspect the provider conversation manually before resolving or retrying. |
 | Login HTTP 429 | Wait for the lock window, check the login identifier, investigate repeated unexpected failures. |
-| No reminders/backups/feed updates | Confirm a worker, matching database settings, writable destinations, and successful logs. Development/ngrok launchers do not start it. |
+| No reminders/backups/feed updates | Confirm successful worker cycles, matching database settings and writable destinations. Supervised launchers include the worker; do not start a duplicate. A completed worker-generated follow-up is not recreated every cycle. |
 | HAI export failure | Complete setup, use a writable JSON path, and select workspace explicitly when necessary. Check shared mounts in containers. |
-| ngrok failure | Check real executable/account setup, unused origin port, and no competing agent at port 4040. |
+| ngrok failure | Check real executable/account setup, unused origin port and the owned process's startup output. Readiness is checked at the local upstream; separately verify actual public HTTPS access. |
 | Public deployment fails | Check domain, DNS, TLS ports, production settings, proxy address, and subnet conflicts. |
 | Port conflict | Stop the conflicting process you own or choose a supported unused port. |
 | SQLite locked/unavailable | Inspect writers, duplicate workers, permissions, disk, and mounts. Preserve data before recovery. |
@@ -597,11 +597,11 @@ Indexes, bounded API lists, compiled assets, and one maintenance loop keep the a
 
 - No official messaging integration, automated sending, scraping, inbox reading, delivery receipts, credit accounting, billing, or AI generation. Entered outcomes cannot independently verify provider events.
 - No managed hosting, signed installer, automatic updates, Windows service, or live public-domain/ngrok/HAI acceptance supplied by the repository itself.
-- No password reset/change, MFA/SSO, invitation email, workspace provisioning, member removal, or role-change workflows. Wider hosting requires additional account administration.
-- Several UI lists lack pagination even though APIs support it. Large datasets may need API access for records beyond the first batch; some lists remain bounded without full navigation.
+- No forgotten-password recovery, MFA/SSO, invitation email, workspace provisioning, member removal, or role-change workflows. Authenticated password change exists and revokes all sessions; wider hosting still requires additional account administration.
+- Pagination does not establish large-scale simultaneous-user capacity. SQLite remains a single-host design; measure your workload and preserve the single-worker constraint.
 - Templates have a version field but no editing/history workflow. Prospect and campaign metadata editing is limited. Autosave and translation catalogs are absent.
 - Review scoring uses English text checks and does not enforce a minimum approval score. Recorded consent is not provider-verified.
-- Retained suppressions are not reapplied automatically after deleting/recreating a prospect. Unresolved handoffs can outlive later local state changes; reconcile outcomes before acting and never use an old handoff to resume contact after an opt-out.
+- A retained restriction matches the normalized provider/source URL, not every possible alias for a person. The app cannot prevent contact made directly outside it; never use an old copied message to resume contact after an opt-out.
 - General personal-data retention, encryption at rest, cryptographic audit integrity, and multi-host database/worker coordination are absent.
 - The HAI snapshot is bounded, has no deletion events or two-way sync, and needs receiving-side configuration.
 - A dedicated screen-reader and broader accessibility review remains outstanding.

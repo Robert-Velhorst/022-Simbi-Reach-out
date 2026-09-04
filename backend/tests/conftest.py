@@ -42,3 +42,12 @@ def setup_owner(client: TestClient, email: str = "owner@example.test") -> dict:
 
 def csrf_headers(client: TestClient, **extra: str) -> dict[str, str]:
     return {"X-CSRF-Token": client.cookies.get("simbi_csrf"), **extra}
+
+
+def draft_hash(draft_id: int) -> str:
+    import hashlib
+
+    from app.db import fetch_one
+
+    draft = fetch_one("SELECT subject,body FROM drafts WHERE id=?", (draft_id,))
+    return hashlib.sha256((draft["subject"] + "\n" + draft["body"]).encode()).hexdigest()

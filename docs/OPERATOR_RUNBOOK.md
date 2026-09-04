@@ -13,10 +13,10 @@
 - Add only a prospect/source you may lawfully use.
 - Open the source and verify it still matches the planned message.
 - Edit the deterministic draft; quality signals are aids, not permission.
-- Complete all safety checks.
+- Save edits, then complete all safety checks. Approval is tied to the exact saved text; reload and re-review if another editor changes it.
 - Copy and open the provider only when still appropriate.
 - Record the exact external result. When unsure, choose **ambiguous**.
-- Record objections immediately with the suppression action; never delete a suppression just to retry.
+- Record objections immediately with **Prospects → Stop contact** and a reason; never delete a suppression just to retry. Restrictions survive prospect deletion/re-import.
 
 ## Emergency stop
 
@@ -32,13 +32,13 @@ Create a backup before upgrades, restore tests, or bulk imports:
 .\.venv\Scripts\python.exe -m app.cli backup
 ```
 
-Test restore on a non-production copy. Restore validates SQLite integrity and the migration table, then automatically backs up the current database before copying the candidate:
+Test restore on a non-production copy with the app and worker stopped. Restore takes an exclusive runtime lease, validates integrity/foreign keys/exact schema/migration history, stages any upgrade, and makes a safety snapshot before restoring through SQLite's atomic backup transaction. It never replaces a live WAL database with a raw file copy:
 
 ```powershell
 .\.venv\Scripts\python.exe -m app.cli restore .\backups\simbi-...db --confirm
 ```
 
-Docker volume backup should stop app/worker writers first, then copy using SQLite's backup API from a temporary container or export the workspace JSON. Do not copy a live WAL database as a single file.
+For Docker recovery, stop app/worker writers and use controlled access to the volume. Do not copy a live WAL database as a single file. Workspace JSON export is not a restorable database backup. A corrupt existing target that cannot produce a valid safety snapshot requires separate recovery planning; the ordinary restore refuses it. Backup publication requires filesystem hard-link support.
 
 ## Reconciliation
 
@@ -80,7 +80,13 @@ The file is written atomically. A repeated unchanged export does not rewrite it.
 
 ## ngrok incident boundary
 
-The ngrok launcher is for temporary, explicitly supervised access. It must not expose HAI or a development-mode Simbi process. Stop the launcher to stop both the app and tunnel. If the URL was disclosed unexpectedly, stop it immediately, review audit events, expire sessions by restarting after deleting them through a reviewed maintenance step, and rotate the ngrok credential if compromise is suspected.
+The ngrok launcher is for temporary, explicitly supervised access. It must not expose HAI or a development-mode Simbi process. It supervises app, maintenance, and its owned tunnel; stop the launcher to stop all three. It refuses occupied origin ports and selects only its process's reported tunnel. If the URL was disclosed unexpectedly, stop it immediately, review audit events, change the application password to revoke that user's sessions, and rotate the ngrok credential if compromise is suspected. Restarting alone does not revoke database-backed sessions.
+
+## First-owner and password controls
+
+Production first-owner setup requires the configured `SIMBI_SETUP_TOKEN`, a unique random secret of 32–200 characters. Missing/incorrect tokens fail closed. Keep ingress restricted during bootstrap and remove the token from the deployment environment after creating the owner. Settings provides authenticated password change, which requires the current password and signs out every session for that account. Forgotten-password recovery and team-member removal are not supplied workflows.
+
+Readiness in supervised/production modes requires a live singleton worker with recent successful maintenance and no newer failure. Check worker logs, storage permissions and backup/feed destinations if readiness returns `maintenance_unavailable`; do not disable the health gate to conceal a failure.
 
 ## Troubleshooting
 

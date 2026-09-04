@@ -31,6 +31,9 @@ const server = spawn(python, [
     SIMBI_COOKIE_SECURE: 'false',
     SIMBI_ALLOWED_HOSTS: '127.0.0.1',
     SIMBI_AUTO_BACKUP: 'false',
+    SIMBI_REQUIRE_MAINTENANCE: 'false',
+    SIMBI_SETUP_TOKEN: '',
+    SIMBI_HAI_FEED_PATH: '',
   },
   stdio: ['ignore', 'pipe', 'pipe'],
 })
@@ -61,12 +64,19 @@ try {
     bypassCSP: true,
   })
   const browserErrors = []
+  let signedOutProbeExpected = false
+  let signedOutProbes = 0
   page.on('console', (message) => {
+    if (signedOutProbeExpected && message.location().url === `${origin}/api/me`
+      && message.text().includes('401')) { signedOutProbes++; return }
     if (message.type() === 'error') browserErrors.push(`console: ${message.text()}`)
   })
   page.on('pageerror', (error) => browserErrors.push(`page: ${error.message}`))
 
   await page.goto(origin, { waitUntil: 'networkidle' })
+  if (!(await page.title()).includes('Simbi') || !page.url().startsWith(origin)) {
+    throw new Error('Unexpected application identity')
+  }
   await page.getByRole('textbox', { name: 'Your name' }).fill('Production QA')
   await page.getByRole('textbox', { name: 'Workspace name' }).fill('Production QA workspace')
   await page.getByRole('textbox', { name: 'Email' }).fill('qa@example.test')
@@ -119,13 +129,52 @@ try {
   await draft.getByRole('button', { name: 'Prepare draft' }).click()
   await page.getByText('100/100', { exact: true }).waitFor()
   for (const checkbox of await page.getByRole('checkbox').all()) await checkbox.check()
+  await page.getByRole('textbox', { name: 'Subject', exact: true }).fill('Reviewed QA subject')
+  if (!(await page.getByRole('button', { name: 'Approve for handoff' }).isDisabled())) {
+    throw new Error('Unsaved message changes did not block approval')
+  }
+  await page.getByRole('button', { name: 'Save and return to review' }).click()
+  await page.getByRole('button', { name: 'Save and return to review' }).waitFor({ state: 'visible' })
+  await page.waitForFunction(() => [...document.querySelectorAll('.approval-box input[type=checkbox]')].every((checkbox) => !checkbox.checked))
+  for (const checkbox of await page.getByRole('checkbox').all()) await checkbox.check()
   await page.getByRole('button', { name: 'Approve for handoff' }).click()
+  const handoffResponse = page.waitForResponse((response) => response.url().endsWith('/handoff') && response.request().method() === 'POST')
   await page.getByRole('button', { name: 'Copy and open provider' }).click()
-  const providerLink = page.getByRole('link', { name: /Open provider/ })
-  if (await providerLink.getAttribute('href') !== 'https://simbi.com/alex-example') {
+  const handoffPayload = await (await handoffResponse).json()
+  await page.getByRole('button', { name: 'Open provider', exact: true }).waitFor()
+  if (handoffPayload.provider_url !== 'https://simbi.com/alex-example' || !handoffPayload.can_open_provider) {
     throw new Error('The assisted handoff did not preserve the approved provider URL')
   }
+  // Recover an interrupted handoff without preparing a second provider action.
+  await page.reload({ waitUntil: 'networkidle' })
+  const recoveredResponse = page.waitForResponse((response) => response.url().includes('/api/handoffs?') && response.request().method() === 'GET')
+  await page.getByRole('button', { name: 'Resolve latest handoff' }).click()
+  await page.getByRole('dialog', { name: 'Manual provider handoff' }).waitFor()
+  const recovered = (await (await recoveredResponse).json()).items[0]
+  if (recovered.provider_url !== 'https://simbi.com/alex-example' || recovered.id !== handoffPayload.id) {
+    throw new Error('Recovered handoff lost the original provider link')
+  }
   await page.getByRole('button', { name: 'Not sent' }).click()
+
+  await page.getByRole('link', { name: 'Prospects' }).click()
+  await page.getByRole('button', { name: 'Stop contact', exact: true }).click()
+  const stopDialog = page.getByRole('dialog', { name: 'Stop contact: Alex Example' })
+  await stopDialog.getByLabel('Reason').fill('QA record: do not contact again')
+  await stopDialog.getByRole('button', { name: 'Confirm stop contact' }).click()
+  await stopDialog.waitFor({ state: 'hidden' })
+  await page.waitForFunction(() => [...document.querySelectorAll('button')].some((button) => button.textContent === 'Stop contact' && button.disabled))
+
+  await page.getByRole('link', { name: 'Settings' }).click()
+  await page.getByLabel('Current password', { exact: true }).fill('correct horse battery staple')
+  await page.getByLabel('New password', { exact: true }).fill('a different long QA password')
+  await page.getByRole('button', { name: /Change password/ }).click()
+  signedOutProbeExpected = true
+  await page.getByRole('link', { name: 'Sign in again' }).click()
+  await page.getByRole('textbox', { name: 'Email' }).fill('qa@example.test')
+  await page.getByRole('textbox', { name: 'Password', exact: true }).fill('a different long QA password')
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+  await page.getByRole('heading', { name: /Good morning/ }).waitFor()
+  signedOutProbeExpected = false
   await page.getByRole('link', { name: 'Overview' }).click()
   await page.getByRole('heading', { name: /Good morning/ }).waitFor()
 
@@ -154,6 +203,11 @@ try {
   if (browserErrors.length) throw new Error(`Browser errors:\n${browserErrors.join('\n')}`)
   process.stdout.write(`${JSON.stringify({
     critical_path: 'passed',
+    interrupted_handoff_recovery: 'passed',
+    exact_content_approval: 'passed',
+    operator_stop_contact: 'passed',
+    password_change_reauthentication: 'passed',
+    expected_signed_out_probes: signedOutProbes,
     provider_navigation: 'not attempted',
     accessibility_violations: 0,
     responsive_mobile_menu: 'passed',
