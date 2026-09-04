@@ -2,13 +2,21 @@ from __future__ import annotations
 
 import argparse
 import json
-import shutil
 import sqlite3
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from .config import ROOT, settings
-from .db import create_backup, database_size, fetch_all, fetch_one, migrate, now, transaction
+from .db import (
+    create_backup,
+    database_size,
+    fetch_all,
+    fetch_one,
+    migrate,
+    now,
+    restore_backup,
+    transaction,
+)
 from .hai import export_hai_feed
 
 
@@ -63,18 +71,13 @@ def restore(source_value: str, confirm: bool) -> int:
     if not source.is_file() or source.suffix.lower() != ".db":
         print("Restore source must be an existing .db file")
         return 2
-    with sqlite3.connect(source) as candidate:
-        integrity = candidate.execute("PRAGMA integrity_check").fetchone()[0]
-        required = candidate.execute(
-            "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='schema_migrations'"
-        ).fetchone()[0]
-    if integrity != "ok" or not required:
-        print("Restore source failed integrity or schema checks")
+    try:
+        safety_backup = restore_backup(source)
+    except (sqlite3.Error, OSError, RuntimeError, ValueError) as exc:
+        print(f"Restore failed or refused: {exc}")
         return 2
-    backup()
-    settings.database_path.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(source, settings.database_path)
-    migrate()
+    if safety_backup:
+        print(f"Pre-restore backup: {safety_backup}")
     print(f"Restored: {settings.database_path}")
     return 0
 

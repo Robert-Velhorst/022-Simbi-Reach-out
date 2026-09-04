@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import hashlib
+import hmac
 import io
 import json
 import re
@@ -19,7 +20,17 @@ from pydantic import BaseModel, ConfigDict, Field
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from .config import ROOT, settings
-from .db import audit, connect, database_size, fetch_all, fetch_one, migrate, now, transaction
+from .db import (
+    audit,
+    connect,
+    database_size,
+    fetch_all,
+    fetch_one,
+    migrate,
+    now,
+    runtime_guard,
+    transaction,
+)
 from .domain import (
     APPROVAL_CHECKS,
     DomainError,
@@ -63,11 +74,17 @@ class SetupBody(StrictModel):
     workspace_name: str = Field(min_length=2, max_length=100)
     email: str = Field(min_length=3, max_length=254)
     password: str = Field(min_length=12, max_length=200)
+    setup_token: str | None = Field(default=None, max_length=200)
 
 
 class LoginBody(StrictModel):
     email: str
     password: str
+
+
+class PasswordBody(StrictModel):
+    current_password: str = Field(min_length=1, max_length=200)
+    new_password: str = Field(min_length=12, max_length=200)
 
 
 class CampaignBody(StrictModel):
@@ -121,6 +138,7 @@ class DraftEditBody(StrictModel):
 class ReviewBody(StrictModel):
     decision: Literal["approve", "decline"]
     acknowledged_checks: list[str] = Field(default_factory=list)
+    expected_content_hash: str | None = Field(default=None, min_length=64, max_length=64)
 
 
 class HandoffOutcomeBody(StrictModel):
@@ -174,8 +192,9 @@ class TeamMemberBody(StrictModel):
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    migrate()
-    yield
+    with runtime_guard():
+        migrate()
+        yield
 
 
 app = FastAPI(
@@ -258,7 +277,7 @@ async def validation_error_handler(request: Request, exc: RequestValidationError
         "validation_failed",
         "Check the highlighted fields and try again",
         request.state.request_id,
-        exc.errors(),
+        [{key: error[key] for key in ("loc", "type", "msg")} for error in exc.errors()],
     )
 
 
@@ -443,6 +462,13 @@ def ready():
     try:
         connection = connect()
         connection.execute("SELECT 1").fetchone()
+        if settings.require_maintenance:
+            from .worker import healthcheck
+
+            if not healthcheck():
+                raise AppError(
+                    503, "maintenance_unavailable", "Maintenance is not running successfully"
+                )
         return {"status": "ready", "database": "reachable"}
     except sqlite3.Error as exc:
         raise AppError(503, "database_unavailable", "The local database is unavailable") from exc
@@ -456,6 +482,7 @@ def auth_status():
     count = fetch_one("SELECT COUNT(*) AS count FROM users")
     return {
         "setup_required": count["count"] == 0,
+        "setup_token_required": settings.environment == "production" or bool(settings.setup_token),
         "environment": settings.environment,
         "demo_mode": settings.demo_mode,
     }
@@ -465,6 +492,11 @@ def auth_status():
 def setup(body: SetupBody, response: Response):
     if fetch_one("SELECT id FROM users LIMIT 1"):
         raise AppError(409, "setup_complete", "Initial setup has already been completed")
+    if settings.environment == "production" or settings.setup_token:
+        if not settings.setup_token or not hmac.compare_digest(
+            (body.setup_token or "").encode(), settings.setup_token.encode()
+        ):
+            raise AppError(403, "setup_token_invalid", "A valid operator setup token is required")
     try:
         email = validate_email(body.email)
         password = hash_password(body.password)
@@ -473,6 +505,8 @@ def setup(body: SetupBody, response: Response):
     except ValueError as exc:
         raise AppError(422, "validation_failed", str(exc)) from exc
     with transaction() as connection:
+        if connection.execute("SELECT id FROM users LIMIT 1").fetchone():
+            raise AppError(409, "setup_complete", "Initial setup has already been completed")
         timestamp = now()
         user_id = connection.execute(
             "INSERT INTO users(email,password_hash,display_name,created_at) VALUES (?,?,?,?)",
@@ -516,6 +550,11 @@ def login(body: LoginBody, request: Request, response: Response):
         record_login_failure(fingerprint)
         raise AppError(401, "invalid_credentials", "Email or password is incorrect")
     with transaction() as connection:
+        current_user = connection.execute(
+            "SELECT password_hash FROM users WHERE id=?", (user["id"],)
+        ).fetchone()
+        if not current_user or current_user["password_hash"] != encoded_password:
+            raise AppError(401, "invalid_credentials", "Credentials changed; sign in again")
         connection.execute("DELETE FROM login_attempts WHERE fingerprint=?", (fingerprint,))
         connection.execute("DELETE FROM sessions WHERE expires_at<=?", (now(),))
         raw_session, raw_csrf = issue_session(connection, user["id"])
@@ -536,6 +575,30 @@ def logout(
     response.delete_cookie(SESSION_COOKIE, path="/")
     response.delete_cookie(CSRF_COOKIE, path="/")
     return {"status": "signed_out"}
+
+
+@app.post("/api/auth/password")
+def change_password(body: PasswordBody, response: Response, member: Member):
+    with transaction() as connection:
+        user = connection.execute("SELECT * FROM users WHERE id=?", (member["user_id"],)).fetchone()
+        if not verify_password(body.current_password, user["password_hash"]):
+            raise AppError(403, "current_password_invalid", "The current password is incorrect")
+        connection.execute(
+            "UPDATE users SET password_hash=? WHERE id=?",
+            (hash_password(body.new_password), member["user_id"]),
+        )
+        connection.execute("DELETE FROM sessions WHERE user_id=?", (member["user_id"],))
+        audit(
+            connection,
+            member["workspace_id"],
+            member["user_id"],
+            "account.password_changed",
+            "user",
+            member["user_id"],
+        )
+    response.delete_cookie(SESSION_COOKIE, path="/")
+    response.delete_cookie(CSRF_COOKIE, path="/")
+    return {"changed": True, "reauthenticate": True}
 
 
 @app.get("/api/me")
@@ -702,11 +765,17 @@ def create_prospect(body: ProspectBody, member: Member):
                 source_url,
                 body.contact_handle,
                 body.notes,
-                body.consent_status,
+                "opted_out"
+                if is_suppressed(connection, member["workspace_id"], provider, source_url)
+                else body.consent_status,
                 timestamp,
                 timestamp,
             ),
         ).lastrowid
+        if body.consent_status in {"opted_out", "blocked"}:
+            persist_intake_restriction(
+                connection, member, record_id, provider, source_url, body.consent_status
+            )
         audit(
             connection,
             member["workspace_id"],
@@ -774,13 +843,30 @@ def import_prospects(body: ImportBody, member: Member):
                         row["source_url"],
                         row["contact_handle"],
                         row["notes"],
-                        row["consent_status"],
+                        "opted_out"
+                        if is_suppressed(
+                            connection, member["workspace_id"], row["provider"], row["source_url"]
+                        )
+                        else row["consent_status"],
                         timestamp,
                         timestamp,
                     ),
                 )
                 inserted += cursor.rowcount
                 duplicates += 1 - cursor.rowcount
+                if row["consent_status"] in {"opted_out", "blocked"}:
+                    prospect_id = connection.execute(
+                        "SELECT id FROM prospects WHERE workspace_id=? AND provider=? AND source_url=?",
+                        (member["workspace_id"], row["provider"], row["source_url"]),
+                    ).fetchone()["id"]
+                    persist_intake_restriction(
+                        connection,
+                        member,
+                        prospect_id,
+                        row["provider"],
+                        row["source_url"],
+                        row["consent_status"],
+                    )
             audit(
                 connection,
                 member["workspace_id"],
@@ -804,6 +890,15 @@ def delete_prospect(prospect_id: int, member: Member):
     require_role(member, "owner", "admin")
     with transaction() as connection:
         record = owned(connection, "prospects", prospect_id, member["workspace_id"])
+        if record["consent_status"] in {"opted_out", "blocked"}:
+            persist_intake_restriction(
+                connection,
+                member,
+                prospect_id,
+                record["provider"],
+                record["source_url"],
+                record["consent_status"],
+            )
         connection.execute("DELETE FROM prospects WHERE id=?", (prospect_id,))
         audit(
             connection,
@@ -880,12 +975,85 @@ def list_drafts(
         f"c.name AS campaign_name,t.name AS template_name FROM drafts d "
         f"JOIN prospects p ON p.id=d.prospect_id JOIN campaigns c ON c.id=d.campaign_id "
         f"LEFT JOIN templates t ON t.id=d.template_id WHERE {where} "
-        "ORDER BY CASE d.state WHEN 'ambiguous' THEN 0 WHEN 'needs_review' THEN 1 ELSE 2 END, d.updated_at DESC LIMIT ? OFFSET ?",
+        "ORDER BY CASE d.state WHEN 'ambiguous' THEN 0 WHEN 'needs_review' THEN 1 ELSE 2 END, d.updated_at DESC,d.id DESC LIMIT ? OFFSET ?",
         tuple(parameters),
     )
     for item in items:
         item["safety_flags"] = parse_flags(item["safety_flags"])
+        item["content_hash"] = hashlib.sha256(
+            (item["subject"] + "\n" + item["body"]).encode()
+        ).hexdigest()
     return {"items": items, "total": total["count"], "limit": limit, "offset": offset}
+
+
+def suppression_key(provider: str, source_url: str) -> str:
+    return f"{provider}:{validate_provider_url(source_url)}".lower()
+
+
+def persist_intake_restriction(connection, member, prospect_id, provider, source_url, status):
+    connection.execute(
+        "INSERT OR IGNORE INTO suppressions(workspace_id,prospect_id,normalized_value,reason,created_by,created_at) VALUES (?,?,?,?,?,?)",
+        (
+            member["workspace_id"],
+            prospect_id,
+            suppression_key(provider, source_url),
+            f"Restricted during intake: {status}",
+            member["user_id"],
+            now(),
+        ),
+    )
+    connection.execute(
+        "UPDATE prospects SET consent_status=?,updated_at=? WHERE id=?",
+        (status, now(), prospect_id),
+    )
+    connection.execute(
+        "UPDATE drafts SET state='suppressed',updated_at=? WHERE prospect_id=? AND state NOT IN ('replied','suppressed')",
+        (now(), prospect_id),
+    )
+    connection.execute(
+        "UPDATE reminders SET status='cancelled' WHERE status='open' AND (prospect_id=? OR draft_id IN (SELECT id FROM drafts WHERE prospect_id=?))",
+        (prospect_id, prospect_id),
+    )
+
+
+def approved_provider_url(connection, workspace_id, prospect):
+    provider = connection.execute(
+        "SELECT * FROM provider_settings WHERE workspace_id=? AND provider=?",
+        (workspace_id, prospect["provider"]),
+    ).fetchone()
+    if not provider:
+        raise AppError(409, "provider_not_configured", "Configure an approved provider link first")
+    try:
+        allowed_host = {validate_provider_url(provider["base_url"]).split("/")[2].lower()}
+        return validate_provider_url(prospect["source_url"], allowed_host)
+    except ValueError as exc:
+        raise AppError(
+            409, "provider_not_approved", "The current provider link is not approved"
+        ) from exc
+
+
+def is_suppressed(connection, workspace_id: int, provider: str, source_url: str) -> bool:
+    key = suppression_key(provider, source_url)
+    # Historical entries used uncanonicalized URLs. Preserve those opt-outs too.
+    for row in connection.execute(
+        "SELECT normalized_value FROM suppressions WHERE workspace_id=?",
+        (workspace_id,),
+    ):
+        stored_provider, _, stored_url = row["normalized_value"].partition(":")
+        try:
+            if suppression_key(stored_provider, stored_url) == key:
+                return True
+        except ValueError:
+            if row["normalized_value"] == key:
+                return True
+    return False
+
+
+def require_contactable(connection, prospect):
+    if prospect["consent_status"] in {"opted_out", "blocked"} or is_suppressed(
+        connection, prospect["workspace_id"], prospect["provider"], prospect["source_url"]
+    ):
+        raise AppError(409, "prospect_suppressed", "This prospect cannot receive outreach")
 
 
 @app.post("/api/drafts", status_code=201)
@@ -895,8 +1063,7 @@ def create_draft(body: DraftBody, member: Member):
         campaign = owned(connection, "campaigns", body.campaign_id, member["workspace_id"])
         prospect = owned(connection, "prospects", body.prospect_id, member["workspace_id"])
         template = owned(connection, "templates", body.template_id, member["workspace_id"])
-        if prospect["consent_status"] in {"opted_out", "blocked"}:
-            raise AppError(409, "prospect_suppressed", "This prospect cannot receive outreach")
+        require_contactable(connection, prospect)
         try:
             rendered = render_template(
                 template["body"],
@@ -1002,8 +1169,16 @@ def review_draft(draft_id: int, body: ReviewBody, member: Member):
                     "SELECT * FROM prospects WHERE id=?", (draft["prospect_id"],)
                 ).fetchone()
             )
-            if prospect["consent_status"] in {"opted_out", "blocked"}:
-                raise AppError(409, "prospect_suppressed", "This prospect cannot receive outreach")
+            require_contactable(connection, prospect)
+            expected = hashlib.sha256(
+                (draft["subject"] + "\n" + draft["body"]).encode()
+            ).hexdigest()
+            if body.expected_content_hash != expected:
+                raise AppError(
+                    409,
+                    "draft_changed",
+                    "Reload and review the current saved message before approving",
+                )
         timestamp = now()
         connection.execute(
             "UPDATE drafts SET state=?,reviewed_by=?,approved_at=?,updated_at=? WHERE id=?",
@@ -1045,13 +1220,10 @@ def prepare_handoff(
             "SELECT * FROM handoffs WHERE workspace_id=? AND idempotency_key=?",
             (member["workspace_id"], idempotency_key),
         ).fetchone()
-        if existing:
-            return dict(existing) | {
-                "replayed": True,
-                "instruction": "Copy the message, open the provider, send manually, then record the outcome.",
-            }
         draft = owned(connection, "drafts", draft_id, member["workspace_id"])
-        if draft["state"] != "approved":
+        if existing and existing["draft_id"] != draft_id:
+            raise AppError(409, "idempotency_conflict", "This handoff key belongs to another draft")
+        if not existing and draft["state"] != "approved":
             raise AppError(
                 409, "approval_required", "Approve the current draft before preparing a handoff"
             )
@@ -1076,8 +1248,30 @@ def prepare_handoff(
             raise AppError(
                 409, "campaign_inactive", "Activate the campaign before preparing a handoff"
             )
-        if prospect["consent_status"] in {"opted_out", "blocked"}:
-            raise AppError(409, "prospect_suppressed", "This prospect cannot receive outreach")
+        require_contactable(connection, prospect)
+        provider_url = approved_provider_url(connection, member["workspace_id"], prospect)
+        content_hash = hashlib.sha256(
+            (draft["subject"] + "\n" + draft["body"]).encode()
+        ).hexdigest()
+        if existing:
+            latest = connection.execute(
+                "SELECT id FROM handoffs WHERE draft_id=? ORDER BY id DESC LIMIT 1", (draft_id,)
+            ).fetchone()
+            if (
+                existing["status"] not in {"prepared", "opened", "ambiguous"}
+                or draft["state"] not in {"handoff_created", "ambiguous"}
+                or latest["id"] != existing["id"]
+                or existing["content_hash"] != content_hash
+                or validate_provider_url(existing["provider_url"]) != provider_url
+            ):
+                raise AppError(409, "handoff_stale", "This handoff is no longer actionable")
+            return dict(existing) | {
+                "subject": draft["subject"],
+                "body": draft["body"],
+                "replayed": True,
+                "can_open_provider": True,
+                "instruction": "Copy the message, open the provider, send manually, then record the outcome.",
+            }
         today = datetime.now(UTC).date().isoformat()
         daily = connection.execute(
             "SELECT COUNT(*) AS count FROM handoffs h JOIN drafts d ON d.id=h.draft_id "
@@ -1103,19 +1297,6 @@ def prepare_handoff(
                     "cooldown_active",
                     f"This prospect is in cooldown until {next_allowed.isoformat()}",
                 )
-        provider = connection.execute(
-            "SELECT * FROM provider_settings WHERE workspace_id=? AND provider=?",
-            (member["workspace_id"], prospect["provider"]),
-        ).fetchone()
-        if not provider:
-            raise AppError(
-                409, "provider_not_configured", "Configure an approved provider link first"
-            )
-        allowed_host = {validate_provider_url(provider["base_url"]).split("/")[2].lower()}
-        provider_url = validate_provider_url(prospect["source_url"], allowed_host)
-        content_hash = hashlib.sha256(
-            (draft["subject"] + "\n" + draft["body"]).encode()
-        ).hexdigest()
         timestamp = now()
         handoff_id = connection.execute(
             "INSERT INTO handoffs(workspace_id,draft_id,idempotency_key,provider_url,content_hash,prepared_at) VALUES (?,?,?,?,?,?)",
@@ -1149,6 +1330,7 @@ def prepare_handoff(
         "body": draft["body"],
         "status": "prepared",
         "replayed": False,
+        "can_open_provider": True,
         "instruction": "Copy the message, open the provider, send manually, then record the outcome.",
     }
 
@@ -1161,6 +1343,14 @@ def record_handoff_outcome(handoff_id: int, body: HandoffOutcomeBody, member: Me
         handoff = owned(connection, "handoffs", handoff_id, member["workspace_id"])
         if handoff["status"] not in {"prepared", "opened", "ambiguous"}:
             raise AppError(409, "outcome_recorded", "This handoff already has a final outcome")
+        draft = owned(connection, "drafts", handoff["draft_id"], member["workspace_id"])
+        latest = connection.execute(
+            "SELECT id FROM handoffs WHERE draft_id=? ORDER BY id DESC LIMIT 1", (draft["id"],)
+        ).fetchone()
+        if draft["state"] not in {"handoff_created", "ambiguous"} or latest["id"] != handoff_id:
+            raise AppError(409, "handoff_stale", "A newer draft state supersedes this handoff")
+        prospect = owned(connection, "prospects", draft["prospect_id"], member["workspace_id"])
+        require_contactable(connection, prospect)
         timestamp = now()
         connection.execute(
             "UPDATE handoffs SET status=?,completed_at=? WHERE id=?",
@@ -1199,26 +1389,67 @@ def list_handoffs(
         where += " AND h.draft_id=?"
         parameters.append(draft_id)
     parameters.append(limit)
-    return {
-        "items": fetch_all(
-            f"SELECT h.*,d.subject,d.body,p.name AS prospect_name "
-            f"FROM handoffs h JOIN drafts d ON d.id=h.draft_id "
-            f"JOIN prospects p ON p.id=d.prospect_id WHERE {where} "
-            "ORDER BY h.prepared_at DESC LIMIT ?",
-            tuple(parameters),
-        )
-    }
+    with transaction() as connection:
+        items = [
+            dict(row)
+            for row in connection.execute(
+                f"SELECT h.*,d.subject,d.body,p.name AS prospect_name "
+                f"FROM handoffs h JOIN drafts d ON d.id=h.draft_id "
+                f"JOIN prospects p ON p.id=d.prospect_id WHERE {where} "
+                "ORDER BY h.id DESC LIMIT ?",
+                tuple(parameters),
+            )
+        ]
+        workspace = connection.execute(
+            "SELECT * FROM workspaces WHERE id=?", (member["workspace_id"],)
+        ).fetchone()
+        for item in items:
+            item["can_open_provider"] = False
+            draft = owned(connection, "drafts", item["draft_id"], member["workspace_id"])
+            prospect = owned(connection, "prospects", draft["prospect_id"], member["workspace_id"])
+            campaign = owned(connection, "campaigns", draft["campaign_id"], member["workspace_id"])
+            latest = connection.execute(
+                "SELECT id FROM handoffs WHERE draft_id=? ORDER BY id DESC LIMIT 1", (draft["id"],)
+            ).fetchone()
+            if (
+                settings.demo_mode
+                or member["role"] not in {"owner", "admin", "editor"}
+                or workspace["paused_at"]
+                or not workspace["compliance_ack_at"]
+                or campaign["status"] != "active"
+                or draft["state"] not in {"handoff_created", "ambiguous"}
+                or item["status"] not in {"prepared", "opened", "ambiguous"}
+                or latest["id"] != item["id"]
+                or item["content_hash"]
+                != hashlib.sha256((draft["subject"] + "\n" + draft["body"]).encode()).hexdigest()
+            ):
+                continue
+            try:
+                require_contactable(connection, prospect)
+                item["can_open_provider"] = validate_provider_url(
+                    item["provider_url"]
+                ) == approved_provider_url(connection, member["workspace_id"], prospect)
+            except (AppError, ValueError):
+                pass
+    return {"items": items}
 
 
 @app.get("/api/replies")
-def list_replies(member: Member, limit: int = Query(50, ge=1, le=100)):
+def list_replies(
+    member: Member, limit: int = Query(50, ge=1, le=100), offset: int = Query(0, ge=0)
+):
     return {
         "items": fetch_all(
             "SELECT r.*,p.name AS prospect_name,c.name AS campaign_name FROM replies r "
             "JOIN drafts d ON d.id=r.draft_id JOIN prospects p ON p.id=d.prospect_id "
-            "JOIN campaigns c ON c.id=d.campaign_id WHERE r.workspace_id=? ORDER BY r.received_at DESC LIMIT ?",
-            (member["workspace_id"], limit),
-        )
+            "JOIN campaigns c ON c.id=d.campaign_id WHERE r.workspace_id=? ORDER BY r.received_at DESC,r.id DESC LIMIT ? OFFSET ?",
+            (member["workspace_id"], limit, offset),
+        ),
+        "total": fetch_one(
+            "SELECT COUNT(*) AS count FROM replies WHERE workspace_id=?", (member["workspace_id"],)
+        )["count"],
+        "limit": limit,
+        "offset": offset,
     }
 
 
@@ -1258,14 +1489,25 @@ def create_reply(body: ReplyBody, member: Member):
 
 
 @app.get("/api/reminders")
-def list_reminders(member: Member, status: str = Query("open", max_length=20)):
+def list_reminders(
+    member: Member,
+    status: str = Query("open", max_length=20),
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+):
     return {
         "items": fetch_all(
             "SELECT r.*,p.name AS prospect_name,c.name AS campaign_name FROM reminders r "
             "LEFT JOIN drafts d ON d.id=r.draft_id LEFT JOIN prospects p ON p.id=COALESCE(r.prospect_id,d.prospect_id) "
-            "LEFT JOIN campaigns c ON c.id=d.campaign_id WHERE r.workspace_id=? AND r.status=? ORDER BY r.due_at",
+            "LEFT JOIN campaigns c ON c.id=d.campaign_id WHERE r.workspace_id=? AND r.status=? ORDER BY r.due_at,r.id LIMIT ? OFFSET ?",
+            (member["workspace_id"], status, limit, offset),
+        ),
+        "total": fetch_one(
+            "SELECT COUNT(*) AS count FROM reminders WHERE workspace_id=? AND status=?",
             (member["workspace_id"], status),
-        )
+        )["count"],
+        "limit": limit,
+        "offset": offset,
     }
 
 
@@ -1323,7 +1565,7 @@ def suppress_prospect(body: SuppressionBody, member: Member):
     require_role(member, "owner", "admin", "editor")
     with transaction() as connection:
         prospect = owned(connection, "prospects", body.prospect_id, member["workspace_id"])
-        value = (prospect["provider"] + ":" + prospect["source_url"]).lower()
+        value = suppression_key(prospect["provider"], prospect["source_url"])
         connection.execute(
             "INSERT OR IGNORE INTO suppressions(workspace_id,prospect_id,normalized_value,reason,created_by,created_at) VALUES (?,?,?,?,?,?)",
             (
@@ -1343,6 +1585,16 @@ def suppress_prospect(body: SuppressionBody, member: Member):
             "UPDATE drafts SET state='suppressed',updated_at=? WHERE prospect_id=? AND state NOT IN ('replied','suppressed')",
             (now(), body.prospect_id),
         )
+        connection.execute(
+            "UPDATE handoffs SET status='cancelled',completed_at=? WHERE draft_id IN "
+            "(SELECT id FROM drafts WHERE prospect_id=?) AND status IN ('prepared','opened','ambiguous')",
+            (now(), body.prospect_id),
+        )
+        connection.execute(
+            "UPDATE reminders SET status='cancelled' WHERE status='open' AND "
+            "(prospect_id=? OR draft_id IN (SELECT id FROM drafts WHERE prospect_id=?))",
+            (body.prospect_id, body.prospect_id),
+        )
         audit(
             connection,
             member["workspace_id"],
@@ -1360,9 +1612,15 @@ def list_audit(member: Member, limit: int = Query(100, ge=1, le=500), offset: in
     return {
         "items": fetch_all(
             "SELECT a.*,u.display_name FROM audit_events a LEFT JOIN users u ON u.id=a.actor_user_id "
-            "WHERE a.workspace_id=? ORDER BY a.created_at DESC LIMIT ? OFFSET ?",
+            "WHERE a.workspace_id=? ORDER BY a.created_at DESC,a.id DESC LIMIT ? OFFSET ?",
             (member["workspace_id"], limit, offset),
-        )
+        ),
+        "total": fetch_one(
+            "SELECT COUNT(*) AS count FROM audit_events WHERE workspace_id=?",
+            (member["workspace_id"],),
+        )["count"],
+        "limit": limit,
+        "offset": offset,
     }
 
 

@@ -1,27 +1,29 @@
 $ErrorActionPreference = "Stop"
+. "$PSScriptRoot/common.ps1"
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
 $Python = Join-Path $ProjectRoot ".venv\Scripts\python.exe"
 
 Push-Location $ProjectRoot
 try {
-    & $Python -m ruff check backend
-    & $Python -m pytest
-    & $Python -m pip_audit --skip-editable
-    & $Python scripts\benchmark.py
+    Invoke-SimbiNative $Python @('-m', 'ruff', 'check', 'backend')
+    Invoke-SimbiNative $Python @('-m', 'pytest')
+    Invoke-SimbiNative $Python @('-m', 'pip_audit', '--skip-editable')
+    Invoke-SimbiNative $Python @('scripts/benchmark.py')
     Push-Location (Join-Path $ProjectRoot "frontend")
     try {
-        pnpm.cmd lint
-        pnpm.cmd test
-        pnpm.cmd build
-        pnpm.cmd audit --audit-level high
-        pnpm.cmd exec playwright install chromium
-        pnpm.cmd test:e2e:run
+        Invoke-SimbiNative pnpm.cmd @('lint')
+        Invoke-SimbiNative pnpm.cmd @('test')
+        Invoke-SimbiNative pnpm.cmd @('build')
+        Invoke-SimbiNative pnpm.cmd @('audit', '--audit-level', 'high')
+        Invoke-SimbiNative pnpm.cmd @('exec', 'playwright', 'install', 'chromium')
+        Invoke-SimbiNative pnpm.cmd @('test:e2e:run')
     } finally {
         Pop-Location
     }
-    & $Python -m app.cli doctor
-    docker compose config --quiet
-    docker compose -f compose.production.yaml --env-file .env.production.example config --quiet
+    Invoke-SimbiNative $Python @('-m', 'app.cli', 'doctor')
+    Invoke-SimbiNative docker @('compose', 'config', '--quiet')
+    Invoke-SimbiNative docker @('compose', '-f', 'compose.production.yaml', '--env-file', '.env.production.example', 'config', '--quiet')
+    Invoke-SimbiNative (Get-Command pwsh).Source @('-NoProfile', '-File', "$PSScriptRoot/test-launchers.ps1")
 } finally {
     Pop-Location
 }

@@ -15,6 +15,7 @@ The API and worker never call the provider. The provider is a separate trust bou
 
 - Salted scrypt password hashes; no fallback or default password.
 - Random opaque server-side sessions with bounded expiry.
+- Production first-owner setup requires an operator-configured high-entropy token; setup is serialized. Authenticated password change revokes all sessions, including protection against an old-password login racing the change.
 - `HttpOnly`, `SameSite=Strict` session cookie and double-submit CSRF control.
 - Production startup requires an HTTPS origin, explicit public hostname, trusted proxy list, and secure cookies.
 - Failed logins are rate-limited by a one-way client/email fingerprint; unknown users still run a password verification to reduce account enumeration timing signals.
@@ -25,6 +26,10 @@ The API and worker never call the provider. The provider is a separate trust bou
 - No uploads; CSV imports are bounded, parsed in memory, previewed, and committed atomically only when every row is valid.
 - Daily handoff limit, per-prospect cooldown, unique campaign/prospect draft, and idempotent handoff key.
 - Explicit state machine blocks impossible or repeated transitions.
+- Approval requires the exact saved content hash. Recovery and copy/open actions recheck current contact permission and provider host; stale outcomes cannot overwrite replies or suppression.
+- Contact restrictions are retained separately from prospect records, including restrictions provided by manual/CSV intake. Re-importing a deleted prospect does not remove a retained opt-out.
+- Validation responses omit submitted field values, preventing password/personal-content echo in error details.
+- Shared runtime leases block ordinary restore while app/worker connections are active; restore validates a staged candidate and preserves a safety snapshot before atomic SQLite restoration.
 - Support bundle excludes names, emails, provider handles, tokens, credentials, and message bodies.
 - Runtime database, logs, exports, backups, uploads, and environment files are ignored by Git.
 - Production containers are non-root, capability-free, read-only, resource-limited, log-rotated, and place the trusted Caddy proxy at a fixed private address.

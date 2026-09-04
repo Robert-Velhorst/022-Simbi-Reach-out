@@ -5,7 +5,7 @@ import { Button, Field, Input, Notice } from './ui'
 
 type AuthResult = { status: string; csrf_token: string }
 
-export function SetupScreen({ onComplete }: { onComplete: () => void }) {
+export function SetupScreen({ onComplete, setupTokenRequired = false }: { onComplete: () => void; setupTokenRequired?: boolean }) {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -27,6 +27,7 @@ export function SetupScreen({ onComplete }: { onComplete: () => void }) {
   return <AuthLayout title="Create your local workspace" detail="Your records stay in the local database. No platform account credentials are requested or stored.">
     {error ? <Notice tone="danger">{error}</Notice> : null}
     <form onSubmit={submit} className="form-stack">
+      {setupTokenRequired ? <Field label="Setup token" hint="Use the bootstrap token configured by the deployment operator."><Input name="setup_token" type="password" required autoComplete="off" /></Field> : null}
       <Field label="Your name"><Input name="display_name" required minLength={2} autoComplete="name" /></Field>
       <Field label="Workspace name"><Input name="workspace_name" required minLength={2} defaultValue="Simbi outreach" /></Field>
       <Field label="Email"><Input name="email" type="email" required autoComplete="email" /></Field>

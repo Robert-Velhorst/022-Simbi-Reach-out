@@ -32,6 +32,8 @@ jobs:
         run: ruff check backend
       - name: Backend tests
         run: pytest
+      - name: Isolated worker lifecycle contract
+        run: python scripts/test-worker-process.py
       - name: Backend dependency audit
         run: pip-audit --skip-editable
       - name: Capacity benchmark
@@ -57,6 +59,9 @@ jobs:
             backend frontend/src scripts Dockerfile docker-compose.yml pyproject.toml
       - name: Docker build
         run: docker build -t simbi-reach-out:ci .
+      - name: Isolated production maintenance and storage smoke
+        shell: pwsh
+        run: ./scripts/smoke-container.ps1 -Image simbi-reach-out:ci
       - name: Validate deployment configuration
         run: |
           docker compose config --quiet
@@ -98,10 +103,23 @@ jobs:
         shell: pwsh
         run: |
           python -m venv .venv
+          if ($LASTEXITCODE -ne 0) { throw "Virtual environment creation failed." }
           .\.venv\Scripts\python.exe -m pip install -e ".[dev]"
+          if ($LASTEXITCODE -ne 0) { throw "Backend installation failed." }
+      - name: Windows launcher process contracts
+        shell: pwsh
+        run: .\scripts\test-launchers.ps1
+      - name: Windows worker lifecycle contract
+        shell: pwsh
+        run: |
+          .\.venv\Scripts\python.exe scripts/test-worker-process.py
+          if ($LASTEXITCODE -ne 0) { throw "Worker process tests failed." }
       - name: Build Windows standalone app
         shell: pwsh
         run: .\scripts\build-windows.ps1
+      - name: Isolated executable readiness and shutdown smoke
+        shell: pwsh
+        run: .\scripts\smoke-windows.ps1
       - uses: actions/upload-artifact@v4
         with:
           name: simbi-reach-out-windows

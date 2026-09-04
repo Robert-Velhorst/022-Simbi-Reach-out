@@ -22,7 +22,7 @@ COPY pyproject.toml ./
 COPY backend ./backend
 COPY --from=frontend /build/frontend/dist ./frontend/dist
 RUN pip install --no-cache-dir .
-RUN mkdir -p /app/data /app/backups && chown -R simbi:simbi /app
+RUN mkdir -p /app/data /app/backups /app/hai && chown -R simbi:simbi /app
 USER simbi
 EXPOSE 8000
 STOPSIGNAL SIGTERM

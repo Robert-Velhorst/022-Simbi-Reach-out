@@ -12,6 +12,11 @@ x-app-environment: &app-environment
   SIMBI_AUTO_BACKUP: "true"
   SIMBI_BACKUP_PATH: /app/backups
   SIMBI_BACKUP_RETENTION_DAYS: ${SIMBI_BACKUP_RETENTION_DAYS:-30}
+  SIMBI_REQUIRE_MAINTENANCE: "true"
+  SIMBI_SETUP_TOKEN: ${SIMBI_SETUP_TOKEN:-}
+  # Opt in with /app/hai/simbi.json; the dedicated volume stays private by default.
+  SIMBI_HAI_FEED_PATH: ${SIMBI_HAI_FEED_PATH:-}
+  SIMBI_HAI_INCLUDE_CONTENT: ${SIMBI_HAI_INCLUDE_CONTENT:-false}
 
 x-runtime: &runtime
   image: simbi-reach-out:${SIMBI_IMAGE_TAG:-1.0.0}
@@ -19,6 +24,7 @@ x-runtime: &runtime
   volumes:
     - simbi-data:/app/data
     - simbi-backups:/app/backups
+    - simbi-hai:/app/hai
   read_only: true
   tmpfs:
     - /tmp:size=64m,mode=1777
@@ -54,9 +60,9 @@ services:
     command: ["python", "-m", "app.worker", "--interval", "300"]
     depends_on:
       app:
-        condition: service_healthy
+        condition: service_started
     healthcheck:
-      test: ["CMD", "python", "-c", "from pathlib import Path; assert b'app.worker' in Path('/proc/1/cmdline').read_bytes()"]
+      test: ["CMD", "python", "-m", "app.worker", "--healthcheck"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -92,6 +98,7 @@ services:
 volumes:
   simbi-data:
   simbi-backups:
+  simbi-hai:
   caddy-data:
   caddy-config:
 

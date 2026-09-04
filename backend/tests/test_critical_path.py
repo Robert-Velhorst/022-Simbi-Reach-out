@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from conftest import csrf_headers, setup_owner
+from conftest import csrf_headers, draft_hash, setup_owner
 from fastapi.testclient import TestClient
 
 APPROVAL_CHECKS = [
@@ -100,7 +100,11 @@ def test_complete_assisted_critical_path(client: TestClient):
     approved = client.post(
         f"/api/drafts/{draft_id}/review",
         headers=headers,
-        json={"decision": "approve", "acknowledged_checks": APPROVAL_CHECKS},
+        json={
+            "decision": "approve",
+            "acknowledged_checks": APPROVAL_CHECKS,
+            "expected_content_hash": draft_hash(draft_id),
+        },
     )
     assert approved.status_code == 200
     no_key = client.post(f"/api/drafts/{draft_id}/handoff", headers=headers, json={})
