@@ -2,6 +2,8 @@
 
 ## 2026-10-01 — owner-controlled personal cleanup
 
+- Published through PR90 after source36792480879 and PR36792484857 passed Linux/Windows at2073039; merged without conflicts at81ec23b. Source/merge tree hashes match, local main fast-forwarded cleanly and no open PRs remain.66 relative documentation links/anchors pass. Final README publication follows this merge; later main/documentation CI remains separate evidence. No real records/provider account were changed.
+
 - Implemented immutable migration003 and owner-only exact-preview cleanup/retention preference with fresh-session/role/password/CSRF/throttling checks. Verified backup precedes deletion; stale/uncertain/foreign links fail closed; durable do-not-contact identities and retry receipts prevent history deletion from bypassing safety. Deprecated direct API deletion cannot skip the new gates. No real-data/provider operation was performed.
 - Added isolated backup/rollback/writer-lock/replay/batch/policy/authorization regressions and bilingual Settings controls with truthful pending/errors, paginated selection and receipt recovery after reload.120 frontend tests and a focused14-test post-dialog-fix rerun pass; lint/build and complete Chromium English/Dutch cleanup/existing journeys pass with zero unexpected errors/selected WCAG violations.
 - Visual QA found and repaired off-center/clipped dialogs caused by nesting under a panel. Test-harness selector/option/reload-helper issues were also fixed. Exact-revision CI/publication follows local proof. Phases028/102 remain partial for full removal/retention/archive coverage; the overall goal remains open.

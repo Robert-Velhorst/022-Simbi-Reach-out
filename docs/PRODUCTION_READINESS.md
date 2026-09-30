@@ -2,6 +2,10 @@
 
 ## Personal cleanup acceptance (2026-10-01)
 
+Published through [PR90](https://github.com/Robert-Velhorst/022-Simbi-Reach-out/pull/90), merged without conflicts at `81ec23ba2131bc60f03ba0c6c8855ccfe5519d5d` after [source CI](https://github.com/Robert-Velhorst/022-Simbi-Reach-out/actions/runs/36792480879) and [PR CI](https://github.com/Robert-Velhorst/022-Simbi-Reach-out/actions/runs/36792484857) both succeeded Linux/Windows at `2073039de15418f70cba28864b2cf55064553f30`. Both include fresh dependency audits, bilingual browser acceptance, container/storage/worker checks and newly built/smoked Windows packages. Source/merge tree hashes match `effbc5515de1cf77a1307e10029d4b14d109ccee`; local main fast-forwarded cleanly and no open PRs remained. Later main/documentation runs are separate commit-specific checks, not assumed successful here. This supersedes the PR89 publication snapshot below.
+
+Operator-approval and migration guidance informed exact, stale-rejecting confirmation and an additive schema change; no sending mechanism or production-data deletion was performed. Documentation validation found66 working relative file/heading links across nine updated documents; whitespace checks pass.
+
 This increment adds a real owner-controlled contact/conversation cleanup path, not an automatic provider or personal-data purge. See [the exact policy, API and retained-data limits](PRIVACY_CLEANUP.md). Publication is recorded after exact-revision CI; earlier PR89/package results are not attributed to this change.
 
 - Added immutable migration003 with owner/workspace-bound ten-minute previews and idempotent receipts. Settings supports retention preference, bounded old/closed-history cleanup or paginated single-contact selection. Exact names/counts are shown before password/acknowledgement confirmation; there is no direct-delete bypass. Failed searches/previews show errors, not invented zero results.
