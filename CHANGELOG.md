@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — English/Dutch personal workflow (2026-10-01)
+
+- Added typed English/Dutch UI catalogs and an accessible language selector before authentication and in the app. The versioned browser preference contains only `en` or `nl` and falls back safely when storage is unavailable.
+- Localized static/dynamic labels, known errors, safety/review/handoff instructions, statuses, audit events, counts and dates without translating record content or changing API/CSV/template field names. Locale changes preserve forms and exact-content review checks.
+- Added limited Dutch context, pressure and easy-decline phrases to existing deterministic review hints. Human approval and manual provider action remain mandatory.
+- Added catalog/parity/placeholder/static-text guards and state-preservation tests, plus a real local Dutch setup-to-handoff/reply/reminder/report journey and other-tab modal preservation. Browser test requests are blocked outside the local owner context; fixtures are not provider delivery evidence.
+
 ## Unreleased — truthful loading and retries (2026-10-01)
 
 - Overview, prospects, campaigns, templates, review, replies, reminders, audit and reports no longer describe pending/failed first reads as empty records or zero figures.

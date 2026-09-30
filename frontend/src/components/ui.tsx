@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n'
 import { useEffect, useId, useRef, type ComponentProps, type InputHTMLAttributes, type ReactNode, type RefObject, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react'
 import { AlertTriangle, CheckCircle2, Info, X } from 'lucide-react'
 
@@ -38,9 +39,10 @@ export function Select(props: SelectHTMLAttributes<HTMLSelectElement>) {
 }
 
 export function Status({ value }: { value: string }) {
+  const { formatCode } = useI18n()
   const safe = ['active', 'approved', 'sent', 'replied', 'consented', 'contextual', 'done', 'ready'].includes(value)
   const warn = ['draft', 'needs_review', 'ambiguous', 'unknown', 'open', 'paused'].includes(value)
-  return <span className={`status ${safe ? 'status-safe' : warn ? 'status-warn' : 'status-muted'}`}>{value.replaceAll('_', ' ')}</span>
+  return <span className={`status ${safe ? 'status-safe' : warn ? 'status-warn' : 'status-muted'}`}>{formatCode(value)}</span>
 }
 
 export function Notice({ tone = 'info', children }: { tone?: 'info' | 'success' | 'warning' | 'danger'; children: ReactNode }) {
@@ -53,6 +55,7 @@ export function EmptyState({ title, detail, action }: { title: string; detail: s
 }
 
 export function Modal({ title, children, onClose, returnFocusRef }: { title: string; children: ReactNode; onClose: () => void; returnFocusRef?: RefObject<HTMLElement | null> }) {
+  const { t } = useI18n()
   const dialogRef = useRef<HTMLDialogElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
   const titleId = useId()
@@ -91,14 +94,8 @@ export function Modal({ title, children, onClose, returnFocusRef }: { title: str
         const bounds = event.currentTarget.getBoundingClientRect()
         if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) onClose()
       }}>
-      <header><h2 id={titleId}>{title}</h2><button ref={closeRef} type="button" className="icon-button" onClick={onClose} aria-label="Close"><X size={20} /></button></header>
+      <header><h2 id={titleId}>{title}</h2><button ref={closeRef} type="button" className="icon-button" onClick={onClose} aria-label={t("Close")}><X size={20} /></button></header>
       {children}
     </dialog>
   )
-}
-
-export function formatDate(value: string | null | undefined): string {
-  if (!value) return 'Not set'
-  const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(date)
 }

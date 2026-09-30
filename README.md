@@ -18,6 +18,7 @@ The application uses **React and TypeScript** in the browser, **FastAPI and Pyth
 
 - [Purpose and audience](#purpose-and-audience)
 - [Features](#features)
+- [English and Dutch interface](#english-and-dutch-interface)
 - [First use and daily workflow](#first-use-and-daily-workflow)
 - [Roles and access](#roles-and-access)
 - [Choose a deployment](#choose-a-deployment)
@@ -63,10 +64,19 @@ For example, you might have permission to respond to someone's request for proje
 | Team | Local owner, admin, editor, and viewer accounts. |
 | Data operations | Workspace JSON export, diagnostic output, API prospect deletion, CLI backup/restore/reconciliation/retention cleanup. |
 | Deployment | Docker, Windows package building, temporary ngrok access, Caddy TLS deployment, and optional HAI feed export. |
+| Languages | English/Dutch interface selection before sign-in and in the application, including forms, safety instructions, statuses, notices and dates. Stored content is not translated. |
 
 Records start empty. The app does not populate live contacts, import a provider account, or fabricate activity. The image in `docs/design/` is a design concept, not a current application screenshot or evidence of real user data.
 
 Loading is separate from an empty result: the nine operational screens show pending reads and retryable failures, not a claim that your records have disappeared. During refresh, retained records are labelled as the last loaded snapshot. A failed report refresh keeps the previous figures with an out-of-date warning; unknown figures are not invented as zeros.
+
+## English and Dutch interface
+
+Choose **English** or **Nederlands** in the language selector on setup/sign-in screens or the application header. English is the default. The browser remembers only this preference locally; it is not an account setting or a cloud sync feature. Changing language changes the interface immediately without rewriting names, notes, campaigns, templates, drafts, approved messages, replies or exports. Existing unsaved inputs and review checks remain tied to the same record. Another tab's language change is applied without resetting an open form.
+
+The interface translates navigation, setup/sign-in, resource forms, review checks, handoff warnings and outcomes, reminders/replies, reports, audit labels, settings, help, loading/empty/error notices and known message-quality signals. Dates use English (`en-GB`) or Dutch (`nl-NL`) formatting in the browser's time zone. API field names, status values, CSV headers and the template fields `{name}`, `{organization}`, `{campaign}`, `{notes}` stay unchanged.
+
+This is **interface localization, not automatic message translation**. The starter template remains English until you edit it; you can author your own Dutch template. Unknown technical diagnostics retain their original detail with a Dutch explanation rather than being silently omitted. CLI commands, generated system record content, external provider pages and linked documentation are not translated by the selector. If browser storage is denied, switching still works for the current tab but may not survive reload. See the [language maintenance guide](docs/LOCALIZATION.md) for developer contracts and verification limits.
 
 ## First use and daily workflow
 
@@ -76,7 +86,7 @@ Loading is separate from an empty result: the nine operational screens show pend
 2. Create the first owner with your name, workspace name, email, and a password of at least 12 characters. This is an application account; use a password distinct from your provider account. There is no default login.
 3. Open **Settings → Compliance acknowledgement**. Review the provider's current rules and confirm the four statements about source authorization, manual operation, and handling opt-outs.
 4. Check **Provider handoff** in Settings. Initial setup creates a Simbi base link at `https://simbi.com/`. Saving a link configures URL validation; it does not authenticate with or verify an account at the provider.
-5. Add local team members as needed.
+5. For your personal workspace, keep using the owner account. Optional local team members can be added if you deliberately need them.
 
 Complete first-owner setup while access is restricted to you. In production, the setup form also requires the operator's `SIMBI_SETUP_TOKEN` (a unique random secret of 32–200 characters). With no configured token, production setup refuses every request; there is no default token. Setup is serialized so concurrent requests cannot create two owners. Remove the token from the runtime environment after bootstrap and keep the owner password in a password manager.
 
@@ -88,7 +98,7 @@ Use **Settings → Change password** to replace your application password. You m
 2. **Add a prospect.** Supply a name, an HTTPS source link, context, and the consent status you actually know. An `unknown` or `contextual` status is recorded information, not an automated determination of permission.
 3. **Create a template.** Supported body placeholders are `{name}`, `{organization}`, `{campaign}`, and `{notes}`. Unsupported fields are rejected. Subjects are copied as entered; substitution applies to the body.
 4. **Create a draft in the review queue.** Select a campaign, prospect, and template. The database permits one draft per campaign/prospect pair.
-5. **Review and edit.** Check the source and recipient context, then save explicitly. The 0–100 quality score flags missing personalization, short/long text, promotional wording, and missing decline language. It is an English-oriented heuristic, not AI, permission to send, or a success probability.
+5. **Review and edit.** Check the source and recipient context, then save explicitly. The 0–100 quality score flags missing personalization, short/long text, promotional wording, and missing decline language using a small English/Dutch phrase heuristic. It is not language understanding, AI, permission to send, or a success probability.
 6. **Approve.** Confirm authorized source, personalized message, policy review, and understanding that sending is manual. Unsaved edits block approval; saving resets the checks. The backend binds approval to the exact saved subject/body and rejects a stale view if another editor changed it. Owner/admin/editor roles can approve their own drafts; a second reviewer is not enforced.
 7. **Activate the campaign and prepare the handoff.** The backend checks approval, campaign status, workspace pause, prospect status, provider hostname, limits, cooldown, and an idempotency key. Daily limits count prepared handoffs on the UTC date, including later cancellations, rather than confirmed sends.
 8. **Perform any external action yourself.** Copy the approved text, open the provider if appropriate, and send manually there. Copy/open recheck the current handoff permission. Opening navigates the same browser tab; use Back to return and recover the handoff. A page refresh does not imply a send or prepare a second handoff.
@@ -583,6 +593,8 @@ The README publication at `571ec0d` also passed [both main CI jobs](https://gith
 
 That loading/retry improvement is published through [PR #88](https://github.com/Robert-Velhorst/022-Simbi-Reach-out/pull/88), merged without conflicts at `b7f5af1`. [Source CI](https://github.com/Robert-Velhorst/022-Simbi-Reach-out/actions/runs/36786160695) and [PR CI](https://github.com/Robert-Velhorst/022-Simbi-Reach-out/actions/runs/36786178690) both passed Linux and Windows at `b5a5174`, including dependency audits, browser acceptance, container runtime and standalone package checks. The merged file tree was verified identical to that tested source and no open PRs remained. Consult commit-specific Actions for later main/documentation checks; this is incremental evidence, not completion of the full goal.
 
+The English/Dutch increment passes106 backend tests and111 frontend tests, Ruff/ESLint and the production build. Local Chromium acceptance includes Dutch setup and operational workflow, preserved data/review checks, real browser language persistence and cross-tab open-form preservation. Selected automated WCAG scans in both languages report zero violations. The [language guide](docs/LOCALIZATION.md) and [readiness ledger](docs/PRODUCTION_READINESS.md#englishdutch-personal-workflow-2026-10-01) distinguish interface coverage from untranslated authored content/technical diagnostics and remaining production gates. The older pre-localization executable is not evidence of this interface; rebuild or use an artifact from this increment's successful Windows CI.
+
 A separate authorized live check on2026-09-05 used a fresh fictional workspace to open the real public Simbi homepage through the app's Open provider button, then use browser Back, recover the same handoff and record Not sent. The exact handoff was revalidated before navigation; opening the page did not mark it sent. External writes were blocked by the test browser, and no Simbi login, clipboard copy or messaging was attempted. This is dated public-navigation acceptance, not authenticated provider or delivery proof, and it is not part of routine CI. See [A29 and its observed limitations](docs/ACCEPTANCE_TESTS.md#a29-operator-procedure-and-observed-result).
 
 The interface changes were also packaged separately on Windows on2026-09-05, before publication. That executable passed isolated readiness, frontend-serving, backup and shutdown checks. Desktop browser checks against it verified the then-current JS/CSS bytes, owner setup, campaign persistence, native-dialog initial focus and viewer restrictions. This was a local build using existing dependencies, not a signed installer, fresh-machine installation or new GitHub release. Historical artifact hashes and limitations are recorded in the [Windows package acceptance evidence](docs/PRODUCTION_READINESS.md#current-tree-windows-package-acceptance-2026-09-05-uncommitted); the ledger's October1 dependency-refresh section identifies the newer verified bundle.
@@ -612,7 +624,7 @@ docker compose config --quiet
 docker compose -f compose.production.yaml --env-file .env.production.example config --quiet
 ```
 
-Build before `test:e2e:run`; it does not build automatically. Linux CI uses browser installation with `--with-deps`. Browser tests use port 4173 and recreate `.e2e-runtime`; the benchmark recreates `.benchmark-runtime`; backend tests use `backend/tests/.runtime`. Keep real data out of test folders and avoid concurrent suites sharing their fixture storage.
+Build before `test:e2e:run`; it does not build automatically. Linux CI uses browser installation with `--with-deps`. Browser tests default to port4173; set `SIMBI_E2E_PORT` to an unused port1024–65535 if necessary. Each browser run gets a new `.e2e-runtime/run-*` folder and preserves prior runs. The benchmark recreates `.benchmark-runtime`; backend tests use `backend/tests/.runtime`. Keep real data out of test folders and avoid concurrent suites sharing their fixture storage.
 
 Linux CI includes lint, tests, dependency audits, build, capacity checks, browser acceptance, a source guard, Docker build, Compose validation, worker lifecycle checks, and container readiness. Windows CI checks launcher/worker process contracts, builds the package, runs an isolated executable smoke, and uploads the artifact. The local `verify.ps1` does not itself build/launch-test the executable or perform a clean container build: run the separate smoke scripts or inspect commit-specific CI. Neither local checks nor CI prove live ngrok, public-domain, receiving-side HAI, or provider acceptance.
 
@@ -650,8 +662,8 @@ Indexes, bounded API lists, compiled assets, and one maintenance loop keep the a
 - No managed hosting, signed installer, automatic updates, Windows service, or live public-domain/ngrok/HAI acceptance supplied by the repository itself.
 - No remote password reset, MFA/SSO, invitation email, workspace provisioning, member removal, or role-change workflows. Offline owner recovery is limited to a local personal installation; wider hosting still requires additional account administration.
 - Pagination does not establish large-scale simultaneous-user capacity. SQLite remains a single-host design; measure your workload and preserve the single-worker constraint.
-- Templates have a version field but no editing/history workflow. Prospect and campaign metadata editing is limited. Autosave and translation catalogs are absent.
-- Review scoring uses English text checks and does not enforce a minimum approval score. Recorded consent is not provider-verified.
+- Templates have a version field but no editing/history workflow. Prospect and campaign metadata editing is limited. Autosave is absent.
+- English/Dutch interface catalogs exist; authored content, CLI/output diagnostics and linked documentation are not automatically translated. Review scoring recognizes a limited set of English/Dutch phrases and does not enforce a minimum approval score. Recorded consent is not provider-verified.
 - A retained restriction matches the normalized provider/source URL, not every possible alias for a person. The app cannot prevent contact made directly outside it; never use an old copied message to resume contact after an opt-out.
 - General personal-data retention, encryption at rest, cryptographic audit integrity, and multi-host database/worker coordination are absent.
 - The HAI snapshot is bounded, has no deletion events or two-way sync, and needs receiving-side configuration.

@@ -69,16 +69,19 @@ def assess_message(body: str, prospect: dict[str, Any]) -> tuple[int, list[str]]
     if len(body) > 1500:
         score -= 15
         flags.append("too_long")
-    if not any(word in normalized for word in ("request", "project", "offer", "service", "help")):
+    if not any(word in normalized for word in (
+        "request", "project", "offer", "service", "help",
+        "verzoek", "aanbod", "dienst", "hulp", "vraag",
+    )):
         score -= 15
         flags.append("missing_context")
-    if re.search(r"\b(buy now|limited time|guaranteed|act now)\b", normalized):
+    if re.search(r"\b(buy now|limited time|guaranteed|act now|koop nu|beperkte tijd|gegarandeerd|handel nu)\b", normalized):
         score -= 30
         flags.append("promotional_pressure")
     if body.count("!") > 2:
         score -= 10
         flags.append("excessive_punctuation")
-    if not re.search(r"\b(no thanks|not interested|do not contact|opt out)\b", normalized):
+    if not re.search(r"\b(no thanks|not interested|do not contact|opt out|nee bedankt|geen interesse|niet geïnteresseerd|geen contact|niet contacteren|afmelden)\b", normalized):
         score -= 10
         flags.append("missing_easy_decline")
     return max(0, score), flags

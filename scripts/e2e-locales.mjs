@@ -1,0 +1,171 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+
+const nl = JSON.parse(readFileSync(new URL('../frontend/src/locales/nl.json', import.meta.url), 'utf8'))
+const t = (key) => {
+  if (!Object.hasOwn(nl, key)) throw new Error(`Missing Dutch browser-test key: ${key}`)
+  return nl[key]
+}
+
+export async function bilingualWorkflow(page, origin, runtime) {
+  const picker = () => page.getByRole('combobox', { name: 'Language / Taal' })
+  const nav = async (label) => { await page.getByRole('link', { name: t(label), exact: true }).click(); await page.waitForLoadState('networkidle') }
+  const button = (label) => page.getByRole('button', { name: t(label), exact: true })
+  const snapshots = await (await page.request.get(`${origin}/api/export`)).json()
+  await picker().selectOption('nl')
+  await page.reload({ waitUntil: 'networkidle' })
+  if (await page.locator('html').getAttribute('lang') !== 'nl' || await picker().inputValue() !== 'nl') throw new Error('Dutch preference did not survive reload')
+  const afterSwitch = await (await page.request.get(`${origin}/api/export`)).json()
+  // Exports contain a generated timestamp; compare actual stored table records.
+  const storedTables = ['campaigns', 'prospects', 'templates', 'drafts', 'handoffs', 'replies', 'reminders', 'suppressions', 'audit_events']
+  for (const table of storedTables) {
+    if (!Array.isArray(snapshots[table]) || JSON.stringify(snapshots[table]) !== JSON.stringify(afterSwitch[table])) throw new Error(`Language change altered stored ${table} records`)
+  }
+
+  for (const [route, heading] of [['Overview', 'Good morning,'], ['Prospects', 'Prospects'], ['Campaigns', 'Campaigns'], ['Templates', 'Templates'], ['Review queue', 'Review queue'], ['Replies', 'Replies'], ['Reminders', 'Reminders'], ['Reports', 'Reports'], ['Audit log', 'Audit log'], ['Settings', 'Settings & safety']]) {
+    await nav(route)
+    await page.getByRole('heading', { name: new RegExp(t(heading).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) }).first().waitFor()
+  }
+  await page.getByText(t('Simbi\'s current terms prohibit unsolicited messages, harvesting, scraping, automated searches and automated agents. Re-check policy before each operational launch.')).waitFor()
+  await page.getByRole('link', { name: t('Export workspace JSON'), exact: true }).waitFor()
+  await page.getByRole('link', { name: t('Help'), exact: true }).click()
+  await page.getByText(t('Manual means manual'), { exact: true }).waitFor()
+
+  await nav('Campaigns')
+  await button('New campaign').click()
+  let dialog = page.getByRole('dialog')
+  await dialog.locator('[name=name]').fill('Nederlandse fictieve QA-campagne')
+  await dialog.locator('[name=purpose]').fill('Alleen lokale acceptatie; geen echte benadering.')
+  await dialog.locator('[name=lawful_basis]').fill('Fictieve gegevens voor een geïsoleerde test.')
+  await dialog.getByRole('button', { name: t('Create draft campaign'), exact: true }).click()
+  await dialog.waitFor({ state: 'hidden' })
+  await page.locator('.resource-row').filter({ hasText: 'Nederlandse fictieve QA-campagne' }).getByRole('button', { name: t('Activate'), exact: true }).click()
+
+  await nav('Prospects')
+  await button('Add prospect').click()
+  dialog = page.getByRole('dialog')
+  await dialog.locator('[name=name]').fill('Robin fictieve QA')
+  await dialog.locator('[name=source_url]').fill('https://simbi.com/never-send-nl-qa')
+  await dialog.locator('[name=consent_status]').selectOption('consented')
+  await dialog.locator('[name=notes]').fill('Original English note $& {name} — niet vertalen')
+  // A native dialog makes the topbar inert. A real sibling-tab change exercises
+  // the storage event without bypassing modal controls or discarding the form.
+  const sibling = await page.context().newPage()
+  const siblingErrors = []
+  sibling.on('pageerror', (error) => siblingErrors.push(error.message))
+  sibling.on('console', (message) => { if (message.type() === 'error') siblingErrors.push(message.text()) })
+  try {
+    await sibling.goto(origin, { waitUntil: 'networkidle' })
+    await sibling.getByRole('combobox', { name: 'Language / Taal' }).selectOption('en')
+    await dialog.getByRole('heading', { name: 'Add prospect' }).waitFor()
+    if (await dialog.locator('[name=notes]').inputValue() !== 'Original English note $& {name} — niet vertalen') throw new Error('Other-tab locale change discarded unsaved form data')
+    await sibling.getByRole('combobox', { name: 'Language / Taal' }).selectOption('nl')
+    await dialog.getByRole('heading', { name: t('Add prospect') }).waitFor()
+  } finally { await sibling.close() }
+  if (siblingErrors.length) throw new Error(`Other-tab browser errors: ${siblingErrors.join('; ')}`)
+  await dialog.getByRole('button', { name: t('Add prospect'), exact: true }).click()
+  await dialog.waitFor({ state: 'hidden' })
+
+  await nav('Templates')
+  await button('New template').click()
+  dialog = page.getByRole('dialog')
+  await dialog.getByText('{name}', { exact: false }).first().waitFor()
+  const templateBody = 'Hallo {name}, ik las je verzoek om hulp met {campaign}. {notes}\n\nNee bedankt is prima. Dit is alleen een fictieve lokale test, geen echt bericht.'
+  await dialog.locator('[name=name]').fill('Nederlands QA-sjabloon')
+  await dialog.locator('[name=subject]').fill('FICTIEVE QA — NOOIT VERSTUREN')
+  await dialog.locator('[name=body]').fill(templateBody)
+  await dialog.getByRole('button', { name: t('Create template'), exact: true }).click()
+  await dialog.waitFor({ state: 'hidden' })
+  await page.getByText(templateBody, { exact: true }).waitFor()
+
+  await nav('Review queue')
+  await button('Prepare draft').click()
+  dialog = page.getByRole('dialog')
+  await dialog.locator('[name=campaign_id]').selectOption({ label: 'Nederlandse fictieve QA-campagne (actief)' })
+  await dialog.locator('[name=prospect_id]').selectOption({ label: 'Robin fictieve QA' })
+  await dialog.locator('[name=template_id]').selectOption({ label: 'Nederlands QA-sjabloon' })
+  await dialog.getByRole('button', { name: t('Prepare draft'), exact: true }).click()
+  await dialog.waitFor({ state: 'hidden' })
+  await page.locator('.review-item').filter({ hasText: 'Robin fictieve QA' }).click()
+  const savedMessage = await page.locator('[name=body]').inputValue()
+  if (!savedMessage.includes('Original English note $& {name}') || !savedMessage.includes('Hallo Robin fictieve QA')) throw new Error('Dutch rendering rewrote source data or placeholders recursively')
+  for (const check of await page.locator('.approval-box input[type=checkbox]').all()) await check.check()
+  await picker().selectOption('en')
+  if (await page.locator('.approval-box input:checked').count() !== 4 || await page.locator('[name=body]').inputValue() !== savedMessage) throw new Error('Locale switch changed saved message or review checks')
+  await picker().selectOption('nl')
+  await button('Approve for handoff').click()
+  await button('Copy and open provider').click()
+  dialog = page.getByRole('dialog', { name: t('Manual provider handoff') })
+  await dialog.waitFor()
+  await dialog.getByText(t('The app has not sent anything. Verify what happened on the provider before recording an outcome; do not send again blindly.')).waitFor()
+  const approved = await dialog.getByLabel(t('Approved message')).inputValue()
+  if (!approved.includes(savedMessage)) throw new Error('Dutch handoff changed approved content')
+  await page.screenshot({ path: join(runtime, 'dutch-handoff-desktop.png'), fullPage: false })
+  await page.setViewportSize({ width: 390, height: 450 })
+  const bounds = await dialog.evaluate((element) => { const rect = element.getBoundingClientRect(); return { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, width: innerWidth, height: innerHeight } })
+  if (bounds.left < -1 || bounds.top < -1 || bounds.right > bounds.width + 1 || bounds.bottom > bounds.height + 1) throw new Error('Dutch handoff overflowed short mobile viewport')
+  await page.screenshot({ path: join(runtime, 'dutch-handoff-short-mobile.png'), fullPage: false })
+  await dialog.getByRole('button', { name: t('Not sent'), exact: true }).click()
+  await dialog.waitFor({ state: 'hidden' })
+  await page.setViewportSize({ width: 1440, height: 1000 })
+
+  await nav('Reminders')
+  await button('New reminder').click()
+  dialog = page.getByRole('dialog')
+  await dialog.locator('[name=draft_id]').selectOption({ label: 'Robin fictieve QA — Nederlandse fictieve QA-campagne' })
+  await dialog.locator('[name=title]').fill('Nederlandse QA-herinnering — geen verzending')
+  await dialog.locator('[name=due_at]').fill('2026-10-02T14:30')
+  await dialog.getByRole('button', { name: t('Create reminder'), exact: true }).click()
+  await dialog.waitFor({ state: 'hidden' })
+  await page.getByText('Nederlandse QA-herinnering — geen verzending', { exact: true }).waitFor()
+
+  // Explicitly fictional uncertainty/reply fixtures exercise local bookkeeping,
+  // never delivery. A fresh handoff remains separate from the cancelled one.
+  // Do not bypass the cancelled contact's cooldown. Use another fictional record.
+  await nav('Prospects')
+  await button('Add prospect').click()
+  dialog = page.getByRole('dialog')
+  await dialog.locator('[name=name]').fill('Noor fictieve QA')
+  await dialog.locator('[name=source_url]').fill('https://simbi.com/never-send-nl-reply-qa')
+  await dialog.locator('[name=consent_status]').selectOption('consented')
+  await dialog.getByRole('button', { name: t('Add prospect'), exact: true }).click()
+  await dialog.waitFor({ state: 'hidden' })
+  await nav('Review queue')
+  await button('Prepare draft').click()
+  dialog = page.getByRole('dialog')
+  await dialog.locator('[name=campaign_id]').selectOption({ label: 'Nederlandse fictieve QA-campagne (actief)' })
+  await dialog.locator('[name=prospect_id]').selectOption({ label: 'Noor fictieve QA' })
+  await dialog.locator('[name=template_id]').selectOption({ label: 'Nederlands QA-sjabloon' })
+  await dialog.getByRole('button', { name: t('Prepare draft'), exact: true }).click()
+  await dialog.waitFor({ state: 'hidden' })
+  await page.locator('.review-item').filter({ hasText: 'Noor fictieve QA' }).click()
+  for (const check of await page.locator('.approval-box input[type=checkbox]').all()) await check.check()
+  await button('Approve for handoff').click()
+  await button('Copy and open provider').click()
+  dialog = page.getByRole('dialog')
+  await dialog.getByRole('button', { name: t('Unsure — needs verification'), exact: true }).click()
+  await dialog.waitFor({ state: 'hidden' })
+
+  await nav('Replies')
+  await button('Record reply').click()
+  dialog = page.getByRole('dialog')
+  await dialog.locator('[name=draft_id]').selectOption({ label: 'Noor fictieve QA — Nederlandse fictieve QA-campagne (onzeker)' })
+  await dialog.locator('[name=body]').fill('Fictieve Nederlandse QA-reactie; geen bewijs van platformgebruik.')
+  await dialog.getByRole('button', { name: t('Record reply'), exact: true }).click()
+  await dialog.waitFor({ state: 'hidden' })
+  await page.getByText('Fictieve Nederlandse QA-reactie; geen bewijs van platformgebruik.').waitFor()
+  await nav('Reports')
+  await page.getByRole('row').filter({ hasText: 'Nederlandse fictieve QA-campagne' }).waitFor()
+  await nav('Audit log')
+  await page.getByText(t('handoff cancelled'), { exact: true }).first().waitFor()
+  await nav('Overview')
+  await page.getByText(t('Loading {resource}…').replace('{resource}', t('overview')), { exact: true }).waitFor({ state: 'hidden' })
+  await page.locator('.dashboard-grid').waitFor()
+  await page.screenshot({ path: join(runtime, 'dutch-desktop.png'), fullPage: true })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.reload({ waitUntil: 'networkidle' })
+  const layout = await page.evaluate(() => ({ width: innerWidth, scroll: document.documentElement.scrollWidth }))
+  if (layout.scroll > layout.width + 1) throw new Error('Dutch overview has horizontal overflow')
+  await page.screenshot({ path: join(runtime, 'dutch-mobile.png'), fullPage: true })
+  await page.setViewportSize({ width: 1440, height: 1000 })
+}

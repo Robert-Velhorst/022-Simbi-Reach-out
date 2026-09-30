@@ -1,6 +1,6 @@
-import { render, screen } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Member } from '../types'
 import Dashboard from './Dashboard'
 
@@ -18,7 +18,21 @@ const member: Member = {
   demo_mode: false,
 }
 
+afterEach(() => { cleanup(); vi.unstubAllGlobals() })
+
 describe('dashboard', () => {
+  it('labels the open-reminder preview accurately even when none is due yet', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      counts: { reviews: 0, due: 0, replies: 0, prospects: 0 },
+      queue: [], campaigns: [], events: [],
+      reminders: [{ id: 1, title: 'Future reminder', due_at: '2099-01-01T12:00:00Z', status: 'open' }],
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } })))
+    render(<MemoryRouter><Dashboard member={member} /></MemoryRouter>)
+    expect(await screen.findByText('Future reminder')).toBeVisible()
+    expect(screen.getByRole('heading', { name: 'Open reminders' })).toBeVisible()
+    expect(screen.getByText(/0 reminders due/)).toBeVisible()
+    expect(screen.queryByRole('heading', { name: 'Due reminders' })).not.toBeInTheDocument()
+  })
   it('renders truthful empty operational state', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
       counts: { reviews: 0, due: 0, replies: 0, prospects: 0 },
