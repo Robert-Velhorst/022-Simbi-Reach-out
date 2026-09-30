@@ -2,6 +2,8 @@
 
 ## 2026-10-01 — English/Dutch personal workflow
 
+- Published through PR89 after source36789544913 and PR36789594274 both passed Linux/Windows atcac4439. Merged without conflicts atf387f1d; source/merged trees verified identical, no open PRs remain. README publication evidence is updated afterward; main/documentation CI is a separate run, not assumed complete.
+
 - Confirmed prior main merge/documentation CI success atb7f5af1/1c75899, preserved the personal-owner scope and existing records/legacy archive. Added explicit typed501-key catalogs and local browser preference; translated interface and known code/error/date labels without translating record content or changing API/CSV/template identifiers.
 - Added bounded Dutch quality phrases and catalog/state/static-text regressions. Backend106 tests/Ruff pass; actual Chromium bilingual workflows, language persistence, cross-tab modal preservation, export equality and both-locale selected WCAG checks pass. Found and repaired the Playwright convenience-context restriction, Node25 unit-storage shadowing and query/import-format issues.
 - Screenshot inspection prompted wrapping for long Dutch safety labels and a truthful Open reminders label for the API's all-open preview. Final111 frontend tests/lint/build and complete bilingual Chromium rerun pass;61 relative documentation links/anchors checked. Publication follows exact-revision CI. No real prospect, provider account, message, credential rotation or shared history was changed. Broader privacy/manual-provider/accessibility acceptance remains open.
