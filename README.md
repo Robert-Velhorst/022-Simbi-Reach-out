@@ -62,7 +62,7 @@ For example, you might have permission to respond to someone's request for proje
 | Reports | Current draft-state counts and campaign average quality, based on local records. No provider open rates or delivery analytics. |
 | Safety controls | Compliance acknowledgement, provider-host matching, opt-out recording, and a stop for new approvals/handoffs. |
 | Team | Local owner, admin, editor, and viewer accounts. |
-| Data operations | Workspace JSON export, diagnostic output, API prospect deletion, CLI backup/restore/reconciliation/retention cleanup. |
+| Data operations | Workspace JSON export, diagnostics, owner-only previewed contact/history cleanup with verified recovery copy and retry receipts, CLI backup/restore/reconciliation/limited operational cleanup. |
 | Deployment | Docker, Windows package building, temporary ngrok access, Caddy TLS deployment, and optional HAI feed export. |
 | Languages | English/Dutch interface selection before sign-in and in the application, including forms, safety instructions, statuses, notices and dates. Stored content is not translated. |
 
@@ -142,7 +142,9 @@ The default text limit is 1 MiB of UTF-8 data, with a separate 5,000-row maximum
 | Review, prepare handoffs, record outcomes/replies, manage reminders and opt-outs | Yes | Yes | No |
 | Compliance, provider settings, workspace pause/resume | Yes | No | No |
 | Add local members | Yes | No | No |
-| JSON export, support data, API prospect deletion | Yes | No | No |
+| JSON export, support data | Yes | No | No |
+
+Personal cleanup/retention preferences are **owner-only**; admins can export diagnostics/workspace records but cannot remove personal history. Direct API deletion no longer bypasses the preview/password/backup path.
 
 The backend enforces access even where a restricted role still sees a control in the interface. The first account is owner; new members can be admin, editor, or viewer. Email is a login identifier, not an invitation service. Authenticated password change and offline personal-owner recovery are available. Member removal and role editing are not exposed workflows.
 
@@ -438,13 +440,17 @@ Provider URLs must use HTTPS, have no embedded credentials or unsupported ports,
 
 ### Different data operations have different scopes
 
+For personal history cleanup, open **Settings → Privacy & cleanup** as the owner. Save an inactive-history preference (30–3650 days), choose old closed history or search/select one contact, then inspect the exact names and counts. Nothing is removed until you review that preview, acknowledge the consequences and enter your local app password. A verified recovery copy is required before removal; failed backups and stale/expired previews fail closed. The same completed preview can be retried safely, and **Check cleanup receipts** recovers recent results after reload. This never deletes anything on Simbi.
+
+Age-based cleanup only includes old contacts whose linked campaigns are archived, with no recent activity, open reminders or pending/uncertain handoffs. Batches remove at most50 contacts; scans exceeding1000 old contacts are rejected. Individual removal includes all the selected contact's local conversation/reminder history but still requires resolving uncertain handoffs first. Both paths retain do-not-contact identities, preventing removal/re-import from bypassing safety history. Campaigns, templates, audit, old exports/backups and HAI copies remain: this is not anonymization or secure erasure. Full scope, errors and recovery caveats are in the [personal cleanup guide](docs/PRIVACY_CLEANUP.md).
+
 | Operation | Scope |
 |---|---|
 | Workspace JSON export | Campaigns, prospects, templates, drafts, handoffs, replies, reminders, suppressions, and audit for the workspace. Personal content is included; account credentials are not. No JSON restore endpoint exists. |
 | SQLite backup | Entire database, including account/session data and all workspaces; protect it accordingly. |
 | Support data | Defined diagnostic counts, migrations, event types/times; message bodies and direct personal identifiers are excluded from that output. Review before sharing. |
-| Prospect deletion | Owner/admin API action; related records cascade per schema. Suppression identifiers remain for opt-out history. |
-| Retention purge | Deletes old `analytics_events` and expired sessions only. It does not erase prospects, messages, replies, audit events, or suppressions. |
+| Personal cleanup | Settings → Privacy & cleanup: owner-only contact/conversation removal after exact preview, password reauthentication and verified backup. Choose old closed history or one contact. Durable do-not-contact identities remain; unrelated campaigns/templates/audit and external copies are not erased. |
+| CLI retention purge | Deletes old `analytics_events` and expired sessions only, using the installation environment setting. This differs from the workspace's owner-controlled personal cleanup preference. |
 
 Opt-out handling marks the existing prospect `opted_out`, records a durable suppression, suppresses drafts except those already replied/suppressed, and cancels pending handoffs/open reminders. Creation/import rechecks retained restrictions, including after deletion. Intake restrictions are persisted even for duplicate CSV records. Approval, preparation and recovery recheck the restriction rather than trusting a possibly inconsistent prospect status. Restrictions identify the normalized provider/source URL; operators must still recognize alternate URLs belonging to the same person.
 
@@ -558,7 +564,8 @@ Authenticated requests use the `simbi_session` cookie. After setup/login, send t
 | `/api/auth/password` | POST current/new password; successful change revokes all sessions and requires sign-in again. |
 | `/api/overview` | GET dashboard data. |
 | `/api/campaigns`, `/api/campaigns/{id}/status` | GET/POST campaigns; PATCH status. |
-| `/api/prospects`, `/api/prospects/import`, `/api/prospects/{id}` | GET/POST prospects; POST import; owner/admin DELETE. |
+| `/api/prospects`, `/api/prospects/import`, `/api/prospects/{id}` | GET/POST prospects; POST import. Direct owner DELETE now requires the privacy preview/confirmation path and returns409 for an owned record. |
+| `/api/settings/retention`, `/api/privacy/preview`, `/api/privacy/confirm`, `/api/privacy/receipts` | Owner-only retention preference and bounded, exact-preview cleanup; CSRF writes, password-gated confirmation, verified backup and retry receipts. |
 | `/api/templates` | GET/POST; no template-update endpoint. |
 | `/api/drafts`, `/api/drafts/{id}` | GET/POST drafts; PATCH draft text. |
 | `/api/drafts/{id}/review`, `/api/drafts/{id}/handoff` | POST review and handoff preparation. |
@@ -576,6 +583,8 @@ Campaign/prospect/template list APIs support `limit`, `offset`, `search`, and al
 Handled app errors return `error.code`, `error.message`, `error.details`, and `error.request_id`. Common responses include 409 for state/duplicate conflicts, 422 for validation, 401/403 for authentication/access/CSRF, and 429 for throttling/limits. Framework/proxy failures may use another response shape. Include a redacted request ID when reporting issues. See the running schema/source for exact fields and the [API usage audit](docs/API_USAGE_AUDIT.md) for existing consumer/test mappings. No endpoint sends an external message.
 
 ## Verification and performance
+
+The2026-10-01 personal-cleanup increment adds owner-controlled exact-preview/history removal, recovery snapshots and receipts. Local proof covers136 backend tests (30 privacy cases),120 frontend tests, lint/build and the full bilingual Chromium workflow, including backup/rollback/permissions/stale plans, cancel/focus, short-mobile dialog bounds, fictional-contact removal and receipt recovery. Selected accessibility scans and unexpected browser errors are zero. The [cleanup guide](docs/PRIVACY_CLEANUP.md) explains retained identifiers/external copies and the [current ledger](docs/PRODUCTION_READINESS.md#personal-cleanup-acceptance-2026-10-01) records exact evidence, publication and remaining gates. This is not whole-project completion or proof of real provider delivery.
 
 Use [commit-specific Actions results](https://github.com/Robert-Velhorst/022-Simbi-Reach-out/actions/workflows/ci.yml) for current checks. The [2026-08-09 verification report](docs/FINAL_VERIFICATION_REPORT.md) records earlier tests, browser runs, container and Windows executable startup, and a fresh-clone exercise. These are dated results, not a promise that dependencies or deployment conditions remain unchanged.
 
@@ -667,7 +676,7 @@ Indexes, bounded API lists, compiled assets, and one maintenance loop keep the a
 - Templates have a version field but no editing/history workflow. Prospect and campaign metadata editing is limited. Autosave is absent.
 - English/Dutch interface catalogs exist; authored content, CLI/output diagnostics and linked documentation are not automatically translated. Review scoring recognizes a limited set of English/Dutch phrases and does not enforce a minimum approval score. Recorded consent is not provider-verified.
 - A retained restriction matches the normalized provider/source URL, not every possible alias for a person. The app cannot prevent contact made directly outside it; never use an old copied message to resume contact after an opt-out.
-- General personal-data retention, encryption at rest, cryptographic audit integrity, and multi-host database/worker coordination are absent.
+- Contact/conversation cleanup is owner-controlled and backed up; full account/workspace deletion, campaign/template deletion, audit-content retention/redaction, external-copy cleanup and long-term archival acceptance remain incomplete. Encryption at rest, cryptographic audit integrity and multi-host database/worker coordination are absent.
 - The HAI snapshot is bounded, has no deletion events or two-way sync, and needs receiving-side configuration.
 - A dedicated screen-reader and broader accessibility review remains outstanding.
 - Historical credentials remain in Git history until owner rotation and a separately coordinated cleanup are completed.

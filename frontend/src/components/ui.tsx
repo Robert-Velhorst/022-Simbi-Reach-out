@@ -54,7 +54,7 @@ export function EmptyState({ title, detail, action }: { title: string; detail: s
   return <div className="empty"><h3>{title}</h3><p>{detail}</p>{action}</div>
 }
 
-export function Modal({ title, children, onClose, returnFocusRef }: { title: string; children: ReactNode; onClose: () => void; returnFocusRef?: RefObject<HTMLElement | null> }) {
+export function Modal({ title, children, onClose, returnFocusRef, closeDisabled = false }: { title: string; children: ReactNode; onClose: () => void; returnFocusRef?: RefObject<HTMLElement | null>; closeDisabled?: boolean }) {
   const { t } = useI18n()
   const dialogRef = useRef<HTMLDialogElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
@@ -94,7 +94,7 @@ export function Modal({ title, children, onClose, returnFocusRef }: { title: str
         const bounds = event.currentTarget.getBoundingClientRect()
         if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) onClose()
       }}>
-      <header><h2 id={titleId}>{title}</h2><button ref={closeRef} type="button" className="icon-button" onClick={onClose} aria-label={t("Close")}><X size={20} /></button></header>
+      <header><h2 id={titleId}>{title}</h2><button ref={closeRef} type="button" className="icon-button" onClick={onClose} disabled={closeDisabled} aria-label={t("Close")}><X size={20} /></button></header>
       {children}
     </dialog>
   )

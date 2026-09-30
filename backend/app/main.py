@@ -19,6 +19,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
+from . import privacy
 from .config import ROOT, settings
 from .db import (
     audit,
@@ -85,6 +86,21 @@ class LoginBody(StrictModel):
 class PasswordBody(StrictModel):
     current_password: str = Field(min_length=1, max_length=200)
     new_password: str = Field(min_length=12, max_length=200)
+
+
+class RetentionBody(StrictModel):
+    retention_days: int = Field(ge=30, le=3650)
+
+
+class CleanupPreviewBody(StrictModel):
+    kind: Literal["retention", "prospect"]
+    prospect_id: int | None = Field(default=None, ge=1)
+
+
+class CleanupConfirmBody(StrictModel):
+    plan_id: str = Field(pattern=r"^[a-f0-9]{32}$")
+    current_password: str = Field(min_length=1, max_length=200)
+    confirmed: Literal[True]
 
 
 class CampaignBody(StrictModel):
@@ -887,29 +903,12 @@ def import_prospects(body: ImportBody, member: Member):
 
 @app.delete("/api/prospects/{prospect_id}")
 def delete_prospect(prospect_id: int, member: Member):
-    require_role(member, "owner", "admin")
+    require_role(member, "owner")
     with transaction() as connection:
-        record = owned(connection, "prospects", prospect_id, member["workspace_id"])
-        if record["consent_status"] in {"opted_out", "blocked"}:
-            persist_intake_restriction(
-                connection,
-                member,
-                prospect_id,
-                record["provider"],
-                record["source_url"],
-                record["consent_status"],
-            )
-        connection.execute("DELETE FROM prospects WHERE id=?", (prospect_id,))
-        audit(
-            connection,
-            member["workspace_id"],
-            member["user_id"],
-            "prospect.deleted",
-            "prospect",
-            prospect_id,
-            {"provider": record["provider"]},
-        )
-    return {"status": "deleted"}
+        owned(connection, "prospects", prospect_id, member["workspace_id"])
+    raise AppError(
+        409, "privacy_preview_required", "Create a new cleanup preview before confirming"
+    )
 
 
 @app.get("/api/templates")
@@ -1659,6 +1658,92 @@ def get_settings(member: Member):
         "environment": settings.environment,
         "demo_mode": settings.demo_mode,
     }
+
+
+def require_current_owner(connection, request: Request, member: dict) -> None:
+    require_role(member, "owner")
+    row = connection.execute(
+        "SELECT m.role FROM memberships m JOIN sessions s ON s.user_id=m.user_id "
+        "WHERE m.workspace_id=? AND m.user_id=? AND s.token_hash=? AND s.expires_at>?",
+        (
+            member["workspace_id"],
+            member["user_id"],
+            token_hash(request.cookies.get(SESSION_COOKIE, "")),
+            now(),
+        ),
+    ).fetchone()
+    if not row or row["role"] != "owner":
+        raise AppError(403, "permission_denied", "Your role cannot perform this action")
+
+
+@app.post("/api/settings/retention")
+def update_retention(body: RetentionBody, request: Request, member: Member):
+    with transaction() as connection:
+        require_current_owner(connection, request, member)
+        connection.execute(
+            "UPDATE workspaces SET retention_days=? WHERE id=?",
+            (body.retention_days, member["workspace_id"]),
+        )
+        audit(
+            connection,
+            member["workspace_id"],
+            member["user_id"],
+            "privacy.retention_changed",
+            "workspace",
+            member["workspace_id"],
+            {"retention_days": body.retention_days},
+        )
+    return {"retention_days": body.retention_days, "automatic_personal_data_deletion": False}
+
+
+@app.post("/api/privacy/preview")
+def preview_cleanup(body: CleanupPreviewBody, request: Request, member: Member):
+    if (body.kind == "prospect") != (body.prospect_id is not None):
+        raise AppError(
+            422, "privacy_selection_invalid", "Choose either retention cleanup or one contact"
+        )
+    try:
+        with transaction() as connection:
+            require_current_owner(connection, request, member)
+            return privacy.preview(connection, member, body.kind, body.prospect_id)
+    except privacy.PrivacyError as exc:
+        raise AppError(exc.status, exc.code, exc.message) from exc
+
+
+@app.get("/api/privacy/receipts")
+def cleanup_receipts(request: Request, member: Member):
+    with transaction() as connection:
+        require_current_owner(connection, request, member)
+        rows = connection.execute(
+            "SELECT receipt_json FROM privacy_cleanup_plans WHERE workspace_id=? AND owner_id=? "
+            "AND receipt_json IS NOT NULL ORDER BY created_at DESC, id DESC LIMIT 10",
+            (member["workspace_id"], member["user_id"]),
+        ).fetchall()
+        return {"items": [json.loads(row["receipt_json"]) for row in rows]}
+
+
+@app.post("/api/privacy/confirm")
+def confirm_cleanup(body: CleanupConfirmBody, request: Request, member: Member):
+    require_role(member, "owner")
+    fingerprint = "privacy:" + login_fingerprint(request, member["email"])
+    enforce_login_limit(fingerprint)
+    try:
+        with transaction() as connection:
+            require_current_owner(connection, request, member)
+            user = connection.execute(
+                "SELECT password_hash FROM users WHERE id=?", (member["user_id"],)
+            ).fetchone()
+            if not user or not verify_password(body.current_password, user["password_hash"]):
+                raise AppError(403, "current_password_invalid", "The current password is incorrect")
+            receipt = privacy.execute(connection, member, body.plan_id)
+            connection.execute("DELETE FROM login_attempts WHERE fingerprint=?", (fingerprint,))
+            return receipt
+    except AppError as exc:
+        if exc.code == "current_password_invalid":
+            record_login_failure(fingerprint)
+        raise
+    except privacy.PrivacyError as exc:
+        raise AppError(exc.status, exc.code, exc.message) from exc
 
 
 @app.post("/api/settings/compliance")
