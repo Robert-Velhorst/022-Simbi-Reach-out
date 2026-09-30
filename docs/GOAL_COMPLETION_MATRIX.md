@@ -36,7 +36,7 @@ Scope clarification on 2026-09-05: the owner confirmed this is a personal tool f
 | 025 AI abstraction/fallback | Implemented | Deterministic renderer is the safe provider-independent default; no fake AI. |
 | 026 Human review/approval | Implemented | Four explicit checks, edit reset, role/compliance/pause guards. |
 | 027 Notifications/reminders | Implemented | User and worker reminders; no external notification claims. |
-| 028 Privacy/deletion | Partial | Export, prospect deletion, suppression and minimization exist. Retention CLI removes old analytics/expired sessions only; general personal-record retention remains missing. |
+| 028 Privacy/deletion | Partial | Owner-only contact/conversation cleanup now has exact preview, password/CSRF/session checks, verified backup, protected uncertainty/links, durable suppression and receipts. Account/workspace-wide erasure, campaign/template deletion, audit-content policy and external-copy cleanup remain incomplete. See PRIVACY_CLEANUP.md. |
 | 029 Web security | Implemented | CSP, HSTS, trusted hosts, sanitized request IDs, COOP/CORP, frame/MIME/referrer/permissions headers, CSRF and login throttling. |
 | 030 Secrets/rotation | Blocked | Current tree clean; pre-existing Git-history credential needs owner-coordinated rewrite/rotation. |
 | 031 One-command local dev | Implemented | Docker Compose and `scripts/dev.ps1`. |
@@ -110,7 +110,7 @@ Scope clarification on 2026-09-05: the owner confirmed this is a personal tool f
 | 099 Roadmap/blockers | Implemented | Exact remaining gaps listed here/final report. |
 | 100 Provider cleanup/account safety | Blocked | Provider password rotation/session review/history rewrite require owner actions. |
 | 101 Support bundle | Implemented | CLI/API redacted bundle and explicit test. |
-| 102 Retention/archive | Partial | Confirmed analytics/session cleanup and backup pruning exist. Configured retention is not a general purge of prospects, drafts, replies or audit content; that broader policy/workflow is unfinished. |
+| 102 Retention/archive | Partial | Workspace retention preference and bounded old/closed contact-history cleanup implemented; preview fixes exact targets and requires manual confirmation. CLI operational cleanup remains separate. Audit/external-copy policy, full deletion coverage and long-term archival acceptance remain unfinished. |
 | 103 Prototype-to-production | Partial | Production guards, packaging, recovery and deployment configuration exist. Actual intended deployment, operator acceptance, credential response and receiving-side HAI acceptance if enabled are not complete. |
 | 104 Safety stop | Implemented | Owner/admin pause blocks approval and handoff. |
 | 105 Onboarding | Implemented | First-owner setup and guided compliance next action. |

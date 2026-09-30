@@ -20,7 +20,11 @@ Intended operation: one personal workspace for the owner's own Simbi account (co
 - Record the exact external result. When unsure, choose **ambiguous**.
 - Record objections immediately with **Prospects → Stop contact** and a reason; never delete a suppression just to retry. Restrictions survive prospect deletion/re-import.
 
-## Emergency stop
+## Personal history cleanup
+
+Use **Settings → Privacy & cleanup** as the owner. Preview the exact contacts/history first; approve only after reading counts and retained-data warnings. Confirmation requires your local password and a verified recovery copy. Saving the retention preference or cancelling the dialog removes no personal records. Resolve pending/uncertain handoffs before removal. Retry the same preview after an interrupted response, or check recent receipts after reload. Restrictions survive deletion/re-import. Backups/exports/HAI/audit can still contain identifiers; this is not secure erasure. See [the complete cleanup procedure and API contract](PRIVACY_CLEANUP.md). No automated personal-record purge is enabled.
+
+## Emergency stop controls
 
 Settings -> Emergency safety stop blocks approvals and new handoffs while preserving local investigation, export, reply recording, and audit access. Resume only after the incident is understood and recorded.
 

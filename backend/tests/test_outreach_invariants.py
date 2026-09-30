@@ -4,7 +4,7 @@ import hashlib
 
 import pytest
 from app.db import fetch_one, transaction
-from conftest import csrf_headers, draft_hash, setup_owner
+from conftest import csrf_headers, draft_hash, remove_contact, setup_owner
 from test_critical_path import APPROVAL_CHECKS, create_foundation
 
 
@@ -117,7 +117,7 @@ def test_restriction_at_intake_survives_deletion(client, status, intake):
             == 200
         )
     prospect_id = client.get("/api/prospects").json()["items"][0]["id"]
-    assert client.delete(f"/api/prospects/{prospect_id}", headers=headers).status_code == 200
+    assert remove_contact(client, prospect_id).status_code == 200
     payload["consent_status"] = "consented"
     assert client.post("/api/prospects", headers=headers, json=payload).json()[
         "consent_status"
@@ -157,7 +157,7 @@ def test_legacy_intake_restriction_is_preserved_before_deletion(client, status):
         connection.execute(
             "UPDATE prospects SET consent_status=? WHERE id=?", (status, prospect_id)
         )
-    assert client.delete(f"/api/prospects/{prospect_id}", headers=headers).status_code == 200
+    assert remove_contact(client, prospect_id).status_code == 200
     payload["consent_status"] = "consented"
     assert (
         client.post("/api/prospects", headers=headers, json=payload).json()["consent_status"]
@@ -179,7 +179,7 @@ def test_deleted_opt_out_remains_blocked_when_recreated(client, intake):
         ).status_code
         == 201
     )
-    assert client.delete(f"/api/prospects/{prospect}", headers=headers).status_code == 200
+    assert remove_contact(client, prospect).status_code == 200
     if intake == "manual":
         response = client.post(
             "/api/prospects",

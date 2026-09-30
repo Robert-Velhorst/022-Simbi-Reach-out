@@ -11,7 +11,8 @@ All non-health endpoints below require an authenticated workspace member unless 
 | `GET /api/overview` | Dashboard | Frontend dashboard test and critical path. |
 | `GET/POST /api/campaigns` | Campaign page | Critical path. |
 | `PATCH /api/campaigns/{id}/status` | Campaign page | Compliance gate in critical path. |
-| `GET/POST/DELETE /api/prospects` | Prospect page/privacy deletion | Import, isolation, URL, suppression tests. |
+| `GET/POST /api/prospects`; deprecated `DELETE /api/prospects/{id}` | Prospect page; direct deletion rejects without privacy preview | Import/isolation/URL/suppression and bypass-rejection tests. |
+| `POST /api/settings/retention`; `POST /api/privacy/preview`, `/confirm`; `GET /api/privacy/receipts` | Owner-only Settings privacy controls | Exact plans, password/CSRF/current role/session, backup-before-delete, stale/uncertain protection, rollback/retry/receipt, workspace isolation and real bilingual browser fixtures. |
 | `POST /api/prospects/import` | Prospect CSV modal | Atomic preview/commit test. |
 | `GET/POST /api/templates` | Templates/review | Placeholder validation and critical path. |
 | `GET/POST/PATCH /api/drafts` | Review queue | Critical path, suppression and worker tests. |

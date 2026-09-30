@@ -4,6 +4,7 @@ import { createRequire } from 'node:module'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { bilingualWorkflow } from './e2e-locales.mjs'
+import { privacyWorkflow } from './e2e-privacy.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const require = createRequire(join(root, 'frontend', 'package.json'))
@@ -30,6 +31,7 @@ const server = spawn(python, [
     ...process.env,
     SIMBI_ENV: 'test',
     SIMBI_DATABASE_PATH: join(runtime, 'simbi-e2e.db'),
+    SIMBI_BACKUP_PATH: join(runtime, 'cleanup-backups'),
     SIMBI_FRONTEND_ORIGIN: origin,
     SIMBI_COOKIE_SECURE: 'false',
     SIMBI_ALLOWED_HOSTS: '127.0.0.1',
@@ -521,6 +523,8 @@ try {
   const dutchAccessibility = await page.evaluate(async () => window.axe.run(document, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] } }))
   if (dutchAccessibility.violations.length) throw new Error(`Dutch accessibility violations: ${JSON.stringify(dutchAccessibility.violations.map((item) => ({ id: item.id, nodes: item.nodes.map((node) => node.target) })))}`)
   await page.getByRole('combobox', { name: 'Language / Taal' }).selectOption('en')
+  await privacyWorkflow(page, origin, root, 'a different long QA password', axe)
+  await page.addScriptTag({ content: axe.source })
   const accessibility = await page.evaluate(async () => window.axe.run(document, {
     runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] },
   }))
@@ -545,6 +549,7 @@ try {
   if (browserErrors.length) throw new Error(`Browser errors:\n${browserErrors.join('\n')}`)
   process.stdout.write(`${JSON.stringify({
     critical_path: 'passed',
+    personal_cleanup_preview_cancel_backup_confirmation_and_receipt_recovery: 'passed in English and Dutch',
     dutch_workflow_and_language_persistence: 'passed',
     other_tab_language_switch_preserves_unsaved_modal: 'passed',
     language_switch_preserves_review_checks_and_authored_content: 'passed',
