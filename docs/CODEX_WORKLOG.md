@@ -13,6 +13,7 @@
 - With refreshed dependencies,96 backend and75 frontend tests, lint/build, frozen-lockfile install, full local Chromium acceptance, all5 launcher and3 worker contracts pass. Recorded the upstream Starlette/AnyIO deprecation warning.
 - Rebuilt a separate final Windows bundle with refreshed dependencies/assets. Executable startup/operator backup/restore smoke and desktop browser package checks pass; actual assets match the current build. Both old/new artifact hashes and evidence are in the ledger, and no pre-refresh test was claimed against the final bundle.
 - Original localization, broader retained-data controls/usability, authenticated manual provider acceptance and credential response remain incomplete. Publication is a verified increment, not completion of the full production goal.
+- Published source2093f4b in PR87. Both source-branch and PR Linux/Windows CI passed; merged without conflicts at321f75a and verified identical file trees. Local main was updated by fast-forward, the legacy archive was preserved, and no open PRs remained. README/checkpoints/ledger now record current publication rather than leaving an obsolete unpublished claim.
 
 ## 2026-08-08
 

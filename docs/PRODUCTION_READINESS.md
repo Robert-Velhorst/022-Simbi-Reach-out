@@ -2,6 +2,8 @@
 
 Objective: **Make it production-ready, go to Simbi.com if necessary to ensure the tool works.**
 
+Current publication (2026-10-01): the verified personal recovery, role/modal/session improvements, dependency refresh and README are merged through [PR87](https://github.com/Robert-Velhorst/022-Simbi-Reach-out/pull/87) at `321f75a2cb90f65f7661ec8db7c16bd1aac7c863`. [Push CI](https://github.com/Robert-Velhorst/022-Simbi-Reach-out/actions/runs/36783890826) and [PR CI](https://github.com/Robert-Velhorst/022-Simbi-Reach-out/actions/runs/36783911848) both succeeded in Linux and Windows at source `2093f4b35b801d8a46cc03e60c1b9f4592c8280d`; the merged file tree is identical. All open PRs were exhausted (none remained after merge). Dated “uncommitted/unpublished” statements below describe their earlier snapshots and are superseded by this publication record. The full production objective remains incomplete.
+
 ## Confirmed personal-use scope (2026-09-05)
 
 Robert resolved the deployment question: "Just my own, its a personal tool I use for my own account". Acceptance now targets his own Simbi account and one personal workspace. This owner instruction supersedes the earlier unresolved single-versus-multi-workspace discussion and shared-service assumptions below. It does not claim that missing shared-service features were implemented.
