@@ -4,29 +4,29 @@ import type { Page } from './types'
 
 // One bounded page at a time; obsolete searches must never replace newer results.
 export function usePage<T>(path: string) {
-  const [page, setPage] = useState<Page<T> | null>(null)
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [state, setState] = useState<{ path: string; page: Page<T> | null; error: string; loading: boolean }>({ path, page: null, error: '', loading: true })
   const request = useRef(0)
   const offset = useRef(0)
   const invalidate = useCallback(() => { request.current++ }, [])
   const load = useCallback(async (nextOffset = offset.current) => {
     const current = ++request.current
-    setLoading(true); setError('')
+    offset.current = nextOffset
+    setState((previous) => ({ path, page: previous.path === path ? previous.page : null, error: '', loading: true }))
     try {
       const result = await api<Page<T>>(`${path}${path.includes('?') ? '&' : '?'}limit=50&offset=${nextOffset}`)
       if (current !== request.current) return
       offset.current = result.offset
-      setPage(result)
+      setState({ path, page: result, error: '', loading: false })
     } catch (cause) {
-      if (current === request.current) setError(cause instanceof Error ? cause.message : 'Records could not be loaded')
-    } finally {
-      if (current === request.current) setLoading(false)
+      if (current === request.current) setState((previous) => ({ ...previous, error: cause instanceof Error ? cause.message : 'Records could not be loaded', loading: false }))
     }
   }, [path])
   useEffect(() => {
-    offset.current = 0; setPage(null); void load(0)
+    offset.current = 0; void load(0)
     return invalidate
   }, [load, invalidate])
-  return { page, error, loading, load }
+  // A changed search is pending immediately, before its effect starts the request.
+  // Never expose the previous query's rows or error as the new query's result.
+  const current = state.path === path ? state : { page: null, error: '', loading: true }
+  return { page: current.page, error: current.error, loading: current.loading, load }
 }

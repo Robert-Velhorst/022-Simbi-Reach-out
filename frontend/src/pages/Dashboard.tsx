@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
 import { ArrowRight, CheckCircle2, CircleAlert, Info, ShieldCheck } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { api } from '../api'
+import { useResource } from '../useResource'
+import { DataState } from '../components/DataState'
 import { EmptyState, Panel, Status, formatDate } from '../components/ui'
 import type { AuditEvent, Campaign, Member, Reminder } from '../types'
 
@@ -16,17 +16,14 @@ type Overview = {
 }
 
 export default function Dashboard({ member }: { member: Member }) {
-  const [data, setData] = useState<Overview | null>(null)
-  const [error, setError] = useState('')
-  useEffect(() => { api<Overview>('/overview').then(setData).catch((cause) => setError(cause.message)) }, [])
+  const { data, error, loading, load } = useResource<Overview>('/overview')
   const firstName = member.display_name.split(' ')[0]
 
   return <div className="dashboard-page">
     <header className="page-hero dashboard-hero">
-      <div><h1>Good morning, {firstName}</h1><p>{data ? `You have ${data.counts.reviews} drafts to review and ${data.counts.due} reminders due.` : 'Loading the work that needs your attention…'}</p></div>
-      <Link className="button button-primary" to="/review">Review {data?.counts.reviews ?? 0} drafts <ArrowRight size={17} /></Link>
+      <div><h1>Good morning, {firstName}</h1><p>{data ? `You have ${data.counts.reviews} drafts to review and ${data.counts.due} reminders due.` : loading ? 'Loading the work that needs your attention…' : 'Your work overview could not be loaded.'}</p></div>
+      <Link className="button button-primary" to="/review">{data ? `Review ${data.counts.reviews} drafts` : 'Open review queue'} <ArrowRight size={17} /></Link>
     </header>
-    {error ? <div className="notice notice-danger"><CircleAlert size={18} />{error}</div> : null}
     <section className="safety-strip" aria-label="Safety and compliance status">
       <div className="safety-heading"><ShieldCheck /><span>Safety & compliance</span></div>
       <SafetyItem label="Local only" detail="No cloud sync" ready />
@@ -36,7 +33,7 @@ export default function Dashboard({ member }: { member: Member }) {
       <SafetyItem label="Policy review" detail={member.compliance_ack_at ? 'Acknowledged' : 'Required'} ready={Boolean(member.compliance_ack_at)} />
       <Link to="/settings">Review controls <ArrowRight size={15} /></Link>
     </section>
-    <div className="dashboard-grid">
+    <DataState label="overview" loading={loading} error={error} hasData={Boolean(data)} retry={load}><div className="dashboard-grid">
       <Panel className="queue-panel" title="Work queue (exception first)" action={<Link to="/review">Open full queue <ArrowRight size={15} /></Link>}>
         {data?.queue.length ? <div className="table-wrap"><table><thead><tr><th>Priority</th><th>Item</th><th>Campaign</th><th>Issue</th><th>Action</th></tr></thead><tbody>
           {data.queue.map((item) => <tr key={item.id}><td>{item.state === 'ambiguous' ? <CircleAlert className="danger-icon" size={18} /> : <Info className="warning-icon" size={18} />}</td><td><strong>{item.prospect_name}</strong><small>Quality {item.quality_score}/100</small></td><td>{item.campaign_name}</td><td>{item.state === 'ambiguous' ? 'Outcome needs resolution' : item.safety_flags[0]?.replaceAll('_', ' ') ?? 'Human review required'}</td><td><Link className="table-action" to="/review">Review</Link></td></tr>)}
@@ -54,7 +51,7 @@ export default function Dashboard({ member }: { member: Member }) {
       <Panel title="Audit trail (latest)" action={<Link to="/audit">View full log <ArrowRight size={15} /></Link>}>
         {data?.events.length ? <ul className="plain-list audit-preview">{data.events.map((event) => <li key={event.id}><div><strong>{event.event_type.replaceAll('.', ' ')}</strong><small>{event.display_name ?? 'System'} · {event.entity_type} {event.entity_id}</small></div><time>{formatDate(event.created_at)}</time></li>)}</ul> : <EmptyState title="No actions recorded" detail="Every material local action will be listed here." />}
       </Panel>
-    </div>
+    </div></DataState>
     <footer className="assisted-note"><Info size={17} />Simbi Reach-Out does not send messages for you. Review content, then copy and open your provider to send manually.</footer>
   </div>
 }

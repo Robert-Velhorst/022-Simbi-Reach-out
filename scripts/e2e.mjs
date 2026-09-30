@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process'
-import { mkdir, rm } from 'node:fs/promises'
+import { mkdir, mkdtemp } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -8,19 +8,21 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const require = createRequire(join(root, 'frontend', 'package.json'))
 const axe = require('axe-core')
 const { chromium } = require('playwright')
-const runtime = resolve(root, '.e2e-runtime')
-if (dirname(runtime) !== root || !runtime.endsWith('.e2e-runtime')) {
-  throw new Error(`Unsafe E2E runtime path: ${runtime}`)
+const runtimeRoot = resolve(root, '.e2e-runtime')
+if (dirname(runtimeRoot) !== root || !runtimeRoot.endsWith('.e2e-runtime')) {
+  throw new Error(`Unsafe E2E runtime path: ${runtimeRoot}`)
 }
-await rm(runtime, { recursive: true, force: true })
-await mkdir(runtime, { recursive: true })
+await mkdir(runtimeRoot, { recursive: true })
+const runtime = await mkdtemp(join(runtimeRoot, 'run-'))
 
 const python = process.env.SIMBI_E2E_PYTHON
   ?? (process.platform === 'win32' ? join(root, '.venv', 'Scripts', 'python.exe') : 'python')
-const origin = 'http://127.0.0.1:4173'
+const port = process.env.SIMBI_E2E_PORT ?? '4173'
+if (!/^\d+$/.test(port) || Number(port) < 1024 || Number(port) > 65535) throw new Error('SIMBI_E2E_PORT must be an unprivileged port between 1024 and 65535')
+const origin = `http://127.0.0.1:${port}`
 const serverOutput = []
 const server = spawn(python, [
-  '-m', 'uvicorn', 'app.main:app', '--app-dir', 'backend', '--host', '127.0.0.1', '--port', '4173',
+  '-m', 'uvicorn', 'app.main:app', '--app-dir', 'backend', '--host', '127.0.0.1', '--port', port,
 ], {
   cwd: root,
   env: {
@@ -74,7 +76,11 @@ try {
   let signedOutProbes = 0
   let sessionFailureExpected = false
   let sessionFailureProbes = 0
+  let expectedDataFailurePath = ''
+  let dataFailureProbes = 0
   page.on('console', (message) => {
+    if (expectedDataFailurePath && message.location().url.startsWith(`${origin}/api${expectedDataFailurePath}`)
+      && message.text().includes('503')) { dataFailureProbes++; return }
     if (sessionFailureExpected && message.location().url === `${origin}/api/me`
       && message.text().includes('503')) { sessionFailureProbes++; return }
     if (signedOutProbeExpected && message.location().url === `${origin}/api/me`
@@ -430,6 +436,66 @@ try {
   await page.setViewportSize({ width: 1440, height: 1000 })
   await page.waitForFunction(() => document.querySelector('.sidebar').getBoundingClientRect().left >= 0)
 
+  // Hold real local reads before letting the backend respond. Pending is not empty.
+  for (const [nav, endpoint, label, emptyTitle] of [
+    ['Overview', '/overview', 'overview', 'Your queue is clear'],
+    ['Prospects', '/prospects', 'prospects', 'No prospects'],
+    ['Campaigns', '/campaigns', 'campaigns', 'No campaigns'],
+    ['Templates', '/templates', 'templates', 'No templates'],
+    ['Review queue', '/drafts', 'drafts', 'No drafts to review'],
+    ['Replies', '/replies', 'replies', 'No replies recorded'],
+    ['Reminders', '/reminders', 'reminders', 'No open reminders'],
+    ['Audit log', '/audit', 'audit events', 'No events yet'],
+    ['Reports', '/reports/summary', 'reports', 'No report data'],
+  ]) {
+    const matcher = `${origin}/api${endpoint}*`
+    let releaseRead
+    const heldRead = new Promise((resolveRead) => { releaseRead = resolveRead })
+    await page.route(matcher, async (route) => { await heldRead; await route.continue() })
+    try {
+      await page.getByRole('link', { name: nav, exact: true }).click()
+      await page.getByText(`Loading ${label}…`, { exact: true }).waitFor()
+      if (await page.getByRole('heading', { name: emptyTitle, exact: true }).count()) {
+        throw new Error(`${nav} declared an empty result while its read was pending`)
+      }
+      if (nav === 'Reports' && await page.locator('.metric-rail').count()) throw new Error('Pending report invented metrics')
+      if (nav === 'Campaigns') {
+        await page.screenshot({ path: resolve(root, '..', 'simbi-loading-desktop.png'), fullPage: false })
+        await page.setViewportSize({ width: 390, height: 844 })
+        await page.waitForFunction(() => document.querySelector('.sidebar').getBoundingClientRect().right <= 0)
+        if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)) throw new Error('Mobile loading state overflows')
+        await page.screenshot({ path: resolve(root, '..', 'simbi-loading-mobile.png'), fullPage: false })
+        await page.setViewportSize({ width: 1440, height: 1000 })
+      }
+      releaseRead()
+      await page.getByText(`Loading ${label}…`, { exact: true }).waitFor({ state: 'hidden' })
+      if (nav === 'Campaigns') await page.locator('.resource-row h3').filter({ hasText: 'Production readiness outreach' }).waitFor()
+    } finally { releaseRead(); await page.unroute(matcher) }
+  }
+
+  expectedDataFailurePath = '/campaigns'
+  await page.route(`${origin}/api/campaigns*`, (route) => route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: { code: 'qa_temporary', message: 'QA campaign read failure' } }) }))
+  await page.getByRole('link', { name: 'Campaigns', exact: true }).click()
+  await page.getByText('No result is available for campaigns.').waitFor()
+  if (await page.getByRole('heading', { name: 'No campaigns', exact: true }).count()) throw new Error('Failed campaign read declared no campaigns')
+  await page.screenshot({ path: resolve(root, '..', 'simbi-loading-error.png'), fullPage: false })
+  await page.unroute(`${origin}/api/campaigns*`)
+  await page.getByRole('button', { name: 'Retry', exact: true }).click()
+  await page.locator('.resource-row h3').filter({ hasText: 'Production readiness outreach' }).waitFor()
+
+  await page.getByRole('link', { name: 'Reports', exact: true }).click()
+  await page.getByRole('row').filter({ hasText: 'Production readiness outreach' }).waitFor()
+  expectedDataFailurePath = '/reports/summary'
+  await page.route(`${origin}/api/reports/summary`, (route) => route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: { code: 'qa_temporary', message: 'QA report refresh failure' } }) }))
+  await page.getByRole('button', { name: 'Refresh', exact: true }).click()
+  await page.getByText('Showing the last loaded result; it may be out of date.').waitFor()
+  if (await page.locator('.metric-rail > div').filter({ has: page.getByText('total', { exact: true }) }).locator('strong').innerText() !== '2') throw new Error('Failed report refresh lost last loaded values')
+  await page.unroute(`${origin}/api/reports/summary`)
+  await page.getByRole('button', { name: 'Retry', exact: true }).click()
+  await page.getByText('Showing the last loaded result; it may be out of date.').waitFor({ state: 'hidden' })
+  expectedDataFailurePath = ''
+  if (dataFailureProbes !== 2) throw new Error(`Expected exactly two controlled data failures, observed ${dataFailureProbes}`)
+
   await page.getByRole('link', { name: 'Settings' }).click()
   await page.getByLabel('Current password', { exact: true }).fill('correct horse battery staple')
   await page.getByLabel('New password', { exact: true }).fill('a different long QA password')
@@ -479,12 +545,16 @@ try {
     viewer_read_only_routes_and_handoff_history: 'passed',
     modal_viewport_focus_escape_and_scroll: 'passed',
     session_failure_retry_preserves_login: 'passed',
+    delayed_reads_on_nine_operational_routes: 'passed',
+    campaign_read_failure_retry_and_stale_report_refresh: 'passed',
+    expected_data_failure_probes: dataFailureProbes,
     expected_session_failure_probes: sessionFailureProbes,
     expected_signed_out_probes: signedOutProbes,
     provider_navigation: 'not attempted',
     accessibility_violations: 0,
     responsive_mobile_menu: 'passed',
     browser_errors: 0,
+    fixture_runtime: runtime,
   }, null, 2)}\n`)
 } catch (error) {
   if (browser) {

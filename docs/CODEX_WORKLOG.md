@@ -1,5 +1,11 @@
 # Codex worklog
 
+## 2026-10-01 — truthful loading/retry
+
+- Implemented atomic paginated load state, shared overview/report reads, accessible pending/error/snapshot notices and blocked incomplete draft choices. Failed page retries keep the requested offset.
+- Frontend98 tests/lint/build and expanded nine-route Chromium acceptance pass. Desktop/mobile/error screenshots inspected. Expected failures and exact limits recorded in the ledger; no provider navigation/delivery or real-account mutation.
+- Avoided an occupied port without stopping its unrelated server; allocated unique browser fixtures and added a validated port override. Localization, broader retention, authenticated manual-use acceptance and historical credential response remain open.
+
 ## 2026-09-30 — personal recovery
 
 - Inspected current source and preserved existing dirty edits. Added Windows executable operator-command dispatch, compiled-interface diagnostics and local-only offline owner-password recovery with hidden matching input, exclusive runtime lock, verified safety snapshot, transactional hash/session update and attributable offline audit method.

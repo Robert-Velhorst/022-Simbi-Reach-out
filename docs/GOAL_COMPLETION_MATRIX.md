@@ -48,8 +48,8 @@ Scope clarification on 2026-09-05: the owner confirmed this is a personal tool f
 | 037 Demo mode labelling | Implemented | Visible banner and external handoff hard block. |
 | 038 Fake provider lab | Not applicable | Tests require no fake provider; boundary is verified without network. |
 | 039 Factories/fixtures | Implemented | Isolated owner/foundation fixtures and throwaway database. |
-| 040 Backend tests | Implemented | 14 tests pass across critical, security, isolation, HAI feed, backup, and worker paths. |
-| 041 Frontend tests | Implemented | 7 tests pass across API/UI/dashboard/startup-failure behavior. |
+| 040 Backend tests | Implemented | 96 tests passed with the personal-recovery release across backend security, workflow, isolation, recovery and worker paths; see the dated ledger. |
+| 041 Frontend tests | Implemented | 98 frontend tests pass across API/UI, roles, dialogs, loading/retry, stale reads and workflow behavior; see the dated ledger. |
 | 042 Worker tests | Implemented | Reminder idempotency test passes. |
 | 043 End-to-end tests | Implemented | Reproducible real-browser critical path passes without provider navigation. |
 | 044 Acceptance matrix | Implemented | `ACCEPTANCE_TESTS.md` with automated/manual cases. |
@@ -81,7 +81,7 @@ Scope clarification on 2026-09-05: the owner confirmed this is a personal tool f
 | 070 Operator runbook | Implemented | Start, stop, backup, restore, incident and troubleshooting. |
 | 071 User guide/help | Implemented | README plus page-specific safe guidance and empty states. |
 | 072 Error catalog | Implemented | Runbook maps operational error codes to safe action. |
-| 073 UI action audit | Partial | Viewer-role gaps and shared-modal keyboard/focus defects are locally repaired. Frontend75 tests and expanded real-session browser workflow pass, including viewport bounds, Tab/Escape, live/replacement trigger focus and short-screen scrolling. Full role-by-role accessibility/action audit and dedicated assistive-technology acceptance remain open. See the production acceptance ledger. |
+| 073 UI action audit | Partial | Viewer-role gaps and shared-modal keyboard/focus defects are locally repaired. Frontend98 tests and expanded real-session browser workflow pass, including viewport bounds, Tab/Escape, live/replacement trigger focus and short-screen scrolling. Full role-by-role accessibility/action audit and dedicated assistive-technology acceptance remain open. See the production acceptance ledger. |
 | 074 Endpoint usage audit | Implemented | Endpoint/consumer/test map in `API_USAGE_AUDIT.md`. |
 | 075 Documentation truth | Implemented | Claims distinguish implemented, partial, blocked and external. |
 | 076 Technical debt | Implemented | Partial/N/A/blocked gaps retained in this matrix and final report. |
@@ -104,8 +104,8 @@ Scope clarification on 2026-09-05: the owner confirmed this is a personal tool f
 | 093 Manual evidence | Implemented | Real browser critical path plus desktop/mobile screenshots and concept comparison. |
 | 094 No-excuses search | Implemented | Final whitespace, unsafe automation, credential, secret-pattern and placeholder scans passed. |
 | 095 Completion matrix | Implemented | This document. |
-| 096 Final verification | Partial | Historical release checks and newer local follow-ups exist, but required operator/provider/deployment/accessibility acceptance remains open; the current uncommitted tree has no exact-revision hosted CI/fresh-install proof. |
-| 097 Final response | Partial | Required evidence will be supplied after this hardening commit is pushed and CI completes. |
+| 096 Final verification | Partial | PR87/source and subsequent main Linux/Windows CI passed; newer loading/retry checks are recorded in the ledger. Required original localization/privacy/manual-provider/accessibility acceptance remains open; do not substitute earlier release checks for those gates. |
+| 097 Final response | Partial | Incremental publication/verification results are reported; the full production objective still has open original requirements. |
 | 098 Maintenance plan | Implemented | Runbook release/backup/restore plus changelog discipline. |
 | 099 Roadmap/blockers | Implemented | Exact remaining gaps listed here/final report. |
 | 100 Provider cleanup/account safety | Blocked | Provider password rotation/session review/history rewrite require owner actions. |
