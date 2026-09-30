@@ -3,6 +3,7 @@ import { mkdir, mkdtemp } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { bilingualWorkflow } from './e2e-locales.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const require = createRequire(join(root, 'frontend', 'package.json'))
@@ -61,13 +62,14 @@ let browser
 try {
   await waitUntilReady()
   browser = await chromium.launch({ headless: true })
-  const page = await browser.newPage({
+  const ownerContext = await browser.newContext({
     viewport: { width: 1440, height: 1000 },
     bypassCSP: true,
   })
+  const page = await ownerContext.newPage()
   const browserErrors = []
   // These are fictional local workflow records, never evidence of provider delivery.
-  await page.route(/^https?:\/\//, (route) => {
+  await ownerContext.route(/^https?:\/\//, (route) => {
     if (new URL(route.request().url()).origin === origin) return route.continue()
     browserErrors.push(`Unexpected external request: ${new URL(route.request().url()).origin}`)
     return route.abort('blockedbyclient')
@@ -93,11 +95,15 @@ try {
   if (!(await page.title()).includes('Simbi') || !page.url().startsWith(origin)) {
     throw new Error('Unexpected application identity')
   }
-  await page.getByRole('textbox', { name: 'Your name' }).fill('Production QA')
-  await page.getByRole('textbox', { name: 'Workspace name' }).fill('Production QA workspace')
-  await page.getByRole('textbox', { name: 'Email' }).fill('qa@example.test')
-  await page.getByRole('textbox', { name: /Password/ }).fill('correct horse battery staple')
-  await page.getByRole('button', { name: 'Create workspace' }).click()
+  await page.getByRole('combobox', { name: 'Language / Taal' }).selectOption('nl')
+  await page.getByRole('heading', { name: 'Maak je lokale werkruimte aan' }).waitFor()
+  await page.locator('[name=display_name]').fill('Production QA')
+  await page.locator('[name=workspace_name]').fill('Production QA workspace')
+  await page.locator('[name=email]').fill('qa@example.test')
+  await page.locator('[name=password]').fill('correct horse battery staple')
+  await page.getByRole('button', { name: 'Werkruimte aanmaken', exact: true }).click()
+  await page.getByRole('heading', { name: /Goedemorgen/ }).waitFor()
+  await page.getByRole('combobox', { name: 'Language / Taal' }).selectOption('en')
   await page.getByRole('heading', { name: /Good morning/ }).waitFor()
 
   await page.getByRole('link', { name: 'Settings' }).click()
@@ -510,7 +516,11 @@ try {
   await page.getByRole('link', { name: 'Overview' }).click()
   await page.getByRole('heading', { name: /Good morning/ }).waitFor()
 
+  await bilingualWorkflow(page, origin, runtime)
   await page.addScriptTag({ content: axe.source })
+  const dutchAccessibility = await page.evaluate(async () => window.axe.run(document, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] } }))
+  if (dutchAccessibility.violations.length) throw new Error(`Dutch accessibility violations: ${JSON.stringify(dutchAccessibility.violations.map((item) => ({ id: item.id, nodes: item.nodes.map((node) => node.target) })))}`)
+  await page.getByRole('combobox', { name: 'Language / Taal' }).selectOption('en')
   const accessibility = await page.evaluate(async () => window.axe.run(document, {
     runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] },
   }))
@@ -535,6 +545,10 @@ try {
   if (browserErrors.length) throw new Error(`Browser errors:\n${browserErrors.join('\n')}`)
   process.stdout.write(`${JSON.stringify({
     critical_path: 'passed',
+    dutch_workflow_and_language_persistence: 'passed',
+    other_tab_language_switch_preserves_unsaved_modal: 'passed',
+    language_switch_preserves_review_checks_and_authored_content: 'passed',
+    dutch_accessibility_violations: 0,
     interrupted_handoff_recovery: 'passed',
     exact_content_approval: 'passed',
     operator_stop_contact: 'passed',

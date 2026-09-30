@@ -1,3 +1,4 @@
+import { LanguagePicker, useI18n } from '../i18n'
 import { useState } from 'react'
 import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import {
@@ -23,9 +24,10 @@ const navigation = [
   { to: '/reports', label: 'Reports', icon: BarChart3 },
   { to: '/audit', label: 'Audit log', icon: ScrollText },
   { to: '/settings', label: 'Settings', icon: Settings },
-]
+] as const
 
 export default function AppShell({ member, onMemberChange, onSignedOut }: { member: Member; onMemberChange: (member: Member) => void; onSignedOut: () => void }) {
+  const { t, formatCode } = useI18n()
   const [open, setOpen] = useState(false)
   const location = useLocation()
   const canEdit = ['owner', 'admin', 'editor'].includes(member.role)
@@ -37,24 +39,25 @@ export default function AppShell({ member, onMemberChange, onSignedOut }: { memb
 
   return <div className="app-shell">
     <aside className={`sidebar ${open ? 'sidebar-open' : ''}`}>
-      <div className="sidebar-brand"><span className="brand-mark small"><Network /></span><strong>Simbi Reach-Out</strong><button className="mobile-close" onClick={() => setOpen(false)} aria-label="Close navigation"><X /></button></div>
-      <nav aria-label="Primary navigation">
-        {navigation.map(({ to, label, icon: Icon, end }) => <NavLink key={to} to={to} end={end} onClick={() => setOpen(false)} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}><Icon size={19} /><span>{label}</span></NavLink>)}
+      <div className="sidebar-brand"><span className="brand-mark small"><Network /></span><strong>Simbi Reach-Out</strong><button className="mobile-close" onClick={() => setOpen(false)} aria-label={t("Close navigation")}><X /></button></div>
+      <nav aria-label={t("Primary navigation")}>
+        {navigation.map(({ to, label, icon: Icon }) => <NavLink key={to} to={to} end={to === '/'} onClick={() => setOpen(false)} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}><Icon size={19} /><span>{t(label)}</span></NavLink>)}
       </nav>
       <div className={`safety-card ${member.paused_at ? 'safety-paused' : ''}`}>
         <ShieldCheck size={19} />
-        <div><strong>{member.paused_at ? 'Safety stop active' : 'Assisted mode'}</strong><small>{member.paused_at ? 'External handoffs blocked' : 'No automatic sending'}</small></div>
+        <div><strong>{member.paused_at ? t("Safety stop active") : t("Assisted mode")}</strong><small>{member.paused_at ? t("External handoffs blocked") : t("No automatic sending")}</small></div>
       </div>
-      <div className="sidebar-user"><div className="avatar">{member.display_name.slice(0, 1).toUpperCase()}</div><div><strong>{member.display_name}</strong><small>{member.role} · local user</small></div><ChevronDown size={16} /></div>
-      <button className="nav-link signout" onClick={signOut}><LogOut size={18} />Sign out</button>
+      <div className="sidebar-user"><div className="avatar">{member.display_name.slice(0, 1).toUpperCase()}</div><div><strong>{member.display_name}</strong><small>{formatCode(member.role)} {' '}{t("· local user")}</small></div><ChevronDown size={16} /></div>
+      <button className="nav-link signout" onClick={signOut}><LogOut size={18} />{t("Sign out")}</button>
     </aside>
-    {open ? <button className="sidebar-scrim" onClick={() => setOpen(false)} aria-label="Close navigation" /> : null}
+    {open ? <button className="sidebar-scrim" onClick={() => setOpen(false)} aria-label={t("Close navigation")} /> : null}
     <div className="app-main">
       <header className="topbar">
-        <button className="mobile-menu" onClick={() => setOpen(true)} aria-label="Open navigation"><Menu /></button>
-        <span className="mode-label"><ShieldCheck size={17} />{member.demo_mode ? 'DEMO · EXTERNAL ACTIONS BLOCKED' : 'LOCAL ASSISTED MODE'}</span>
-        <span className="local-indicator"><i />Data stored locally</span>
-        <Link className="help-link" to="/help"><BookOpenText size={17} />Help</Link>
+        <button className="mobile-menu" onClick={() => setOpen(true)} aria-label={t("Open navigation")}><Menu /></button>
+        <LanguagePicker />
+        <span className="mode-label"><ShieldCheck size={17} />{member.demo_mode ? t("DEMO · EXTERNAL ACTIONS BLOCKED") : t("LOCAL ASSISTED MODE")}</span>
+        <span className="local-indicator"><i />{t("Data stored locally")}</span>
+        <Link className="help-link" to="/help"><BookOpenText size={17} />{t("Help")}</Link>
       </header>
       <main className="content" key={location.pathname}>
         <Routes>

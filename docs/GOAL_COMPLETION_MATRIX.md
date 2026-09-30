@@ -49,7 +49,7 @@ Scope clarification on 2026-09-05: the owner confirmed this is a personal tool f
 | 038 Fake provider lab | Not applicable | Tests require no fake provider; boundary is verified without network. |
 | 039 Factories/fixtures | Implemented | Isolated owner/foundation fixtures and throwaway database. |
 | 040 Backend tests | Implemented | 96 tests passed with the personal-recovery release across backend security, workflow, isolation, recovery and worker paths; see the dated ledger. |
-| 041 Frontend tests | Implemented | 98 frontend tests pass across API/UI, roles, dialogs, loading/retry, stale reads and workflow behavior; see the dated ledger. |
+| 041 Frontend tests | Implemented | Frontend tests cover API/UI, roles, dialogs, truthful loading/reminder labels, stale reads, bilingual catalog/state contracts and workflows; see the dated ledger for current verified counts. |
 | 042 Worker tests | Implemented | Reminder idempotency test passes. |
 | 043 End-to-end tests | Implemented | Reproducible real-browser critical path passes without provider navigation. |
 | 044 Acceptance matrix | Implemented | `ACCEPTANCE_TESTS.md` with automated/manual cases. |
@@ -65,7 +65,7 @@ Scope clarification on 2026-09-05: the owner confirmed this is a personal tool f
 | 054 Reconciliation/repair | Implemented | Detects orphans/impossible sends; safe explicit repair. |
 | 055 Local analytics | Implemented | Schema is local/event-minimal; no external telemetry. |
 | 056 SaaS without billing | Not applicable | Owner explicitly chose a personal tool for his own account on 2026-09-05, not a shared SaaS. No tenant provisioning, workspace switching or billing is required; existing deployment and isolation controls remain preserved. |
-| 057 i18n Dutch/English | Partial | Copy centralized by components but no translation catalog yet. |
+| 057 i18n Dutch/English | Implemented | Typed501-key English/Dutch UI catalogs, pre-auth/header selection, persistent browser preference, localized labels/notices/statuses/counts/dates, unchanged authored data and API/CSV/template values. Unit/static guards and local Dutch Chromium workflow pass. Diagnostics/CLI/docs are not automatically translated; see LOCALIZATION.md and the dated ledger. |
 | 058 Feature flags | Implemented | Workspace-scoped flag schema; no risky feature is silently enabled. |
 | 059 State machines | Implemented | Explicit draft transition map and guarded endpoints. |
 | 060 Domain specification | Implemented | Schema and `CRITICAL_PATH.md`. |
@@ -104,7 +104,7 @@ Scope clarification on 2026-09-05: the owner confirmed this is a personal tool f
 | 093 Manual evidence | Implemented | Real browser critical path plus desktop/mobile screenshots and concept comparison. |
 | 094 No-excuses search | Implemented | Final whitespace, unsafe automation, credential, secret-pattern and placeholder scans passed. |
 | 095 Completion matrix | Implemented | This document. |
-| 096 Final verification | Partial | PR87/source and subsequent main Linux/Windows CI passed; newer loading/retry checks are recorded in the ledger. Required original localization/privacy/manual-provider/accessibility acceptance remains open; do not substitute earlier release checks for those gates. |
+| 096 Final verification | Partial | PR87/88 and subsequent main Linux/Windows CI passed; bilingual source tests/browser evidence are recorded in the ledger. General privacy/retention, manual-provider and broader accessibility acceptance remain open; do not substitute earlier release checks for those gates. |
 | 097 Final response | Partial | Incremental publication/verification results are reported; the full production objective still has open original requirements. |
 | 098 Maintenance plan | Implemented | Runbook release/backup/restore plus changelog discipline. |
 | 099 Roadmap/blockers | Implemented | Exact remaining gaps listed here/final report. |
