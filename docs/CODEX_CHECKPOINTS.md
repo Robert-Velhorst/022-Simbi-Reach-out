@@ -1,5 +1,7 @@
 # Codex checkpoints
 
+Latest publication2026-10-01: loading/retry PR88 merged without conflicts atb7f5af1; source/PR Linux/Windows CI both passed atb5a5174 and the merged tree matches. No open PRs remain. The README is published and verified against its remote file hash. Next is full Dutch/English support: source inspection found353 static visible JSX/attribute nodes, excluding dynamic/error/enum/interpolated strings, so that count is not an exhaustive inventory. There is no existing language catalog/preference engine. Preserve original data, template placeholders and API machine values; complete the catalog/workflow and tests before changing phase057 from Partial. Broader privacy/manual provider acceptance remain separate.
+
 2026-10-01 follow-up: truthful loading/failure/empty states have98-test frontend and nine-route Chromium evidence. No real records/provider actions changed. Tests support an alternate loopback port and unique fixture directories; leave unrelated processes intact. Resume localization/general privacy/manual operator acceptance after publication. This usability repair does not complete the full goal.
 
 The C0-C7 entries below describe the earlier release, not completion of the continuing production-readiness goal. Resume that goal from [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md), including its follow-up source audit. The original specification still contains incomplete requirements; do not stop just because this historical table says Complete.

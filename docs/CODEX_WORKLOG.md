@@ -2,6 +2,8 @@
 
 ## 2026-10-01 — truthful loading/retry
 
+- Published through PR88/sourceb5a5174 after both source/PR Linux and Windows CI passed; merged without conflicts atb7f5af1. The merged tree is identical, no open PRs remain, and remote/local README blobs match. This supersedes preparation-only wording in earlier entries. The final publication record is documentation-only and has separate main CI; do not attribute prior runtime proof to an unobserved later run.
+
 - Implemented atomic paginated load state, shared overview/report reads, accessible pending/error/snapshot notices and blocked incomplete draft choices. Failed page retries keep the requested offset.
 - Frontend98 tests/lint/build and expanded nine-route Chromium acceptance pass. Desktop/mobile/error screenshots inspected. Expected failures and exact limits recorded in the ledger; no provider navigation/delivery or real-account mutation.
 - Avoided an occupied port without stopping its unrelated server; allocated unique browser fixtures and added a validated port override. Localization, broader retention, authenticated manual-use acceptance and historical credential response remain open.
