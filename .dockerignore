@@ -6,6 +6,7 @@ frontend/dist
 data
 backups
 support-bundles
+legacy
 backend/tests
 **/__pycache__
 *.db

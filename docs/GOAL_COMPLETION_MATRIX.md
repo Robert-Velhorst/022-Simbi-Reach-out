@@ -2,6 +2,10 @@
 
 Statuses are evidence-based: **Implemented**, **Partial**, **Blocked**, or **Not applicable**. “Implemented” means code and proportional automated evidence exist; browser/deployment-specific phases remain partial until their dedicated verification is recorded.
 
+This matrix originated with the earlier implementation and contains historical verification counts. It is not an unrestricted production-completion certificate. Use [the current production acceptance ledger](PRODUCTION_READINESS.md) for subsequent evidence and open gates; source rechecks may downgrade entries here.
+
+Scope clarification on 2026-09-05: the owner confirmed this is a personal tool for his own Simbi account. Shared-service requirements are not release gates; optional existing capabilities are preserved. Not applicable below means excluded by that explicit personal-use decision, not silently omitted or claimed implemented. Personal safety, recovery, workflow and relevant original usability requirements remain in scope.
+
 | Phase | Status | Evidence / exact gap |
 |---:|---|---|
 | 000 Repository integrity | Implemented | Remote/default/commit/history audited in `TECHNICAL_AUDIT.md`. |
@@ -16,7 +20,7 @@ Statuses are evidence-based: **Implemented**, **Partial**, **Blocked**, or **Not
 | 009 API/error envelope | Implemented | Structured code/message/details/request ID; frontend error test. |
 | 010 Frontend architecture | Implemented | React app shell, routes, focused page/components. |
 | 011 Core vertical slice | Implemented | Campaign through reply/report wired. |
-| 012 Provider reality | Implemented | No approved API assumed; assisted boundary documented. |
+| 012 Provider reality | Partial | Public homepage/sign-in inspection and a one-off actual app-to-Simbi-homepage handoff/Back/Not sent check are evidenced. The latter used a fresh fictional workspace and blocked external writes. Authenticated manual-use acceptance remains open; public navigation is not messaging integration or delivery proof. |
 | 013 Compliance boundary | Implemented | Current primary sources, owner acknowledgement, activation gate. |
 | 014 No fake success | Implemented | Handoff never marks sent; operator records outcome. |
 | 015 Files/uploads/media | Not applicable | Product exposes no upload/media persistence; CSV parsed in memory. |
@@ -32,7 +36,7 @@ Statuses are evidence-based: **Implemented**, **Partial**, **Blocked**, or **Not
 | 025 AI abstraction/fallback | Implemented | Deterministic renderer is the safe provider-independent default; no fake AI. |
 | 026 Human review/approval | Implemented | Four explicit checks, edit reset, role/compliance/pause guards. |
 | 027 Notifications/reminders | Implemented | User and worker reminders; no external notification claims. |
-| 028 Privacy/deletion | Implemented | Export, prospect deletion, suppression, minimization, retention CLI. |
+| 028 Privacy/deletion | Partial | Export, prospect deletion, suppression and minimization exist. Retention CLI removes old analytics/expired sessions only; general personal-record retention remains missing. |
 | 029 Web security | Implemented | CSP, HSTS, trusted hosts, sanitized request IDs, COOP/CORP, frame/MIME/referrer/permissions headers, CSRF and login throttling. |
 | 030 Secrets/rotation | Blocked | Current tree clean; pre-existing Git-history credential needs owner-coordinated rewrite/rotation. |
 | 031 One-command local dev | Implemented | Docker Compose and `scripts/dev.ps1`. |
@@ -53,14 +57,14 @@ Statuses are evidence-based: **Implemented**, **Partial**, **Blocked**, or **Not
 | 046 Cross-user isolation | Implemented | Second-workspace direct-ID test returns 404/no records. |
 | 047 Path traversal | Not applicable | No file path or upload endpoint exists; restore CLI validates explicit `.db` file. |
 | 048 Provider failure | Implemented | Ambiguous/cancelled outcomes and no blind retry; no provider call exists. |
-| 049 Accessibility | Implemented | Automated WCAG A/AA browser scan reports zero violations on the critical dashboard path. |
-| 050 Responsive/browser | Implemented | Desktop and 390x844 mobile path, drawer, screenshots, and browser-console gate pass. |
+| 049 Accessibility | Partial | Selected automated dashboard scan and local modal keyboard regressions pass. Full route/role keyboard and dedicated assistive-technology acceptance are not established. |
+| 050 Responsive/browser | Partial | Chromium desktop, mobile and short-mobile dialog paths are verified. Other browser engines and physical-device/virtual-keyboard behavior remain unverified; no broader compatibility claim is supported. |
 | 051 Performance/indexing | Implemented | Domain indexes, bounded queries/imports, production bundle baseline. |
 | 052 Large dataset/pagination | Implemented | 10,000-prospect/draft benchmark: 0.014s query baseline and 3.7 MB database on the verification machine. |
 | 053 Backup/restore | Implemented | SQLite backup API, integrity/schema-checked restore, backup-first behavior. |
 | 054 Reconciliation/repair | Implemented | Detects orphans/impossible sends; safe explicit repair. |
 | 055 Local analytics | Implemented | Schema is local/event-minimal; no external telemetry. |
-| 056 SaaS without billing | Not applicable | Product is local-first; workspace/roles are ready, billing intentionally absent. |
+| 056 SaaS without billing | Not applicable | Owner explicitly chose a personal tool for his own account on 2026-09-05, not a shared SaaS. No tenant provisioning, workspace switching or billing is required; existing deployment and isolation controls remain preserved. |
 | 057 i18n Dutch/English | Partial | Copy centralized by components but no translation catalog yet. |
 | 058 Feature flags | Implemented | Workspace-scoped flag schema; no risky feature is silently enabled. |
 | 059 State machines | Implemented | Explicit draft transition map and guarded endpoints. |
@@ -77,7 +81,7 @@ Statuses are evidence-based: **Implemented**, **Partial**, **Blocked**, or **Not
 | 070 Operator runbook | Implemented | Start, stop, backup, restore, incident and troubleshooting. |
 | 071 User guide/help | Implemented | README plus page-specific safe guidance and empty states. |
 | 072 Error catalog | Implemented | Runbook maps operational error codes to safe action. |
-| 073 UI action audit | Implemented | Every visible action mapped in `UI_ACTION_AUDIT.md`. |
+| 073 UI action audit | Partial | Viewer-role gaps and shared-modal keyboard/focus defects are locally repaired. Frontend75 tests and expanded real-session browser workflow pass, including viewport bounds, Tab/Escape, live/replacement trigger focus and short-screen scrolling. Full role-by-role accessibility/action audit and dedicated assistive-technology acceptance remain open. See the production acceptance ledger. |
 | 074 Endpoint usage audit | Implemented | Endpoint/consumer/test map in `API_USAGE_AUDIT.md`. |
 | 075 Documentation truth | Implemented | Claims distinguish implemented, partial, blocked and external. |
 | 076 Technical debt | Implemented | Partial/N/A/blocked gaps retained in this matrix and final report. |
@@ -100,17 +104,17 @@ Statuses are evidence-based: **Implemented**, **Partial**, **Blocked**, or **Not
 | 093 Manual evidence | Implemented | Real browser critical path plus desktop/mobile screenshots and concept comparison. |
 | 094 No-excuses search | Implemented | Final whitespace, unsafe automation, credential, secret-pattern and placeholder scans passed. |
 | 095 Completion matrix | Implemented | This document. |
-| 096 Final verification | Implemented | Automated, Docker, browser, responsive, fresh-clone and final scan evidence recorded. |
+| 096 Final verification | Partial | Historical release checks and newer local follow-ups exist, but required operator/provider/deployment/accessibility acceptance remains open; the current uncommitted tree has no exact-revision hosted CI/fresh-install proof. |
 | 097 Final response | Partial | Required evidence will be supplied after this hardening commit is pushed and CI completes. |
 | 098 Maintenance plan | Implemented | Runbook release/backup/restore plus changelog discipline. |
 | 099 Roadmap/blockers | Implemented | Exact remaining gaps listed here/final report. |
 | 100 Provider cleanup/account safety | Blocked | Provider password rotation/session review/history rewrite require owner actions. |
 | 101 Support bundle | Implemented | CLI/API redacted bundle and explicit test. |
-| 102 Retention/archive | Implemented | Configurable retention, purge confirmation, durable suppressions, backup. |
-| 103 Prototype-to-production | Implemented | Production guards, TLS edge, Windows standalone package, ngrok launcher, backups and HAI connector; external credentials/domain remain separate gates. |
+| 102 Retention/archive | Partial | Confirmed analytics/session cleanup and backup pruning exist. Configured retention is not a general purge of prospects, drafts, replies or audit content; that broader policy/workflow is unfinished. |
+| 103 Prototype-to-production | Partial | Production guards, packaging, recovery and deployment configuration exist. Actual intended deployment, operator acceptance, credential response and receiving-side HAI acceptance if enabled are not complete. |
 | 104 Safety stop | Implemented | Owner/admin pause blocks approval and handoff. |
 | 105 Onboarding | Implemented | First-owner setup and guided compliance next action. |
-| 106 Roles/team | Implemented | Owner/admin/editor/viewer and local member creation. |
+| 106 Roles/team | Not applicable | Expanded team lifecycle is not required for the explicitly confirmed sole-owner personal target. Existing owner/admin/editor/viewer checks and local member creation remain preserved and tested; role editing/removal are still absent, not claimed complete. |
 | 107 Quality/confidence | Implemented | Deterministic 0-100 score plus named signals, never permission. |
 | 108 Human decision minimization | Implemented | Defaults/templates/queue reduce clerical work; risky judgment retained. |
 | 109 Exception dashboard | Implemented | Ambiguous and low-quality items prioritized. |
@@ -119,4 +123,4 @@ Statuses are evidence-based: **Implemented**, **Partial**, **Blocked**, or **Not
 | 112 Version/changelog | Implemented | Version `1.0.0`, pinned manifests, `CHANGELOG.md`. |
 | 113 Regression baseline | Implemented | Backend/frontend suites and production bundle. |
 | 114 Maintenance/refactor | Implemented | Focused modules, explicit dependency boundaries, no duplicate runtime. |
-| 115 Human-operator readiness | Implemented | Automated, Docker, browser and clean-install workflows pass; external provider use remains manually gated. |
+| 115 Human-operator readiness | Partial | Local Chromium coverage now includes a fictional sent/reply/reminder/report journey alongside Not sent/Stop contact. This is local record-keeping acceptance, not actual delivery or the complete real operator journey; authenticated provider/manual-use acceptance remains open. |

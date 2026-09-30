@@ -1,5 +1,7 @@
 # Operator runbook
 
+Intended operation: one personal workspace for the owner's own Simbi account (confirmed 2026-09-05). Start locally, normally with the Windows package; adding team members or exposing a public service is not required. Existing Docker/remote-access/HAI instructions remain optional. Keep the Simbi account separate from this app's local owner login; the app does not sign in or send for you.
+
 ## Daily start
 
 1. Start with `docker compose up --build`, `scripts/dev.ps1`, or the built Windows executable.
@@ -25,6 +27,8 @@ Settings -> Emergency safety stop blocks approvals and new handoffs while preser
 ## Backup and restore
 
 Production and Windows standalone modes create one integrity-checked backup per day and retain 30 days by default. Manual backups remain appropriate before upgrades or imports.
+
+Current Windows packages accept the same operator commands directly. From the folder containing the executable, use `& '.\Simbi Reach-Out.exe' backup`, `doctor`, or `support-bundle`. For restore use `& '.\Simbi Reach-Out.exe' restore 'C:\path\actual-backup.db' --confirm` with the app stopped. No Python installation is required. These commands use the standalone storage path, including any inherited `SIMBI_DATABASE_PATH`/`SIMBI_BACKUP_PATH` overrides. Older artifacts must be rebuilt for command support.
 
 Create a backup before upgrades, restore tests, or bulk imports:
 
@@ -84,7 +88,11 @@ The ngrok launcher is for temporary, explicitly supervised access. It must not e
 
 ## First-owner and password controls
 
-Production first-owner setup requires the configured `SIMBI_SETUP_TOKEN`, a unique random secret of 32–200 characters. Missing/incorrect tokens fail closed. Keep ingress restricted during bootstrap and remove the token from the deployment environment after creating the owner. Settings provides authenticated password change, which requires the current password and signs out every session for that account. Forgotten-password recovery and team-member removal are not supplied workflows.
+Production first-owner setup requires the configured `SIMBI_SETUP_TOKEN`, a unique random secret of 32–200 characters. Missing/incorrect tokens fail closed. Keep ingress restricted during bootstrap and remove the token from the deployment environment after creating the owner. Settings provides authenticated password change, which requires the current password and signs out every session for that account. Team-member removal remains absent.
+
+For a forgotten **local app owner** password, stop the app/worker, open PowerShell in the executable folder and use `& '.\Simbi Reach-Out.exe' recover-owner --email 'your-local-login@example.com' --confirm`. Check the printed database path, then enter a matching new 12–200-character password twice. Input is hidden and passwords must not be supplied as arguments. Source installations use `python -m app.cli recover-owner` with the same flags and their configured storage.
+
+Offline recovery is limited to local mode, one existing personal workspace, a valid schema and the existing owner email. A running managed app, invalid target or failed safety snapshot prevents the change. Recovery preserves records/other accounts, revokes the owner's sessions and records an audit event with an offline method rather than falsely attributing it to an authenticated user. It changes no Simbi credentials. Restart and sign in; an existing login throttle must expire before a new attempt succeeds. The pre-recovery backup retains the old hash and sessions, so restoring it also restores that login state. Protect the OS account, database and backups.
 
 Readiness in supervised/production modes requires a live singleton worker with recent successful maintenance and no newer failure. Check worker logs, storage permissions and backup/feed destinations if readiness returns `maintenance_unavailable`; do not disable the health gate to conceal a failure.
 

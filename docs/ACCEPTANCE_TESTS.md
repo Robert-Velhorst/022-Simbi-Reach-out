@@ -1,6 +1,6 @@
 # Acceptance test matrix
 
-Automated results are updated in `FINAL_VERIFICATION_REPORT.md`. Tests use a throwaway local SQLite database and never access a provider.
+The original results are historical in `FINAL_VERIFICATION_REPORT.md`; current evidence and limits are in [the production acceptance ledger](PRODUCTION_READINESS.md). Routine automated suites use throwaway local SQLite databases and do not access a provider. A29 is a separately authorized public-navigation acceptance check, not part of routine CI. Expected outcomes in this table are acceptance targets, not proof that every target has been observed.
 
 | ID | Scenario | Expected |
 |---|---|---|
@@ -23,7 +23,7 @@ Automated results are updated in `FINAL_VERIFICATION_REPORT.md`. Tests use a thr
 | A17 | Dashboard empty state | Shows real next action and explicit no-send wording. |
 | A18 | Production frontend build | TypeScript and Vite complete without errors. |
 | A19 | Responsive browser | No overflow or clipped primary controls at desktop/mobile widths. |
-| A20 | Full browser critical path | First run through reply/report works using local data only. |
+| A20 | Full local browser critical path | First run through review and handoff; preserve the Not sent/Stop contact path. A second fictional conversation records a simulated sent outcome, creates/completes reminders, records a reply that cancels the remaining reminder, survives reload, and updates report counts. This local Chromium path passes; no provider delivery or authenticated provider acceptance is implied. |
 | A21 | Login abuse | Five failures lock the client/account fingerprint; a correct password is rejected until the lock expires. |
 | A22 | Host/proxy boundary | Untrusted Host is rejected; production requires HTTPS, exact hostname, and trusted forwarded source. |
 | A23 | Backup integrity | Online SQLite backup passes `PRAGMA integrity_check` and preserves records. |
@@ -31,6 +31,14 @@ Automated results are updated in `FINAL_VERIFICATION_REPORT.md`. Tests use a thr
 | A25 | HAI content opt-in | Personal content appears only with explicit `--include-content`/environment opt-in. |
 | A26 | Large dataset | 10,000 prospects/drafts remain within the 2-second query and 30 MB database budgets. |
 | A27 | Dependency audits | Python and pnpm report no known vulnerabilities. |
-| A28 | Windows standalone | Bundled executable starts on loopback, serves compiled UI, migrates local data, and stops cleanly. |
+| A28 | Windows standalone | Bundled executable starts on loopback, serves compiled UI, migrates local data, and stops cleanly. A current-tree temporary package passed the isolated readiness/backup/shutdown smoke and desktop browser checks for exact served asset bytes, owner setup, record persistence, native-dialog focus and viewer restrictions on2026-09-05. Not a signed installer or fresh-machine acceptance. |
+| A29 | Public provider handoff and return | In a fresh fictional workspace, prepare an approved handoff to `https://simbi.com/`; click Open provider, verify permission revalidation and the actual public homepage, use Back, recover the same pending handoff and record Not sent. No sign-in, clipboard copy, provider form submission or messaging. Passed in a separately authorized desktop Chromium check on2026-09-05 with external non-GET/HEAD requests blocked. This is not authenticated provider acceptance. |
+| A30 | Personal offline recovery and Windows commands | New local executable passes help/doctor/manual backup/restore/refusal checks. Recover the isolated owner using hidden interactive input; restart, reject the old password, accept the new password and retain the existing campaign. Passed2026-09-30 with no real account or external request. See the readiness ledger for hashes, evidence and limitations. |
 
 A19/A20 evidence includes reproducible screenshots, accessibility results, and browser-console review. A dedicated screen-reader audit and a live ngrok/domain canary remain manual gates for broad hosted release.
+
+### A29 operator procedure and observed result
+
+Only perform live-site checks when separately authorized. Use a new local test workspace and a fresh browser profile, not production records or an existing provider session. Create a fictional prospect named Public homepage QA fixture with source `https://simbi.com/` and a never-send draft explicitly marked LOCAL QA ONLY. Complete the local review, prepare the handoff and click Open provider. Expected: a fresh permission check for that exact handoff, then same-tab navigation to the public Simbi homepage; no outcome inferred. Use browser Back, resolve the original handoff and select Not sent. Expected: one cancelled handoff, draft approved again, no sent timestamp and no reply.
+
+Observed2026-09-05: those checks passed at1440x1000. The homepage title was Simbi - Welcome to the Symbiotic Economy and the SYMBIOTIC ECONOMY heading was rendered. The local application reported no console/page errors. The guarded browser blocked four page-initiated external POST requests (including one to Simbi and three analytics origins), producing four blocked-resource errors; a separate provider-side service-worker error also occurred. Do not report a clean unrestricted provider session or infer what those POST requests would have done. No provider fields or messaging controls were used. See the ledger for evidence provenance and remaining limits.

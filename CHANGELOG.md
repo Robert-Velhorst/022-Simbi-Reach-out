@@ -1,9 +1,21 @@
 # Changelog
 
+## Unreleased — personal recovery (2026-09-30)
+
+- Windows executable now dispatches operator commands instead of launching the server when arguments are supplied. Backup, restore, diagnostics and support commands use the same standalone storage as normal startup.
+- Added `recover-owner --email <existing-local-owner> --confirm`: hidden matching password prompts, one existing personal workspace, local-only mode, offline runtime lock, verified pre-recovery backup, atomic password/session/audit update. Account data and other accounts are preserved.
+- Packaged diagnostics recognize the compiled interface without requiring a development manifest. Expanded Windows smoke covers actual executable help, diagnostics, manual backup/restore and unconfirmed recovery refusal.
+- Rebuild the Windows package for these commands. Recovery changes the local app login, not Simbi credentials. Pre-recovery backups retain the prior login state; existing login-rate locks still expire normally.
+- Refreshed development dependencies after fresh audits found vulnerabilities: Vitest4.1.11, patched Undici/brace-expansion transitives in the lockfile, HTTPX2/HTTPCore2 2.12.0, and a urllib3>=2.8.0 minimum for the audit tool's dependency. See the readiness ledger for dated audit and compatibility evidence.
+
 ## Unreleased — production hardening (2026-09-05)
 
 ### Fixed
 
+- Admin-only data downloads no longer appear as usable links for viewers/editors; the existing server authorization remains unchanged.
+- Viewers retain read-only resource, draft and handoff-history access without being offered editing, approval, provider-opening or outcome-recording controls.
+- Shared dialogs now manage keyboard focus, Tab/Shift+Tab wrapping, guarded Escape dismissal and return focus to the current workflow action; native modal behavior blocks background interaction.
+- Startup distinguishes a missing/expired session from service/network failures during session lookup, with retry instead of a misleading sign-in prompt.
 - Durable restrictions for manual/CSV intake, duplicate imports and deletion/recreation, including records created before this upgrade.
 - Stale handoff outcomes, cross-draft idempotency reuse, missing retry content and recovered provider actions that bypassed current permission.
 - First-owner setup races, unprotected production bootstrap, password-change/login races and validation input echo.

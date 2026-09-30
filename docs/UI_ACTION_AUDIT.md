@@ -2,6 +2,8 @@
 
 Audited 2026-08-08. Every visible control below is wired to a route, local state change, download, or explicit external browser action. No disabled future/placeholder control is shown.
 
+The inventory below is historical, not a current all-role acceptance result. The 2026-09-05 follow-ups repaired misleading viewer actions and modal keyboard behavior, added a fictional local sent/reply/reminder/report browser journey, and separately verified the app's public Simbi homepage handoff/Back/Not sent path; see [the current production acceptance ledger](PRODUCTION_READINESS.md). A wired action or successful public-page navigation is not automatically a verified messaging integration. Authenticated provider operation and the complete role/accessibility audit remain separate gates.
+
 | Surface | Action | Result and guard |
 |---|---|---|
 | First run | Create workspace | Creates owner/workspace/provider-link records and authenticated session. Fails after first owner exists. |
@@ -29,8 +31,8 @@ Audited 2026-08-08. Every visible control below is wired to a route, local state
 | Settings | Compliance acknowledgement | Owner/admin only; requires all current-policy confirmations. |
 | Settings | Safety stop / resume | Owner/admin only; blocks approvals and handoffs without hiding investigation data. |
 | Settings | Provider save | Owner/admin only; HTTPS link only, assisted mode fixed, credentials rejected by design. |
-| Settings | Export | Authenticated full workspace JSON; intentionally sensitive. |
-| Settings | Support data | Authenticated redacted diagnostic JSON. |
+| Settings | Export | Owner/admin-only full workspace JSON; intentionally sensitive. Viewers/editors receive guidance, not a download action. |
+| Settings | Support data | Owner/admin-only redacted diagnostic JSON; other roles receive guidance. |
 | Settings | Add member | Owner/admin only; scrypt password and constrained role. |
 
 Accessibility controls include semantic headings, labels, table headers, focus-visible states, keyboard-operable buttons/links, dialog roles, status announcements, reduced-motion handling, and responsive navigation. Browser evidence at 1440x1000 and 390x844 is recorded in `FINAL_VERIFICATION_REPORT.md`.

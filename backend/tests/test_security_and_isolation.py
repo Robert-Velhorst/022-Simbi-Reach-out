@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import pytest
 from app.db import now, transaction
 from app.security import hash_password
 from conftest import csrf_headers, setup_owner
@@ -115,3 +116,20 @@ def test_support_bundle_is_redacted(client):
     assert "private-owner@example.test" not in text
     assert "password" not in text.lower()
     assert "redaction" in payload
+
+
+@pytest.mark.parametrize("role,status", [("owner", 200), ("admin", 200), ("editor", 403), ("viewer", 403)])
+@pytest.mark.parametrize("path", ["/api/export", "/api/support-bundle"])
+def test_data_downloads_require_workspace_administration(client, role, status, path):
+    setup_owner(client)
+    member = client.get("/api/me").json()
+    with transaction() as connection:
+        connection.execute(
+            "UPDATE memberships SET role=? WHERE user_id=? AND workspace_id=?",
+            (role, member["user_id"], member["workspace_id"]),
+        )
+    response = client.get(path)
+    assert response.status_code == status
+    if status == 403:
+        assert response.json()["error"]["code"] == "permission_denied"
+        assert "owner@example.test" not in response.text

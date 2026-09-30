@@ -16,6 +16,7 @@ The API and worker never call the provider. The provider is a separate trust bou
 - Salted scrypt password hashes; no fallback or default password.
 - Random opaque server-side sessions with bounded expiry.
 - Production first-owner setup requires an operator-configured high-entropy token; setup is serialized. Authenticated password change revokes all sessions, including protection against an old-password login racing the change.
+- Offline personal-owner recovery requires local mode, one existing workspace, the existing owner identity, exclusive runtime access and an integrity-checked safety snapshot. Hidden input is never accepted through an echoing fallback. Password/session/audit changes are atomic; the event records an offline method without claiming an authenticated actor. OS/database access is the authority for this command; it is not an HTTP reset endpoint. Old backups retain the old hash and sessions.
 - `HttpOnly`, `SameSite=Strict` session cookie and double-submit CSRF control.
 - Production startup requires an HTTPS origin, explicit public hostname, trusted proxy list, and secure cookies.
 - Failed logins are rate-limited by a one-way client/email fingerprint; unknown users still run a password verification to reduce account enumeration timing signals.

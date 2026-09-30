@@ -126,6 +126,24 @@ describe('review workflow recovery', () => {
 })
 
 describe('resource loading and settings', () => {
+  it.each(['viewer', 'editor'] as const)('does not offer admin-only data downloads to a %s', async (role) => {
+    vi.stubGlobal('fetch', vi.fn(async () => response({ workspace: { name: 'Test', compliance_ack_at: null, paused_at: null, retention_days: 365 }, providers: [], members: [], environment: 'test', demo_mode: false })))
+    render(<SettingsPage member={{ ...member, role }} onMemberChange={() => {}} />)
+    await screen.findByText(/Retention window: 365 days/)
+    expect(screen.queryByRole('link', { name: 'Export workspace JSON' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Download redacted support data' })).not.toBeInTheDocument()
+    expect(screen.getByText(/Ask a workspace owner or admin to export/)).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Change password' })).toBeEnabled()
+  })
+
+  it.each(['owner', 'admin'] as const)('keeps authorized data downloads available to an %s', async (role) => {
+    vi.stubGlobal('fetch', vi.fn(async () => response({ workspace: { name: 'Test', compliance_ack_at: null, paused_at: null, retention_days: 365 }, providers: [], members: [], environment: 'test', demo_mode: false })))
+    render(<SettingsPage member={{ ...member, role }} onMemberChange={() => {}} />)
+    await screen.findByText(/Retention window: 365 days/)
+    expect(screen.getByRole('link', { name: 'Export workspace JSON' })).toHaveAttribute('href', '/api/export')
+    expect(screen.getByRole('link', { name: 'Download redacted support data' })).toHaveAttribute('href', '/api/support-bundle')
+  })
+
   it('records a reason-bearing stop-contact decision and disables repeat suppression', async () => {
     let submitted: unknown
     let stopped = false
@@ -133,7 +151,7 @@ describe('resource loading and settings', () => {
       if (url.endsWith('/suppressions')) { submitted = JSON.parse(String(options.body)); stopped = true; return response({ id: 1 }) }
       return response(page([{ id: 7, name: 'Stop person', organization: '', provider: 'simbi', source_url: 'https://simbi.com/person', contact_handle: '', notes: '', consent_status: stopped ? 'opted_out' : 'consented', created_at: '2026-09-05' }]))
     }))
-    render(<ProspectsPage />)
+    render(<ProspectsPage canEdit />)
     fireEvent.click(await screen.findByRole('button', { name: 'Stop contact' }))
     const dialog = await screen.findByRole('dialog')
     fireEvent.change(within(dialog).getByLabelText('Reason'), { target: { value: 'Person asked not to be contacted again' } })
@@ -146,7 +164,7 @@ describe('resource loading and settings', () => {
 
   it.each([['Replies', RepliesPage], ['Reminders', RemindersPage], ['Reports', ReportsPage], ['Audit', AuditPage]] as const)('shows operational load failures for %s', async (_name, Component) => {
     vi.stubGlobal('fetch', vi.fn(async () => response({ error: { code: 'unavailable', message: 'Service unavailable for this page' } }, 503)))
-    render(<Component />)
+    render(<Component canEdit />)
     expect((await screen.findAllByText('Service unavailable for this page'))[0]).toBeVisible()
   })
 
@@ -172,7 +190,7 @@ describe('resource loading and settings', () => {
       offsets.push(offset)
       return response(page([{ id: Number(offset) + 1, name: offset === '0' ? 'First person' : 'Later person', organization: '', provider: 'simbi', source_url: 'https://simbi.com/person', contact_handle: '', notes: '', consent_status: 'consented', created_at: '2026-09-05' }], Number(offset), 51))
     }))
-    render(<ProspectsPage />)
+    render(<ProspectsPage canEdit />)
     await screen.findByText('First person')
     fireEvent.click(screen.getByRole('button', { name: /next page/i }))
     expect(await screen.findByText('Later person')).toBeVisible()
@@ -182,7 +200,7 @@ describe('resource loading and settings', () => {
 
   it('shows list request failures instead of silently showing an empty collection', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => response({ error: { message: 'Templates unavailable', code: 'unavailable' } }, 503)))
-    render(<TemplatesPage />)
+    render(<TemplatesPage canEdit />)
     expect(await screen.findByText('Templates unavailable')).toBeVisible()
   })
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import socket
+import sys
 import threading
 import urllib.request
 import webbrowser
@@ -56,8 +57,15 @@ def _open_when_ready(url: str, stop: threading.Event) -> None:
     print(f"Simbi is running at {url}; open that address in your browser.", flush=True)
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
     host, port = _configure()
+    arguments = sys.argv[1:] if argv is None else argv
+    if arguments:
+        # Configure storage before importing settings, just as in the app launch.
+        from .cli import main as operator_main
+
+        operator_main(arguments)
+        return
     # Detect a conflicting listener before migrating data or opening any browser.
     with socket.socket() as probe:
         if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):

@@ -195,8 +195,8 @@ td small { display: block; margin-top: 3px; font-size: .68rem; }
 .template-item > strong { display: block; margin: 19px 0 8px; font-size: .82rem; }
 .template-item p { margin: 0; white-space: pre-wrap; color: #4d596d; line-height: 1.55; font-size: .8rem; }
 
-.modal-backdrop { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 24px; background: rgba(14, 25, 44, .48); backdrop-filter: blur(2px); }
-.modal { width: min(680px, 100%); max-height: calc(100vh - 48px); overflow-y: auto; border-radius: 10px; background: #fff; box-shadow: var(--shadow); }
+.modal::backdrop { background: rgba(14, 25, 44, .48); backdrop-filter: blur(2px); }
+.modal { width: min(680px, calc(100% - 48px)); max-width: none; max-height: calc(100vh - 48px); max-height: calc(100dvh - 48px); margin: auto; padding: 0; border: 0; overflow-y: auto; overscroll-behavior: contain; border-radius: 10px; background: #fff; color: var(--ink); box-shadow: var(--shadow); }
 .modal > header { position: sticky; top: 0; z-index: 2; min-height: 62px; display: flex; align-items: center; justify-content: space-between; padding: 0 22px; border-bottom: 1px solid var(--border); background: #fff; }
 .modal > header h2 { margin: 0; font-size: 1.08rem; }
 .modal > .form-stack, .modal > .form-grid, .modal > .field, .modal > .notice, .modal > .handoff-actions, .modal > .outcome-box { margin-left: 22px; margin-right: 22px; }
@@ -334,8 +334,7 @@ td small { display: block; margin-top: 3px; font-size: .68rem; }
   .metric-rail > div { border-top: 1px solid var(--border); }
   .metric-rail > div:nth-child(odd) { border-right: 1px solid var(--border); }
   .metric-rail > div:nth-child(even) { border-right: 0; }
-  .modal-backdrop { padding: 0; align-items: end; }
-  .modal { max-height: 92vh; border-radius: 12px 12px 0 0; }
+  .modal { width: 100%; max-height: 92vh; max-height: 92dvh; margin: auto auto 0; border-radius: 12px 12px 0 0; }
   .assisted-note { align-items: flex-start; text-align: left; }
 }
 

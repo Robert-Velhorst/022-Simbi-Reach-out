@@ -1,5 +1,7 @@
 # Final verification report
 
+This is a **historical 2026-08-09 report**, not acceptance of the current worktree or an unrestricted production-ready declaration. Follow [the current production acceptance ledger](PRODUCTION_READINESS.md) for later repairs, their publication status and outstanding gates. The original specification's complete operator journey is not proved by the narrower local checks below.
+
 Verification date: 2026-08-09
 Starting commit: `6c3c7cbd23a4aa8edd3e1b0f6eb2fb8f13b3e44d`
 Working branch: `codex/implement-simbi-reach-out`

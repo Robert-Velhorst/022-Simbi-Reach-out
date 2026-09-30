@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import argparse
+import getpass
 import json
 import sqlite3
+import warnings
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -25,7 +27,7 @@ def doctor() -> int:
     try:
         applied = migrate()
         checks.append(("database", True, f"reachable; {len(applied)} migration(s) applied"))
-    except sqlite3.Error as exc:
+    except (sqlite3.Error, OSError, RuntimeError) as exc:
         checks.append(("database", False, str(exc)))
     checks.append(
         (
@@ -34,8 +36,14 @@ def doctor() -> int:
             settings.environment,
         )
     )
+    built_frontend = (ROOT / "frontend" / "dist" / "index.html").is_file()
+    source_frontend = (ROOT / "frontend" / "package.json").is_file()
     checks.append(
-        ("frontend", (ROOT / "frontend" / "package.json").exists(), "package manifest present")
+        (
+            "frontend",
+            built_frontend or source_frontend,
+            "compiled interface present" if built_frontend else "source package manifest check",
+        )
     )
     checks.append(
         (
@@ -150,7 +158,42 @@ def support_bundle() -> Path:
     return target
 
 
-def main() -> None:
+def recover_password(email: str, confirm: bool) -> int:
+    if not confirm:
+        print(
+            "Stop the app and worker, then re-run with --confirm to recover the local owner login."
+        )
+        return 2
+    if settings.environment not in {"local", "test"}:
+        print("Owner recovery is available only for a local personal installation.")
+        return 2
+    print(f"Local database: {settings.database_path.resolve()}")
+    print(
+        "This changes the app login, not your Simbi password. Existing sessions will be signed out."
+    )
+    try:
+        # Refuse getpass's fallback to visible stdin; never echo a recovery secret.
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", getpass.GetPassWarning)
+            passphrase = getpass.getpass("New local password (12-200 characters): ")
+            repeated = getpass.getpass("Repeat new local password: ")
+        if passphrase != repeated:
+            raise ValueError("Passwords do not match")
+        from .recovery import recover_owner_password
+
+        safety_backup = recover_owner_password(email, passphrase)
+    except (ValueError, RuntimeError, OSError, sqlite3.Error, getpass.GetPassWarning) as exc:
+        print(f"Recovery refused: {exc}")
+        return 2
+    except (EOFError, KeyboardInterrupt):
+        print("Recovery cancelled; no password changed.")
+        return 2
+    print(f"Pre-recovery backup: {safety_backup}")
+    print("Local owner password recovered. Restart the app and sign in with the new password.")
+    return 0
+
+
+def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="simbi", description="Simbi Reach-Out operator CLI")
     subparsers = parser.add_subparsers(dest="command", required=True)
     subparsers.add_parser("doctor")
@@ -175,7 +218,12 @@ def main() -> None:
         action="store_true",
         help="Explicitly include prospect names and draft text in the HAI feed",
     )
-    args = parser.parse_args()
+    recovery_parser = subparsers.add_parser(
+        "recover-owner", help="Recover the personal local owner login with the app stopped"
+    )
+    recovery_parser.add_argument("--email", required=True, help="Existing local owner login email")
+    recovery_parser.add_argument("--confirm", action="store_true")
+    args = parser.parse_args(argv)
     if args.command == "doctor":
         raise SystemExit(doctor())
     if args.command == "migrate":
@@ -190,6 +238,8 @@ def main() -> None:
         raise SystemExit(purge_retention(args.confirm))
     elif args.command == "support-bundle":
         support_bundle()
+    elif args.command == "recover-owner":
+        raise SystemExit(recover_password(args.email, args.confirm))
     elif args.command == "hai-export":
         target, count, changed = export_hai_feed(
             Path(args.destination), args.workspace_id, args.include_content
