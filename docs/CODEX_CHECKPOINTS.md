@@ -1,5 +1,7 @@
 # Codex checkpoints
 
+2026-10-01 follow-up: truthful loading/failure/empty states have98-test frontend and nine-route Chromium evidence. No real records/provider actions changed. Tests support an alternate loopback port and unique fixture directories; leave unrelated processes intact. Resume localization/general privacy/manual operator acceptance after publication. This usability repair does not complete the full goal.
+
 The C0-C7 entries below describe the earlier release, not completion of the continuing production-readiness goal. Resume that goal from [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md), including its follow-up source audit. The original specification still contains incomplete requirements; do not stop just because this historical table says Complete.
 
 Latest owner decision (2026-09-05): personal use for his own Simbi account. The deployment-design blocker is resolved. Follow the ledger's Confirmed personal-use scope section; do not ask again whether this should be a multi-team service. Preserve existing features, and continue with personal owner recovery, data safety, relevant usability/localization and actual manual-use acceptance. Do not treat optional shared-service requirements as personal-release blockers.

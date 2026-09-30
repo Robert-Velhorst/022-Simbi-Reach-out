@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — truthful loading and retries (2026-10-01)
+
+- Overview, prospects, campaigns, templates, review, replies, reminders, audit and reports no longer describe pending/failed first reads as empty records or zero figures.
+- Retained results are labelled during refresh or after refresh failure. Failed paged reads retry the requested page; changed searches immediately hide the previous query's rows/errors.
+- Draft choices/submission are disabled while prerequisite reads are pending or failed. No provider action, permission or stored record changes from these display repairs.
+- Browser tests now use unique fixture directories. `SIMBI_E2E_PORT` selects an unused loopback test port without interrupting another process.
+
 ## Unreleased — personal recovery (2026-09-30)
 
 - Windows executable now dispatches operator commands instead of launching the server when arguments are supplied. Backup, restore, diagnostics and support commands use the same standalone storage as normal startup.
