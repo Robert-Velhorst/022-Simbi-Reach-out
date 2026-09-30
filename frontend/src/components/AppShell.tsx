@@ -28,6 +28,7 @@ const navigation = [
 export default function AppShell({ member, onMemberChange, onSignedOut }: { member: Member; onMemberChange: (member: Member) => void; onSignedOut: () => void }) {
   const [open, setOpen] = useState(false)
   const location = useLocation()
+  const canEdit = ['owner', 'admin', 'editor'].includes(member.role)
 
   async function signOut() {
     await post('/auth/logout', {})
@@ -58,12 +59,12 @@ export default function AppShell({ member, onMemberChange, onSignedOut }: { memb
       <main className="content" key={location.pathname}>
         <Routes>
           <Route path="/" element={<Dashboard member={member} />} />
-          <Route path="/prospects" element={<ProspectsPage />} />
+          <Route path="/prospects" element={<ProspectsPage canEdit={canEdit} />} />
           <Route path="/campaigns" element={<CampaignsPage member={member} onMemberChange={onMemberChange} />} />
-          <Route path="/templates" element={<TemplatesPage />} />
+          <Route path="/templates" element={<TemplatesPage canEdit={canEdit} />} />
           <Route path="/review" element={<ReviewQueue member={member} onMemberChange={onMemberChange} />} />
-          <Route path="/replies" element={<RepliesPage />} />
-          <Route path="/reminders" element={<RemindersPage />} />
+          <Route path="/replies" element={<RepliesPage canEdit={canEdit} />} />
+          <Route path="/reminders" element={<RemindersPage canEdit={canEdit} />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/audit" element={<AuditPage />} />
           <Route path="/settings" element={<SettingsPage member={member} onMemberChange={onMemberChange} />} />

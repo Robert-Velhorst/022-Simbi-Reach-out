@@ -4,6 +4,8 @@
 
 **Project 022 — a locally hosted workspace for preparing, reviewing, and tracking personal outreach about services, exchanges, and networking.**
 
+**Intended use:** Robert's personal tool for his own Simbi account, as clarified on 2026-09-05. The release target is one owner and one personal workspace, not a shared service for independent teams. Existing team and deployment options are preserved, but multi-tenant signup, workspace switching, billing and expanded team administration are not personal-release requirements.
+
 Simbi Reach-Out helps you keep track of whom you want to contact, why the contact is appropriate, what you plan to say, and what happened afterward. You enter authorized information, prepare a message from a reusable template, review it, and record the outcome. Your work is stored in a database on the computer or server where you run the application.
 
 Sending is a separate human action. The app provides approved text to copy and a link to the provider's website. You decide whether to open that website, sign in there, and send the message yourself. Replies are entered manually too.
@@ -39,7 +41,7 @@ The application uses **React and TypeScript** in the browser, **FastAPI and Pyth
 
 ## Purpose and audience
 
-The intended users are individuals or small teams organizing service-related conversations: community coordinators, people arranging exchanges, and operators responding to relevant requests. Developers can maintain or extend the workflow and its deployment tools.
+The intended operator is the repository owner organizing his own service-related conversations and exchanges through his own Simbi account. Developers can maintain the personal workflow and its deployment tools. Existing local team roles are an optional capability, not the intended operating model or a claim of shared-service readiness.
 
 For example, you might have permission to respond to someone's request for project help. You record the request's source, create a campaign describing the exchange, prepare a personalized draft, review it, and manually contact the person. Later, you record their reply or a decision to stop. The app organizes this process; it does not find people for you or establish permission to contact them.
 
@@ -76,7 +78,7 @@ Records start empty. The app does not populate live contacts, import a provider 
 
 Complete first-owner setup while access is restricted to you. In production, the setup form also requires the operator's `SIMBI_SETUP_TOKEN` (a unique random secret of 32–200 characters). With no configured token, production setup refuses every request; there is no default token. Setup is serialized so concurrent requests cannot create two owners. Remove the token from the runtime environment after bootstrap and keep the owner password in a password manager.
 
-Use **Settings → Change password** to replace your application password. You must enter the current password; a successful change revokes every session for that user and requires sign-in again. This does not change your Simbi account password and is not a forgotten-password recovery service.
+Use **Settings → Change password** to replace your application password. You must enter the current password; a successful change revokes every session for that user and requires sign-in again. If you forgot the local owner's password, use the [offline recovery procedure](#forgotten-local-owner-password). Neither operation changes your Simbi account password.
 
 ### Prepare and track a conversation
 
@@ -130,11 +132,13 @@ The default text limit is 1 MiB of UTF-8 data, with a separate 5,000-row maximum
 | Add local members | Yes | No | No |
 | JSON export, support data, API prospect deletion | Yes | No | No |
 
-The backend enforces access even where a restricted role still sees a control in the interface. The first account is owner; new members can be admin, editor, or viewer. Email is a login identifier, not an invitation service. Authenticated password change is available; forgotten-password reset, member removal, and role editing are not exposed workflows.
+The backend enforces access even where a restricted role still sees a control in the interface. The first account is owner; new members can be admin, editor, or viewer. Email is a login identifier, not an invitation service. Authenticated password change and offline personal-owner recovery are available. Member removal and role editing are not exposed workflows.
 
 The schema supports workspace memberships and isolation, but shipped onboarding creates one workspace. There is no self-service workspace selector or organization provisioning. CLI commands use the filesystem authority of the person running them and do not use browser roles.
 
 ## Choose a deployment
+
+For the confirmed personal-use target, the Windows standalone application is the primary local option on this workspace's Windows computer. Keep it on loopback unless you deliberately choose remote access. Docker remains an alternative; ngrok, public-domain hosting and HAI are optional and need their respective acceptance checks only when used. Personal use does not require a public website or additional team accounts.
 
 | Mode | Requirements | Default address | Worker | Automatic backups by default |
 |---|---|---|---|---|
@@ -252,6 +256,8 @@ On Windows, install the development prerequisites and create `.venv`, then run:
 
 PyInstaller creates `dist/Simbi Reach-Out/` with the executable, Python runtime, libraries, migrations, and compiled UI. Distribute **the entire folder**, including `_internal`, not just the executable. The destination needs a compatible Windows system and browser, but no Python, Node, pnpm, or Docker.
 
+The preserved [legacy Selenium archive](legacy/README.md) is separate from the supported application and is excluded from Docker and Windows packages. It must not be used as an account integration or daily launcher.
+
 Successful Windows [Actions runs](https://github.com/Robert-Velhorst/022-Simbi-Reach-out/actions/workflows/ci.yml) upload a `simbi-reach-out-windows` artifact. Download it while GitHub retains it; sign-in may be required. There is no signed installer, automatic updater, or Windows service. Windows CI builds the package and runs an isolated executable smoke test covering readiness, packaged frontend serving, automatic backup creation, shutdown, and port release. A maintenance failure stops the standalone server rather than continuing with misleading readiness.
 
 ### Run and store data
@@ -263,6 +269,19 @@ Double-click `Simbi Reach-Out.exe`. It opens the default browser at `http://127.
 - Support bundles generated against that database: its `data\support-bundles` folder
 
 These paths differ from the source checkout. Replacing the package folder does not automatically migrate data from another installation. For a port conflict, set `SIMBI_WINDOWS_PORT` to an unused port from 1024–65535 before starting. Launch from a clean environment when switching between local and hosted modes because existing process settings are inherited.
+
+### Maintain the Windows package
+
+The current source supports operator commands directly through the executable. Rebuild before using these commands; older downloaded artifacts may only launch the app. Open PowerShell in the folder containing `Simbi Reach-Out.exe` and run:
+
+```powershell
+& '.\Simbi Reach-Out.exe' --help
+& '.\Simbi Reach-Out.exe' doctor
+& '.\Simbi Reach-Out.exe' backup
+& '.\Simbi Reach-Out.exe' support-bundle
+```
+
+With no arguments, the executable starts the app normally. Commands use the same standalone data location and inherited overrides as the app and then exit without starting a web server. To restore, stop the app first, choose an existing backup, and run `& '.\Simbi Reach-Out.exe' restore 'C:\SimbiBackups\actual-backup.db' --confirm`. The [restore safeguards](#backup-and-restore) apply. A command does not require Python or the source checkout.
 
 ## Temporary remote access with ngrok
 
@@ -443,7 +462,7 @@ Use the installed source virtual environment from the repository root:
 .\.venv\Scripts\python.exe -m app.cli support-bundle
 ```
 
-`doctor` checks database/migrations, environment, the source frontend manifest, and absence of legacy root automation scripts. It may create/migrate the database; it is not purely read-only and does not prove browser/provider readiness. Packaged/container runtimes may lack that source manifest; use HTTP readiness there. `migrate` applies numbered SQL migrations; rollback migrations are not supplied.
+`doctor` checks database/migrations, environment, the compiled frontend index (or source manifest for development), and absence of legacy root automation scripts. It may create/migrate the database; it is not purely read-only and does not prove browser/provider readiness. A compiled index check does not validate every asset; HTTP readiness and browser checks remain separate. `migrate` applies numbered SQL migrations; rollback migrations are not supplied.
 
 `reconcile` reports orphan drafts, missing send timestamps, and expired sessions. `reconcile --repair` removes expired sessions and marks `sent` records without timestamps as ambiguous; it does not repair every inconsistency or infer a send. `purge-retention --confirm` performs the limited cleanup above. Both modify the selected database, so inspect settings and back up first.
 
@@ -460,6 +479,20 @@ Before restoring, confirm the database path and backup, preserve current data, a
 Replace the example with an existing `.db` file; actual backup names include a unique suffix to avoid collisions. Stop the app and worker first. Restore acquires an exclusive runtime lease, stages the candidate using SQLite's backup API (including committed WAL content), validates integrity, foreign keys, exact schema and known migration history, and applies pending migrations to the staging copy. It creates a validated safety backup of the existing target before restoring through SQLite's atomic backup transaction. Invalid candidates, active managed runtimes, and unsupported schemas are refused.
 
 Use the correct environment for source, standalone, or container storage. Container restore requires controlled access to the volume while all writers are stopped. The lock cannot control unrelated external database tools. A corrupt existing target that cannot produce the required safety snapshot is refused and needs a separate, explicitly planned recovery procedure. Backup publication requires filesystem hard-link support (for example NTFS); unsupported destinations fail rather than overwrite another backup. A workspace JSON export cannot replace a database backup. Downgrading requires schema compatibility checks or a compatible pre-upgrade backup.
+
+### Forgotten local owner password
+
+Stop the app and worker. In PowerShell, open the folder containing the current Windows executable, replace the email with your existing **local app owner login**, and run:
+
+```powershell
+& '.\Simbi Reach-Out.exe' recover-owner --email 'your-local-login@example.com' --confirm
+```
+
+For a source installation, use `.\.venv\Scripts\python.exe -m app.cli recover-owner --email 'your-local-login@example.com' --confirm` from the repository root instead. Check the printed database path before entering a password. The command asks twice for a new 12–200-character password with hidden input; it accepts no password command-line argument and refuses a terminal that cannot hide input.
+
+Recovery requires an existing, valid database with one personal workspace and a matching owner account, in local mode. It refuses a running managed app/worker, missing or unsupported database, non-owner email, invalid password, or failed safety backup. It preserves records and other accounts, changes the owner's password, revokes that owner's sessions, and records an offline recovery audit event. It does not recover a Simbi login, create a replacement workspace, or offer remote password reset. Anyone who can operate on the local database already has privileged access to its contents; protect the Windows account and storage.
+
+Restart the app and sign in with the new password. A previous sign-in rate lock remains in effect until its displayed waiting period expires. The pre-recovery backup contains the old password hash and sessions; restoring it also restores that earlier account state. Protect all database backups as sensitive files.
 
 ## Architecture and repository map
 
@@ -536,7 +569,15 @@ Use [commit-specific Actions results](https://github.com/Robert-Velhorst/022-Sim
 
 The 2026-09-05 hardening pass was merged in [PR #86](https://github.com/Robert-Velhorst/022-Simbi-Reach-out/pull/86) after [both Linux and Windows CI passed](https://github.com/Robert-Velhorst/022-Simbi-Reach-out/actions/runs/33928602539): 75 backend tests, 34 frontend tests, browser acceptance, dependency audits, clean Docker build, production-container storage/maintenance smoke, and Windows executable smoke. The container checks verified the actual import/asset layout, protected setup, backup integrity, private HAI feed storage, singleton worker exclusion, and readiness returning unavailable after the worker stopped. This proves those tested paths, not live provider sending, public TLS/ngrok reachability, or receiving-side HAI ingestion.
 
-The suites cover the assisted path, isolation/security, exact-content approval, durable restrictions, stale handoffs, account races, bounded pagination, worker lifecycle, HAI, and backup/restore. Browser acceptance covers setup through an interrupted/recovered and cancelled handoff without provider navigation, password change and reauthentication, responsive navigation, selected automated WCAG checks, and browser errors. See the [production acceptance ledger](docs/PRODUCTION_READINESS.md) for current evidence and outstanding release gates rather than treating an older test count as a current guarantee. These checks are not exhaustive security or accessibility certification.
+A subsequent local follow-up corrected misleading admin-only download links, session-check failures being displayed as sign-outs, write controls being offered to read-only viewers, and shared-dialog keyboard/focus defects. Local evidence includes 83 backend tests from the viewer follow-up, 75 frontend tests after the dialog repairs, lint, the frontend build and expanded browser acceptance. The browser checks cover local viewer permissions, readable handoff history, session recovery, Tab/Escape navigation, return focus after workflow state changes and short-screen dialog scrolling. Native HTML dialog support is required; this follow-up was browser-tested in Chromium only. These changes remain uncommitted: this is local verification, not additional hosted deployment or GitHub CI evidence. See the [production acceptance ledger](docs/PRODUCTION_READINESS.md#dialog-keyboard-follow-up-2026-09-05-uncommitted) for exact evidence and the incomplete full accessibility/action audit.
+
+The suites cover the assisted path, isolation/security, exact-content approval, durable restrictions, stale handoffs, account races, bounded pagination, worker lifecycle, HAI, and backup/restore. Browser acceptance covers setup through an interrupted/recovered and cancelled handoff without provider navigation, password change and reauthentication, responsive navigation, selected automated WCAG checks, and browser errors. The uncommitted browser follow-up also exercises a second fictional conversation through a simulated sent outcome, persistent reply, manual reminder completion, reply-triggered reminder cancellation and rendered report counts. These fixture records are not evidence of a real message or reply on Simbi. See the [production acceptance ledger](docs/PRODUCTION_READINESS.md) for current evidence and outstanding release gates rather than treating an older test count as a current guarantee. These checks are not exhaustive security or accessibility certification.
+
+The 2026-09-30/2026-10-01 personal-use increment adds offline owner-password recovery and executable operator commands. The refreshed dependency set passes96 backend tests,75 frontend tests, lint/build, frozen-lockfile installation and full local Chromium acceptance. Fresh frontend and Python audits report no known vulnerabilities after updates to development dependencies. The ledger records the observed audit failures, patched versions, separate package checks and outstanding original requirements; these local results do not by themselves prove a finished release or authenticated provider workflow.
+
+A separate authorized live check on2026-09-05 used a fresh fictional workspace to open the real public Simbi homepage through the app's Open provider button, then use browser Back, recover the same handoff and record Not sent. The exact handoff was revalidated before navigation; opening the page did not mark it sent. External writes were blocked by the test browser, and no Simbi login, clipboard copy or messaging was attempted. This is dated public-navigation acceptance, not authenticated provider or delivery proof, and it is not part of routine CI. See [A29 and its observed limitations](docs/ACCEPTANCE_TESTS.md#a29-operator-procedure-and-observed-result).
+
+The current unpublished interface changes were also packaged separately on Windows on2026-09-05. The new executable passed isolated readiness, frontend-serving, backup and shutdown checks. Desktop browser checks against that executable verified exact current JS/CSS bytes, owner setup, campaign persistence, native-dialog initial focus and viewer restrictions. This was a local build using existing dependencies, not a signed installer, fresh-machine installation or new GitHub release. Artifact hashes and limitations are recorded in the [Windows package acceptance evidence](docs/PRODUCTION_READINESS.md#current-tree-windows-package-acceptance-2026-09-05-uncommitted).
 
 ### Run checks
 
@@ -546,7 +587,7 @@ After dependency installation:
 .\scripts\verify.ps1
 ```
 
-This script also expects Docker and installs Chromium. Inspect individual results: it invokes external commands without checking every `$LASTEXITCODE`, so its final exit code alone does not prove every check passed. CI runs them as separate failing steps. For explicit checks:
+Run this script in PowerShell 7.2 or newer. It also expects Docker and installs Chromium. Each external check runs through `Invoke-SimbiNative`, which stops the script and reports the command's nonzero exit code on failure; missing commands also stop execution. A successful run proves only the checks included in this script, not every release gate listed below. CI runs its checks as separate failing steps. For explicit checks:
 
 ```powershell
 .\.venv\Scripts\python.exe -m ruff check backend
@@ -599,7 +640,7 @@ Indexes, bounded API lists, compiled assets, and one maintenance loop keep the a
 
 - No official messaging integration, automated sending, scraping, inbox reading, delivery receipts, credit accounting, billing, or AI generation. Entered outcomes cannot independently verify provider events.
 - No managed hosting, signed installer, automatic updates, Windows service, or live public-domain/ngrok/HAI acceptance supplied by the repository itself.
-- No forgotten-password recovery, MFA/SSO, invitation email, workspace provisioning, member removal, or role-change workflows. Authenticated password change exists and revokes all sessions; wider hosting still requires additional account administration.
+- No remote password reset, MFA/SSO, invitation email, workspace provisioning, member removal, or role-change workflows. Offline owner recovery is limited to a local personal installation; wider hosting still requires additional account administration.
 - Pagination does not establish large-scale simultaneous-user capacity. SQLite remains a single-host design; measure your workload and preserve the single-worker constraint.
 - Templates have a version field but no editing/history workflow. Prospect and campaign metadata editing is limited. Autosave and translation catalogs are absent.
 - Review scoring uses English text checks and does not enforce a minimum approval score. Recorded consent is not provider-verified.

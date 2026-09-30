@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { api } from './api'
+import { api, ApiError } from './api'
 import { SetupScreen, LoginScreen } from './components/Auth'
 import AppShell from './components/AppShell'
 import { Button } from './components/ui'
@@ -22,7 +22,8 @@ export default function App() {
       if (!authStatus.setup_required) {
         try {
           setMember(await api<Member>('/me'))
-        } catch {
+        } catch (cause) {
+          if (!(cause instanceof ApiError) || !['authentication_required', 'session_expired'].includes(cause.code)) throw cause
           setMember(null)
         }
       }

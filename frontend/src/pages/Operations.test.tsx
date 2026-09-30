@@ -19,7 +19,7 @@ it.each([['Replies', RepliesPage, 'Record reply'], ['Reminders', RemindersPage, 
     }
     return response({ items: [], total: 0, limit: 50, offset: 0 })
   }))
-  render(<Component />)
+  render(<Component canEdit />)
   await waitFor(() => expect(reads).toBe(1))
   fireEvent.click(screen.getByRole('button', { name: openButton }))
   const dialog = await screen.findByRole('dialog')
@@ -45,7 +45,7 @@ it.each([
     if (offset === 50 && failNext) { failNext = false; return response({ error: { code: 'temporary', message: 'Page temporarily unavailable' } }, 503) }
     return response({ items: [item(offset + 1)], total: 51, limit: 50, offset })
   }))
-  render(<Component />)
+  render(<Component canEdit />)
   await screen.findByText(`${label} 1`)
   fireEvent.click(screen.getByRole('button', { name: 'Next page' }))
   expect(await screen.findByText('Page temporarily unavailable')).toBeVisible()
@@ -72,7 +72,7 @@ it('refreshes open reminders after completion on a later page', async () => {
     offsets.push(offset)
     return response({ items: completed ? [] : [reminder(offset + 1)], total: completed ? 50 : 51, limit: 50, offset })
   }))
-  render(<RemindersPage />)
+  render(<RemindersPage canEdit />)
   await screen.findByText('Reminder 1')
   fireEvent.click(screen.getByRole('button', { name: 'Next page' }))
   await screen.findByText('Reminder 51')

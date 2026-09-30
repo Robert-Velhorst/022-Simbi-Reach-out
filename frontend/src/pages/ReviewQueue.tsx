@@ -15,6 +15,7 @@ const checks = [
 ] as const
 
 export default function ReviewQueue({ member }: { member: Member; onMemberChange: (member: Member) => void }) {
+  const canEdit = ['owner', 'admin', 'editor'].includes(member.role)
   const drafts = usePage<Draft>('/drafts')
   const campaigns = usePage<Campaign>('/campaigns?order=name')
   const prospects = usePage<Prospect>('/prospects?order=name')
@@ -27,6 +28,7 @@ export default function ReviewQueue({ member }: { member: Member; onMemberChange
   const [reviewChecks, setReviewChecks] = useState<{ key: string; values: string[] }>({ key: '', values: [] })
   const [edited, setEdited] = useState<{ key: string; subject: string; body: string } | null>(null)
   const [busy, setBusy] = useState(false)
+  const handoffTrigger = useRef<HTMLButtonElement | null>(null)
   const handoffKeys = useRef(new Map<string, string>())
   const [copyMessage, setCopyMessage] = useState('')
   const load = () => drafts.load()
@@ -38,7 +40,7 @@ export default function ReviewQueue({ member }: { member: Member; onMemberChange
   function setChecked(values: string[]) { setReviewChecks({ key: selectedKey, values }) }
 
   async function createDraft(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setMessage(''); setBusy(true)
+    event.preventDefault(); if (!canEdit) return; setMessage(''); setBusy(true)
     const values = Object.fromEntries(new FormData(event.currentTarget))
     try {
       await post('/drafts', { campaign_id: Number(values.campaign_id), prospect_id: Number(values.prospect_id), template_id: Number(values.template_id) })
@@ -48,14 +50,14 @@ export default function ReviewQueue({ member }: { member: Member; onMemberChange
   }
 
   async function saveDraft(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); if (!selected) return; setMessage(''); setBusy(true)
+    event.preventDefault(); if (!canEdit || !selected) return; setMessage(''); setBusy(true)
     try { await patch(`/drafts/${selected.id}`, Object.fromEntries(new FormData(event.currentTarget))); setChecked([]); setEdited(null); await load() }
     catch (cause) { setMessage(cause instanceof ApiError ? cause.message : 'Draft could not be saved') }
     finally { setBusy(false) }
   }
 
   async function review(decision: 'approve' | 'decline') {
-    if (!selected || busy || (decision === 'approve' && (dirty || !selected.content_hash))) return; setMessage(''); setBusy(true)
+    if (!canEdit || !selected || busy || (decision === 'approve' && (dirty || !selected.content_hash))) return; setMessage(''); setBusy(true)
     try { await post(`/drafts/${selected.id}/review`, { decision, acknowledged_checks: checked, ...(decision === 'approve' ? { expected_content_hash: selected.content_hash } : {}) }); setChecked([]); await load() }
     catch (cause) {
       setMessage(cause instanceof ApiError ? cause.message : 'Review could not be recorded')
@@ -65,7 +67,7 @@ export default function ReviewQueue({ member }: { member: Member; onMemberChange
   }
 
   async function prepareHandoff() {
-    if (!selected) return; setMessage(''); setBusy(true)
+    if (!canEdit || !selected) return; setMessage(''); setBusy(true)
     try {
       const storageKey = `simbi-handoff-v1:${member.workspace_id}:${member.user_id}:${selected.id}:${selected.updated_at}`
       let key = handoffKeys.current.get(storageKey)
@@ -97,7 +99,7 @@ export default function ReviewQueue({ member }: { member: Member; onMemberChange
   }
 
   async function outcome(value: 'sent' | 'ambiguous' | 'cancelled') {
-    if (!handoff || busy) return
+    if (!canEdit || !handoff || busy) return
     setMessage(''); setBusy(true)
     try { await post(`/handoffs/${handoff.id}/outcome`, { outcome: value }); handoffKeys.current.clear(); setHandoff(null); await load() }
     catch (cause) { setMessage(cause instanceof ApiError ? cause.message : 'Outcome could not be recorded') }
@@ -105,7 +107,7 @@ export default function ReviewQueue({ member }: { member: Member; onMemberChange
   }
 
   async function copyHandoff() {
-    if (!handoff || busy || handoff.can_open_provider !== true) return
+    if (!canEdit || !handoff || busy || handoff.can_open_provider !== true) return
     setBusy(true); setMessage(''); setCopyMessage('')
     try {
       const current = await revalidateHandoff()
@@ -133,7 +135,7 @@ export default function ReviewQueue({ member }: { member: Member; onMemberChange
   }
 
   async function openProvider() {
-    if (!handoff || busy || handoff.can_open_provider !== true) return
+    if (!canEdit || !handoff || busy || handoff.can_open_provider !== true) return
     setBusy(true); setMessage('')
     try {
       const current = await revalidateHandoff()
@@ -142,7 +144,8 @@ export default function ReviewQueue({ member }: { member: Member; onMemberChange
   }
 
   return <div className="page review-page">
-    <header className="page-hero"><div><h1>Review queue</h1><p>Every message stays here until a human reviews its source, wording, policy context and intended manual action.</p></div><Button onClick={() => { setMessage(''); setCreateOpen(true) }}><FilePlus2 size={17} />Prepare draft</Button></header>
+    <header className="page-hero"><div><h1>Review queue</h1><p>Every message stays here until a human reviews its source, wording, policy context and intended manual action.</p></div>{canEdit ? <Button onClick={() => { setMessage(''); setCreateOpen(true) }}><FilePlus2 size={17} />Prepare draft</Button> : null}</header>
+    {!canEdit ? <Notice>Your viewer role has read-only access. Ask an owner, admin or editor to make changes.</Notice> : null}
     {!member.compliance_ack_at ? <Notice tone="warning">Approval is locked until an owner or admin completes the compliance review in Settings.</Notice> : null}
     {message ? <Notice tone="danger">{message}</Notice> : null}
     {[drafts, campaigns, prospects, templates].map((source, index) => source.error ? <Notice key={index} tone="danger">{source.error}<Button variant="quiet" onClick={() => void source.load()}>Retry</Button></Notice> : null)}
@@ -155,16 +158,16 @@ export default function ReviewQueue({ member }: { member: Member; onMemberChange
         <div className="review-context"><div><span>Campaign</span><strong>{selected.campaign_name}</strong></div><div><span>Source context</span><a href={selected.source_url} target="_blank" rel="noreferrer">Open reviewed source <ArrowUpRight size={14} /></a></div><div><span>Consent</span><Status value={selected.consent_status} /></div><div><span>Quality</span><strong>{selected.quality_score}/100</strong></div></div>
         {selected.safety_flags.length ? <Notice tone="warning"><strong>Review signals:</strong> {selected.safety_flags.map((flag) => flag.replaceAll('_', ' ')).join(', ')}. These are prompts for judgment, not automatic rejection.</Notice> : <Notice tone="success">The deterministic quality checks found no warnings. Human review is still required.</Notice>}
         {dirty ? <Notice tone="warning">Save your changes, then repeat the review checks before approving or preparing a handoff.</Notice> : null}<form key={selectedKey} className="form-stack draft-editor" onSubmit={saveDraft}>
-          <Field label="Subject"><Input name="subject" value={editor.subject} onChange={(event) => setEdited({ key: selectedKey, ...editor, subject: event.target.value })} disabled={busy || !['needs_review', 'approved'].includes(selected.state)} /></Field>
-          <Field label="Message"><Textarea name="body" rows={12} value={editor.body} onChange={(event) => setEdited({ key: selectedKey, ...editor, body: event.target.value })} disabled={busy || !['needs_review', 'approved'].includes(selected.state)} required /></Field>
-          {['needs_review', 'approved'].includes(selected.state) ? <div className="editor-actions"><Button variant="secondary" disabled={busy}>Save and return to review</Button></div> : null}
+          <Field label="Subject"><Input name="subject" readOnly={!canEdit} value={editor.subject} onChange={(event) => setEdited({ key: selectedKey, ...editor, subject: event.target.value })} disabled={busy || !['needs_review', 'approved'].includes(selected.state)} /></Field>
+          <Field label="Message"><Textarea name="body" readOnly={!canEdit} rows={12} value={editor.body} onChange={(event) => setEdited({ key: selectedKey, ...editor, body: event.target.value })} disabled={busy || !['needs_review', 'approved'].includes(selected.state)} required /></Field>
+          {canEdit && ['needs_review', 'approved'].includes(selected.state) ? <div className="editor-actions"><Button variant="secondary" disabled={busy}>Save and return to review</Button></div> : null}
         </form>
-        {selected.state === 'needs_review' ? <section className="approval-box"><h3><ShieldAlert size={19} />Pre-action safety review</h3>{checks.map(([value, label]) => <label className="check-row" key={value}><input type="checkbox" checked={checked.includes(value)} onChange={(event) => setChecked(event.target.checked ? [...checked, value] : checked.filter((item) => item !== value))} /><span>{label}</span></label>)}<div className="approval-actions"><Button variant="quiet" onClick={() => review('decline')} disabled={busy}>Decline</Button><Button onClick={() => review('approve')} disabled={busy || dirty || !selected.content_hash || Boolean(drafts.error) || checked.length !== checks.length}><Check size={17} />Approve for handoff</Button></div></section> : null}
-        {selected.state === 'approved' ? <section className="approval-box ready"><h3><Check size={19} />Approved for assisted handoff</h3><p>The next step prepares a copyable message and provider link. It will not log in, fill a form or send anything.</p><Button onClick={prepareHandoff} disabled={busy || dirty || Boolean(drafts.error) || member.demo_mode}><Clipboard size={17} />Copy and open provider</Button>{member.demo_mode ? <small>External handoffs are blocked in demo mode.</small> : null}</section> : null}
-        {['ambiguous', 'handoff_created'].includes(selected.state) ? <section className="approval-box"><Notice tone="danger">This handoff has no confirmed final outcome. Do not retry blindly. Verify the provider conversation manually, then record the result.</Notice><Button variant="secondary" onClick={resolveHandoff} disabled={busy}>Resolve latest handoff</Button></section> : null}
+        {canEdit && selected.state === 'needs_review' ? <section className="approval-box"><h3><ShieldAlert size={19} />Pre-action safety review</h3>{checks.map(([value, label]) => <label className="check-row" key={value}><input type="checkbox" checked={checked.includes(value)} onChange={(event) => setChecked(event.target.checked ? [...checked, value] : checked.filter((item) => item !== value))} /><span>{label}</span></label>)}<div className="approval-actions"><Button variant="quiet" onClick={() => review('decline')} disabled={busy}>Decline</Button><Button onClick={() => review('approve')} disabled={busy || dirty || !selected.content_hash || Boolean(drafts.error) || checked.length !== checks.length}><Check size={17} />Approve for handoff</Button></div></section> : null}
+        {canEdit && selected.state === 'approved' ? <section className="approval-box ready"><h3><Check size={19} />Approved for assisted handoff</h3><p>The next step prepares a copyable message and provider link. It will not log in, fill a form or send anything.</p><Button ref={handoffTrigger} onClick={(event) => { handoffTrigger.current = event.currentTarget; void prepareHandoff() }} disabled={busy || dirty || Boolean(drafts.error) || member.demo_mode}><Clipboard size={17} />Copy and open provider</Button>{member.demo_mode ? <small>External handoffs are blocked in demo mode.</small> : null}</section> : null}
+        {['ambiguous', 'handoff_created'].includes(selected.state) ? <section className="approval-box"><Notice tone="danger">This handoff has no confirmed final outcome. Do not retry blindly. An owner, admin or editor must verify the provider conversation manually, then record the result.</Notice><Button variant="secondary" ref={handoffTrigger} onClick={(event) => { handoffTrigger.current = event.currentTarget; void resolveHandoff() }} disabled={busy}>{canEdit ? 'Resolve latest handoff' : 'View latest handoff'}</Button></section> : null}
       </Panel> : null}
-    </div> : <Panel><EmptyState title="No drafts to review" detail="Prepare a draft after you have a campaign, an authorized prospect record and a reusable template." action={<Button onClick={() => setCreateOpen(true)}><Sparkles size={17} />Prepare first draft</Button>} /></Panel>}
-    {createOpen ? <Modal title="Prepare a deterministic draft" onClose={() => setCreateOpen(false)}>{message ? <Notice tone="danger">{message}</Notice> : <Notice>Template placeholders are rendered locally. The result always starts in the review queue.</Notice>}<form className="form-stack" onSubmit={createDraft}><div><PageNavigation page={campaigns.page} loading={campaigns.loading} load={campaigns.load} /><Field label="Campaign"><Select key={campaigns.page?.offset} name="campaign_id" required defaultValue=""><option value="" disabled>Select campaign</option>{data.campaigns.filter((campaign) => campaign.status !== 'archived').map((campaign) => <option value={campaign.id} key={campaign.id}>{campaign.name} ({campaign.status})</option>)}</Select></Field></div><div><PageNavigation page={prospects.page} loading={prospects.loading} load={prospects.load} /><Field label="Prospect"><Select key={prospects.page?.offset} name="prospect_id" required defaultValue=""><option value="" disabled>Select prospect</option>{data.prospects.filter((prospect) => !['opted_out', 'blocked'].includes(prospect.consent_status)).map((prospect) => <option value={prospect.id} key={prospect.id}>{prospect.name}{prospect.organization ? ` — ${prospect.organization}` : ''}</option>)}</Select></Field></div><div><PageNavigation page={templates.page} loading={templates.loading} load={templates.load} /><Field label="Template"><Select key={templates.page?.offset} name="template_id" required defaultValue=""><option value="" disabled>Select template</option>{data.templates.map((template) => <option value={template.id} key={template.id}>{template.name}</option>)}</Select></Field></div><div className="modal-actions"><Button type="button" variant="quiet" onClick={() => setCreateOpen(false)}>Cancel</Button><Button disabled={busy}>Prepare draft</Button></div></form></Modal> : null}
-    {handoff ? <Modal title="Manual provider handoff" onClose={() => { if (!busy) setHandoff(null) }}>{message ? <Notice tone="danger">{message}</Notice> : null}{copyMessage ? <Notice>{copyMessage}</Notice> : null}<Notice tone="warning">The app has not sent anything. Verify what happened on the provider before recording an outcome; do not send again blindly.</Notice><Field label="Approved message"><Textarea readOnly rows={12} value={`${handoff.subject ? `${handoff.subject}\n\n` : ''}${handoff.body}`} /></Field>{handoff.can_open_provider === true ? <div className="handoff-actions"><Button variant="secondary" disabled={busy} onClick={copyHandoff}><Clipboard size={17} />Copy message</Button><Button disabled={busy} onClick={openProvider}>Open provider <ArrowUpRight size={17} /></Button><small>Opens in this tab after checking permission. Use browser Back to return and resolve this handoff.</small></div> : <Notice tone="warning">Review permissions changed. Copying and opening the provider are disabled. You may record the historical outcome only.</Notice>}<div className="outcome-box"><strong>After checking the provider, record the outcome:</strong><div><Button variant="secondary" disabled={busy} onClick={() => outcome('cancelled')}>Not sent</Button><Button variant="danger" disabled={busy} onClick={() => outcome('ambiguous')}>Unsure — needs verification</Button><Button disabled={busy} onClick={() => outcome('sent')}>Sent manually</Button></div></div></Modal> : null}
+    </div> : <Panel><EmptyState title="No drafts to review" detail="Prepare a draft after you have a campaign, an authorized prospect record and a reusable template." action={canEdit ? <Button onClick={() => setCreateOpen(true)}><Sparkles size={17} />Prepare first draft</Button> : null} /></Panel>}
+    {canEdit && createOpen ? <Modal title="Prepare a deterministic draft" onClose={() => setCreateOpen(false)}>{message ? <Notice tone="danger">{message}</Notice> : <Notice>Template placeholders are rendered locally. The result always starts in the review queue.</Notice>}<form className="form-stack" onSubmit={createDraft}><div><PageNavigation page={campaigns.page} loading={campaigns.loading} load={campaigns.load} /><Field label="Campaign"><Select key={campaigns.page?.offset} name="campaign_id" required defaultValue=""><option value="" disabled>Select campaign</option>{data.campaigns.filter((campaign) => campaign.status !== 'archived').map((campaign) => <option value={campaign.id} key={campaign.id}>{campaign.name} ({campaign.status})</option>)}</Select></Field></div><div><PageNavigation page={prospects.page} loading={prospects.loading} load={prospects.load} /><Field label="Prospect"><Select key={prospects.page?.offset} name="prospect_id" required defaultValue=""><option value="" disabled>Select prospect</option>{data.prospects.filter((prospect) => !['opted_out', 'blocked'].includes(prospect.consent_status)).map((prospect) => <option value={prospect.id} key={prospect.id}>{prospect.name}{prospect.organization ? ` — ${prospect.organization}` : ''}</option>)}</Select></Field></div><div><PageNavigation page={templates.page} loading={templates.loading} load={templates.load} /><Field label="Template"><Select key={templates.page?.offset} name="template_id" required defaultValue=""><option value="" disabled>Select template</option>{data.templates.map((template) => <option value={template.id} key={template.id}>{template.name}</option>)}</Select></Field></div><div className="modal-actions"><Button type="button" variant="quiet" onClick={() => setCreateOpen(false)}>Cancel</Button><Button disabled={busy}>Prepare draft</Button></div></form></Modal> : null}
+    {handoff ? <Modal title="Manual provider handoff" returnFocusRef={handoffTrigger} onClose={() => { if (!busy) setHandoff(null) }}>{message ? <Notice tone="danger">{message}</Notice> : null}{copyMessage ? <Notice>{copyMessage}</Notice> : null}<Notice tone="warning">The app has not sent anything. Verify what happened on the provider before recording an outcome; do not send again blindly.</Notice><Field label="Approved message"><Textarea readOnly rows={12} value={`${handoff.subject ? `${handoff.subject}\n\n` : ''}${handoff.body}`} /></Field>{canEdit && handoff.can_open_provider === true ? <div className="handoff-actions"><Button variant="secondary" disabled={busy} onClick={copyHandoff}><Clipboard size={17} />Copy message</Button><Button disabled={busy} onClick={openProvider}>Open provider <ArrowUpRight size={17} /></Button><small>Opens in this tab after checking permission. Use browser Back to return and resolve this handoff.</small></div> : <Notice tone="warning">{canEdit ? 'Review permissions changed. Copying and opening the provider are disabled. You may record the historical outcome only.' : 'Your viewer role can read this handoff history but cannot copy, open or record an outcome.'}</Notice>}{canEdit ? <div className="outcome-box"><strong>After checking the provider, record the outcome:</strong><div><Button variant="secondary" disabled={busy} onClick={() => outcome('cancelled')}>Not sent</Button><Button variant="danger" disabled={busy} onClick={() => outcome('ambiguous')}>Unsure — needs verification</Button><Button disabled={busy} onClick={() => outcome('sent')}>Sent manually</Button></div></div> : null}</Modal> : null}
   </div>
 }

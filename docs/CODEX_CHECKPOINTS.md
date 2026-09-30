@@ -1,5 +1,11 @@
 # Codex checkpoints
 
+The C0-C7 entries below describe the earlier release, not completion of the continuing production-readiness goal. Resume that goal from [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md), including its follow-up source audit. The original specification still contains incomplete requirements; do not stop just because this historical table says Complete.
+
+Latest owner decision (2026-09-05): personal use for his own Simbi account. The deployment-design blocker is resolved. Follow the ledger's Confirmed personal-use scope section; do not ask again whether this should be a multi-team service. Preserve existing features, and continue with personal owner recovery, data safety, relevant usability/localization and actual manual-use acceptance. Do not treat optional shared-service requirements as personal-release blockers.
+
+2026-09-30: offline local-owner recovery and packaged operator commands now have current backend, executable, interactive-terminal and browser evidence in the ledger. Local main was fast-forwarded to40dda08 while preserving dirty edits and the owner's legacy archive. Resume remaining localization, general retained-data controls/usability and authorized manual provider acceptance; do not restart completed recovery work without a new failure or changed source. Current edits still need verified publication.
+
 | Checkpoint | Resume evidence | State |
 |---|---|---|
 | C0 starting point | `main` at `6c3c7cb`; remote default `main` | Complete |
