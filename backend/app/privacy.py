@@ -174,22 +174,104 @@ def snapshot(connection, workspace_id: int, ids: list[int]) -> tuple[str, dict, 
     return digest, counts, contacts
 
 
-def preview(connection, member: dict, kind: str, prospect_id: int | None) -> dict:
+def container_snapshot(connection, workspace_id: int, kind: str, record_id: int):
+    # Table/column names are internal constants, never request-provided SQL.
+    table = {"campaign": "campaigns", "template": "templates"}[kind]
+    record = connection.execute(
+        f"SELECT * FROM {table} WHERE id=? AND workspace_id=?", (record_id, workspace_id)
+    ).fetchone()
+    if not record:
+        raise PrivacyError(404, "not_found", "The requested record was not found")
+    drafts = [
+        dict(row)
+        for row in connection.execute(
+            f"SELECT * FROM drafts WHERE {kind}_id=? ORDER BY id LIMIT ?",
+            (record_id, SCAN_LIMIT + 1),
+        )
+    ]
+    if len(drafts) > SCAN_LIMIT:
+        raise PrivacyError(
+            409, "privacy_scan_limit", "Too many linked records for one cleanup preview"
+        )
+    histories = {}
+    for draft in drafts:
+        if draft["workspace_id"] != workspace_id:
+            raise PrivacyError(
+                409,
+                "privacy_inconsistent",
+                "Cleanup found inconsistent record links; reconcile the database first",
+            )
+        prospect_id = draft["prospect_id"]
+        if prospect_id not in histories:
+            histories[prospect_id] = graph(connection, workspace_id, prospect_id)
+        if (
+            sum(len(rows) for history in histories.values() for rows in history.values())
+            > SCAN_LIMIT
+        ):
+            raise PrivacyError(
+                409, "privacy_scan_limit", "Too many linked records for one cleanup preview"
+            )
+        # Campaign deletion removes outreach evidence; even another campaign's
+        # pending action for an affected identity must be resolved first.
+        if kind == "campaign" and in_flight(histories[prospect_id]):
+            raise PrivacyError(
+                409,
+                "privacy_in_flight",
+                "Resolve pending or uncertain handoffs before deleting this campaign",
+            )
+    draft_ids = {row["id"] for row in drafts}
+    counts = {name: 0 for name in ("prospects", "drafts", "handoffs", "replies", "reminders")}
+    counts[table] = 1
+    if kind == "campaign":
+        counts["drafts"] = len(drafts)
+        counts["restricted_contacts"] = len(histories)
+        for name in ("handoffs", "replies", "reminders"):
+            counts[name] = sum(
+                row["draft_id"] in draft_ids
+                for history in histories.values()
+                for row in history[name]
+            )
+    else:
+        counts["template_links"] = len(drafts)
+    # Include complete related histories in the digest: additions, link changes,
+    # changed restrictions and foreign-workspace references invalidate preview.
+    state = {"record": dict(record), "drafts": drafts, "histories": histories}
+    digest = hashlib.sha256(encoded(state).encode()).hexdigest()
+    return digest, counts, [{"id": record_id, "name": record["name"]}], list(histories)
+
+
+def preview(connection, member: dict, kind: str, selected_id: int | None) -> dict:
     workspace_id = member["workspace_id"]
     days = connection.execute(
         "SELECT retention_days FROM workspaces WHERE id=?", (workspace_id,)
     ).fetchone()[0]
     cutoff = (datetime.now(UTC) - timedelta(days=days)).replace(microsecond=0).isoformat()
     protected = 0
-    if kind == "prospect":
-        rows = graph(connection, workspace_id, prospect_id)
+    records = []
+    restricted_contacts = []
+    if kind in {"campaign", "template"}:
+        digest, counts, records, affected_ids = container_snapshot(
+            connection, workspace_id, kind, selected_id
+        )
+        if kind == "campaign":
+            restricted_contacts = [
+                dict(
+                    connection.execute(
+                        "SELECT id,name FROM prospects WHERE id=?", (record_id,)
+                    ).fetchone()
+                )
+                for record_id in affected_ids
+            ]
+        ids, remaining, contacts = [selected_id], 0, []
+    elif kind == "prospect":
+        rows = graph(connection, workspace_id, selected_id)
         if in_flight(rows):
             raise PrivacyError(
                 409,
                 "privacy_in_flight",
                 "Resolve pending or uncertain handoffs before deleting this contact",
             )
-        ids, remaining = [prospect_id], 0
+        ids, remaining = [selected_id], 0
     else:
         candidates = connection.execute(
             "SELECT id FROM prospects WHERE workspace_id=? AND updated_at<? ORDER BY id LIMIT ?",
@@ -208,7 +290,8 @@ def preview(connection, member: dict, kind: str, prospect_id: int | None) -> dic
             else:
                 protected += 1
         ids, remaining = eligible[:BATCH_SIZE], max(0, len(eligible) - BATCH_SIZE)
-    digest, counts, contacts = snapshot(connection, workspace_id, ids)
+    if kind not in {"campaign", "template"}:
+        digest, counts, contacts = snapshot(connection, workspace_id, ids)
     timestamp = db.now()
     expires = (datetime.now(UTC) + timedelta(minutes=10)).replace(microsecond=0).isoformat()
     plan_id = uuid.uuid4().hex
@@ -240,12 +323,15 @@ def preview(connection, member: dict, kind: str, prospect_id: int | None) -> dic
         {"kind": kind, "counts": counts},
     )
     return {
+        "kind": kind,
         "plan_id": plan_id,
         "expires_at": expires,
         "cutoff": cutoff,
         "retention_days": days,
         "counts": counts,
         "contacts": contacts,
+        "records": records,
+        "restricted_contacts": restricted_contacts,
         "protected_contacts": protected,
         "remaining_eligible_contacts": remaining,
     }
@@ -274,7 +360,13 @@ def execute(connection, member: dict, plan_id: str) -> dict:
         "SELECT retention_days FROM workspaces WHERE id=?", (workspace_id,)
     ).fetchone()[0]
     try:
-        digest, counts, _ = snapshot(connection, workspace_id, plan["ids"])
+        if plan["kind"] in {"campaign", "template"}:
+            digest, counts, _, contact_ids = container_snapshot(
+                connection, workspace_id, plan["kind"], plan["ids"][0]
+            )
+        else:
+            digest, counts, _ = snapshot(connection, workspace_id, plan["ids"])
+            contact_ids = plan["ids"]
     except PrivacyError as exc:
         raise PrivacyError(
             409,
@@ -287,7 +379,7 @@ def execute(connection, member: dict, plan_id: str) -> dict:
             "privacy_preview_changed",
             "Records changed after the preview; create a new preview",
         )
-    for record_id in plan["ids"]:
+    for record_id in contact_ids if plan["kind"] not in {"campaign", "template"} else []:
         rows = graph(connection, workspace_id, record_id)
         if in_flight(rows) or (
             plan["kind"] == "retention" and not old_and_closed(rows, plan["cutoff"])
@@ -309,7 +401,7 @@ def execute(connection, member: dict, plan_id: str) -> dict:
             "privacy_backup_failed",
             "Recovery backup could not be verified; no cleanup was performed",
         ) from exc
-    for record_id in plan["ids"]:
+    for record_id in contact_ids if plan["kind"] != "template" else []:
         prospect = connection.execute(
             "SELECT * FROM prospects WHERE id=? AND workspace_id=?", (record_id, workspace_id)
         ).fetchone()
@@ -325,10 +417,17 @@ def execute(connection, member: dict, plan_id: str) -> dict:
                 db.now(),
             ),
         )
+        if plan["kind"] not in {"campaign", "template"}:
+            connection.execute(
+                "DELETE FROM prospects WHERE id=? AND workspace_id=?", (record_id, workspace_id)
+            )
+    if plan["kind"] in {"campaign", "template"}:
+        table = {"campaign": "campaigns", "template": "templates"}[plan["kind"]]
         connection.execute(
-            "DELETE FROM prospects WHERE id=? AND workspace_id=?", (record_id, workspace_id)
+            f"DELETE FROM {table} WHERE id=? AND workspace_id=?", (plan["ids"][0], workspace_id)
         )
     receipt = {
+        "kind": plan["kind"],
         "plan_id": plan_id,
         "counts": counts,
         "backup_file": backup.name,

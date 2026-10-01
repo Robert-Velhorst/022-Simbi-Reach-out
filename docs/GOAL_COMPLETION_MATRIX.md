@@ -36,7 +36,7 @@ Scope clarification on 2026-09-05: the owner confirmed this is a personal tool f
 | 025 AI abstraction/fallback | Implemented | Deterministic renderer is the safe provider-independent default; no fake AI. |
 | 026 Human review/approval | Implemented | Four explicit checks, edit reset, role/compliance/pause guards. |
 | 027 Notifications/reminders | Implemented | User and worker reminders; no external notification claims. |
-| 028 Privacy/deletion | Partial | Owner-only contact/conversation cleanup now has exact preview, password/CSRF/session checks, verified backup, protected uncertainty/links, durable suppression and receipts. Account/workspace-wide erasure, campaign/template deletion, audit-content policy and external-copy cleanup remain incomplete. See PRIVACY_CLEANUP.md. |
+| 028 Privacy/deletion | Partial | Owner-only contact/conversation, campaign and template cleanup has exact preview, password/CSRF/session checks, verified backup, protected uncertainty/links, durable suppression and typed receipts. Campaign deletion names affected retained identities; template deletion preserves reviewed draft text. Account/workspace-wide erasure, audit-content policy and external-copy cleanup remain incomplete. See PRIVACY_CLEANUP.md. |
 | 029 Web security | Implemented | CSP, HSTS, trusted hosts, sanitized request IDs, COOP/CORP, frame/MIME/referrer/permissions headers, CSRF and login throttling. |
 | 030 Secrets/rotation | Blocked | Current tree clean; pre-existing Git-history credential needs owner-coordinated rewrite/rotation. |
 | 031 One-command local dev | Implemented | Docker Compose and `scripts/dev.ps1`. |
@@ -65,7 +65,7 @@ Scope clarification on 2026-09-05: the owner confirmed this is a personal tool f
 | 054 Reconciliation/repair | Implemented | Detects orphans/impossible sends; safe explicit repair. |
 | 055 Local analytics | Implemented | Schema is local/event-minimal; no external telemetry. |
 | 056 SaaS without billing | Not applicable | Owner explicitly chose a personal tool for his own account on 2026-09-05, not a shared SaaS. No tenant provisioning, workspace switching or billing is required; existing deployment and isolation controls remain preserved. |
-| 057 i18n Dutch/English | Implemented | Typed501-key English/Dutch UI catalogs, pre-auth/header selection, persistent browser preference, localized labels/notices/statuses/counts/dates, unchanged authored data and API/CSV/template values. Unit/static guards and local Dutch Chromium workflow pass. Diagnostics/CLI/docs are not automatically translated; see LOCALIZATION.md and the dated ledger. |
+| 057 i18n Dutch/English | Implemented | Typed574-key English/Dutch UI catalogs, pre-auth/header selection, persistent browser preference, localized labels/notices/statuses/counts/dates, unchanged authored data and API/CSV/template values. Unit/static guards and local Dutch Chromium workflow pass. Diagnostics/CLI/docs are not automatically translated; see LOCALIZATION.md and the dated ledger. |
 | 058 Feature flags | Implemented | Workspace-scoped flag schema; no risky feature is silently enabled. |
 | 059 State machines | Implemented | Explicit draft transition map and guarded endpoints. |
 | 060 Domain specification | Implemented | Schema and `CRITICAL_PATH.md`. |
@@ -104,7 +104,7 @@ Scope clarification on 2026-09-05: the owner confirmed this is a personal tool f
 | 093 Manual evidence | Implemented | Real browser critical path plus desktop/mobile screenshots and concept comparison. |
 | 094 No-excuses search | Implemented | Final whitespace, unsafe automation, credential, secret-pattern and placeholder scans passed. |
 | 095 Completion matrix | Implemented | This document. |
-| 096 Final verification | Partial | PR87/88/89 Linux/Windows CI passed at their recorded source revisions; bilingual source tests/browser/container/package evidence is recorded in the ledger. General privacy/retention, manual-provider and broader accessibility acceptance remain open; do not substitute earlier release checks for those gates. |
+| 096 Final verification | Partial | PR87/88/89/90 Linux/Windows CI passed at their recorded source revisions; subsequent campaign/template cleanup evidence is tracked separately in the ledger. General privacy/retention, manual-provider and broader accessibility acceptance remain open; do not substitute earlier release checks for those gates. |
 | 097 Final response | Partial | Incremental publication/verification results are reported; the full production objective still has open original requirements. |
 | 098 Maintenance plan | Implemented | Runbook release/backup/restore plus changelog discipline. |
 | 099 Roadmap/blockers | Implemented | Exact remaining gaps listed here/final report. |

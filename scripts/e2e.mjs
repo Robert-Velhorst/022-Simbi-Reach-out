@@ -550,6 +550,7 @@ try {
   process.stdout.write(`${JSON.stringify({
     critical_path: 'passed',
     personal_cleanup_preview_cancel_backup_confirmation_and_receipt_recovery: 'passed in English and Dutch',
+    campaign_and_template_cleanup_counts_cancel_backup_preservation_and_receipts: 'passed in English and Dutch',
     dutch_workflow_and_language_persistence: 'passed',
     other_tab_language_switch_preserves_unsaved_modal: 'passed',
     language_switch_preserves_review_checks_and_authored_content: 'passed',

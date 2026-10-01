@@ -16,6 +16,62 @@ async function openConfirmation() {
 }
 
 describe('personal cleanup controls', () => {
+  it.each(['campaign', 'template'] as const)('selects %s with an exact preview and scope-specific receipt', async (kind) => {
+    const requests: Array<{ url: string; body: unknown }> = []
+    const scopedPlan = { ...plan, kind, contacts: [], records: [{ id: 7, name: 'Fictional Record' }], restricted_contacts: kind === 'campaign' ? [{ id: 8, name: 'Fictional Retained Contact' }] : [], counts: { prospects: 0, drafts: 0, handoffs: 0, replies: 0, reminders: 0, [kind === 'campaign' ? 'campaigns' : 'templates']: 1, ...(kind === 'template' ? { template_links: 2 } : { restricted_contacts: 1 }) } }
+    vi.stubGlobal('fetch', vi.fn(async (url: string, options?: RequestInit) => {
+      requests.push({ url, body: options?.body ? JSON.parse(String(options.body)) : null })
+      return response(url.endsWith('/confirm') ? { ...receipt, kind, counts: scopedPlan.counts } : url.endsWith('/preview') ? scopedPlan : { items: [{ id: 7, name: 'Fictional Record' }], total: 1 })
+    }))
+    render(<PrivacyControls retentionDays={365} onSaved={vi.fn()} />)
+    fireEvent.change(screen.getByLabelText('Cleanup scope'), { target: { value: kind } })
+    expect(screen.getByRole('button', { name: 'Preview cleanup' })).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: kind === 'campaign' ? 'Find campaigns' : 'Find templates' }))
+    await screen.findByRole('option', { name: 'Fictional Record' })
+    fireEvent.change(screen.getByLabelText(kind === 'campaign' ? 'Campaign to remove' : 'Template to remove'), { target: { value: '7' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Preview cleanup' }))
+    await screen.findByRole('heading', { name: 'Removal preview' })
+    expect(requests.find(({ url }) => url.endsWith('/preview'))?.body).toEqual({ kind, [`${kind}_id`]: 7 })
+    expect(screen.getByText(kind === 'campaign' ? /affected identities become do-not-contact/ : /Existing draft text, approvals and conversation history remain/)).toBeVisible()
+    if (kind === 'template') expect(screen.getByText('Template links cleared')).toBeVisible()
+    else expect(screen.getByText('Fictional Retained Contact')).toBeVisible()
+    fireEvent.click(screen.getByRole('button', { name: 'Review removal' }))
+    const dialog = screen.getByRole('dialog')
+    fireEvent.click(within(dialog).getByRole('checkbox'))
+    fireEvent.change(within(dialog).getByLabelText('Local account password'), { target: { value: 'fictional secret' } })
+    fireEvent.submit(within(dialog).getByRole('button', { name: 'Confirm removal' }).closest('form')!)
+    await screen.findByText(kind === 'campaign' ? /Campaigns removed: 1/ : /Templates removed: 1/)
+    expect(screen.queryByText('Fictional Record')).not.toBeInTheDocument()
+    expect(requests.filter(({ url }) => url.endsWith('/confirm'))).toHaveLength(1)
+  })
+
+  it('clears stale campaign selections and search on switching to templates', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => response({ items: [{ id: 7, name: 'Fictional Campaign' }], total: 1 })))
+    render(<PrivacyControls retentionDays={365} onSaved={vi.fn()} />)
+    fireEvent.change(screen.getByLabelText('Cleanup scope'), { target: { value: 'campaign' } })
+    fireEvent.change(screen.getByLabelText('Search campaigns for removal'), { target: { value: 'Fictional' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Find campaigns' }))
+    await screen.findByRole('option', { name: 'Fictional Campaign' })
+    fireEvent.change(screen.getByLabelText('Campaign to remove'), { target: { value: '7' } })
+    fireEvent.change(screen.getByLabelText('Cleanup scope'), { target: { value: 'template' } })
+    expect(screen.getByLabelText('Search templates for removal')).toHaveValue('')
+    expect(screen.queryByRole('option', { name: 'Fictional Campaign' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Preview cleanup' })).toBeDisabled()
+  })
+
+  it('shows Dutch campaign/template receipt types and controls without translating authored names', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => response({ items: [
+      { ...receipt, kind: 'campaign', counts: { ...receipt.counts, prospects: 0, campaigns: 1 } },
+      { ...receipt, plan_id: 'b'.repeat(32), kind: 'template', counts: { ...receipt.counts, prospects: 0, templates: 1 } },
+    ] })))
+    render(<I18nProvider initialLocale="nl"><PrivacyControls retentionDays={365} onSaved={vi.fn()} /></I18nProvider>)
+    fireEvent.change(screen.getByLabelText('Wat wil je opschonen?'), { target: { value: 'campaign' } })
+    expect(screen.getByRole('button', { name: 'Campagnes zoeken' })).toBeVisible()
+    fireEvent.click(screen.getByRole('button', { name: 'Verwijderingsbevestigingen bekijken' }))
+    await screen.findByText(/Verwijderde campagnes: 1/)
+    await screen.findByText(/Verwijderde sjablonen: 1/)
+  })
+
   it('previews counts without deleting and cancellation clears the password', async () => {
     const requests: string[] = []
     vi.stubGlobal('fetch', vi.fn(async (url: string) => { requests.push(url); return response(plan) }))

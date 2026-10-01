@@ -93,8 +93,10 @@ class RetentionBody(StrictModel):
 
 
 class CleanupPreviewBody(StrictModel):
-    kind: Literal["retention", "prospect"]
+    kind: Literal["retention", "prospect", "campaign", "template"]
     prospect_id: int | None = Field(default=None, ge=1)
+    campaign_id: int | None = Field(default=None, ge=1)
+    template_id: int | None = Field(default=None, ge=1)
 
 
 class CleanupConfirmBody(StrictModel):
@@ -1698,14 +1700,19 @@ def update_retention(body: RetentionBody, request: Request, member: Member):
 
 @app.post("/api/privacy/preview")
 def preview_cleanup(body: CleanupPreviewBody, request: Request, member: Member):
-    if (body.kind == "prospect") != (body.prospect_id is not None):
+    selected = {
+        "prospect": body.prospect_id,
+        "campaign": body.campaign_id,
+        "template": body.template_id,
+    }
+    if any((body.kind == kind) != (value is not None) for kind, value in selected.items()):
         raise AppError(
-            422, "privacy_selection_invalid", "Choose either retention cleanup or one contact"
+            422, "privacy_selection_invalid", "Choose retention cleanup or exactly one record"
         )
     try:
         with transaction() as connection:
             require_current_owner(connection, request, member)
-            return privacy.preview(connection, member, body.kind, body.prospect_id)
+            return privacy.preview(connection, member, body.kind, selected.get(body.kind))
     except privacy.PrivacyError as exc:
         raise AppError(exc.status, exc.code, exc.message) from exc
 

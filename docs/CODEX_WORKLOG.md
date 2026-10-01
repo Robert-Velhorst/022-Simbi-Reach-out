@@ -1,5 +1,11 @@
 # Codex worklog
 
+## 2026-10-01 — campaign and template cleanup
+
+- Extended the existing owner-only preview/backup/confirmation workflow with campaign and template scopes; added strict matching-ID validation, stale/link/uncertainty protections, bounded graph inspection and typed receipt recovery. Campaign deletion preserves named affected identities as do-not-contact and unrelated history; template removal changes only the root/template references, preserving text/approval/handoffs.
+- Added isolated backend preservation, pre-change snapshot, replay, failure/rollback, stale/new/foreign-link, empty-root, owner/selection/limit and cross-campaign pending regressions. Frontend124 tests/lint/build and574 matching English/Dutch keys pass. Full local Chromium verifies both scopes in both languages, desktop/short-mobile geometry, cancellation, actual fictional removals and receipt recovery with zero unexpected errors/selected WCAG violations. Existing journeys remain covered.
+- Repaired test-only suppression-helper arguments and ambiguous Dutch receipt locator; no real-data/provider action, dependency or schema change. README, cleanup/API/UI/runbook/localization/matrix/checkpoints reflect the actual paths and retained-data limits. Final backend/publication evidence belongs in the dated readiness ledger; earlier PR90 CI is not new-source proof. The full production objective remains open.
+
 ## 2026-10-01 — owner-controlled personal cleanup
 
 - Published through PR90 after source36792480879 and PR36792484857 passed Linux/Windows at2073039; merged without conflicts at81ec23b. Source/merge tree hashes match, local main fast-forwarded cleanly and no open PRs remain.66 relative documentation links/anchors pass. Final README publication follows this merge; later main/documentation CI remains separate evidence. No real records/provider account were changed.

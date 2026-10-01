@@ -32,6 +32,7 @@ The inventory below is historical, not a current all-role acceptance result. The
 | Settings | Safety stop / resume | Owner/admin only; blocks approvals and handoffs without hiding investigation data. |
 | Settings | Provider save | Owner/admin only; HTTPS link only, assisted mode fixed, credentials rejected by design. |
 | Settings | Export | Owner/admin-only full workspace JSON; intentionally sensitive. Viewers/editors receive guidance, not a download action. |
+| Settings | Privacy cleanup | Owner only: contact/age-based history, campaign or reusable-template scope; search/paging, exact names/counts, explicit acknowledgement/local password and verified backup. Campaign affected identities remain restricted; template removal preserves existing draft text/approval. Cancel is non-destructive; changed previews fail closed; scope-specific receipts recover after reload. |
 | Settings | Support data | Owner/admin-only redacted diagnostic JSON; other roles receive guidance. |
 | Settings | Add member | Owner/admin only; scrypt password and constrained role. |
 
