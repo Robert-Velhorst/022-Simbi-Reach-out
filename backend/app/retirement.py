@@ -34,6 +34,7 @@ TABLES = (
     "analytics_events",
     "login_attempts",
     "privacy_cleanup_plans",
+    "reminder_creation_receipts",
 )
 ROW_LIMIT = 100_000
 

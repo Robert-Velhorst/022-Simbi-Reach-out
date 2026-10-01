@@ -1,5 +1,6 @@
 import pytest
 from app.db import transaction
+from conftest import csrf_headers
 from test_outreach_invariants import prepared_conversation
 
 
@@ -22,7 +23,9 @@ def test_operations_are_bounded_and_pageable(client, resource):
             assert (
                 client.post(
                     "/api/reminders",
-                    headers=headers,
+                    headers=csrf_headers(
+                        client, **{"Idempotency-Key": f"paging-reminder-reference-{i:04}"}
+                    ),
                     json={
                         "prospect_id": prospect,
                         "title": f"Check {i}",

@@ -661,5 +661,10 @@
   "Choose Keep editing to return and save or check the saved version yourself. Browser warnings cannot recover text after a crash or forced closure.": "Choose Keep editing to return and save or check the saved version yourself. Browser warnings cannot recover text after a crash or forced closure.",
   "Discard local edits and continue": "Discard local edits and continue",
   "A request is still pending. Stay here until it finishes, then check its result before retrying or closing this form.": "A request is still pending. Stay here until it finishes, then check its result before retrying or closing this form.",
-  "Unrecognized date: {value}": "Unrecognized date: {value}"
+  "Unrecognized date: {value}": "Unrecognized date: {value}",
+  "Reminder retry references": "Reminder retry references",
+  "Reminder retry reference: {reference}. Retry the original values to check the same attempt. Changed values cannot reuse a committed reference. This reference is kept only while this page remains open; after navigation, reload or closure, check saved reminders before creating again.": "Reminder retry reference: {reference}. Retry the original values to check the same attempt. Changed values cannot reuse a committed reference. This reference is kept only while this page remains open; after navigation, reload or closure, check saved reminders before creating again.",
+  "This reminder retry reference belongs to different submitted values. Retry the original values or check the saved reminders; no new reminder was created.": "This reminder retry reference belongs to different submitted values. Retry the original values or check the saved reminders; no new reminder was created.",
+  "The original reminder was removed or changed. Check the current reminders; this retry did not recreate or reopen it.": "The original reminder was removed or changed. Check the current reminders; this retry did not recreate or reopen it.",
+  "The reminder retry-reference limit was reached. Existing references still work; no new reminder was created.": "The reminder retry-reference limit was reached. Existing references still work; no new reminder was created."
 }
