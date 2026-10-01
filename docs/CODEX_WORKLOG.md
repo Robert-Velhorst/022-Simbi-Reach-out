@@ -1,5 +1,11 @@
 # Codex worklog
 
+## 2026-10-01 — full-body API response boundary
+
+- Repair17 demonstrated transport/form regressions, preserve structured backup/refusal messages and handoff identity, add two unreadable retirement exact-receipt recovery checks. Complete local265 frontend24files/lint/build/704 keys and289 backend/ruff/clean audits pass; generic object fields/wider forms still open.
+- Add owned fictional loopback response proxy after retained browser workflows, with real commit/readback before damaged201 responses and native header-plus-unfinished-body deadline/abort proof. Focused Chromium passes both languages/viewports/three selected scans/zero browser errors; firstPOST200 expectation was a fixture mistake, first Firefox field timeout remains a diagnostic. Final exact full-engine/publication evidence is required in the ledger.
+- Reader comprehension validates uncertainty/read-before-retry/RAM-only/schema/receipt limits and pending versus completed evidence; clarify scenario counts and technical recovery token. No real account/data/runtime/provider or durable working-copy change. Original PDF path remains unavailable; preserved extract retained. README intentionally follows source PR merging separately.
+
 ## 2026-10-01 — explicit-save personal draft leave protection
 
 - PR101 merged conflict-free at679a2ec on2026-10-01T06:47:48Z after source36826068654/PR36826072333 passed all four jobs each at90a26ca. Fresh eight checks/CLEAN/MERGEABLE/basec11541e and matching source/merge tree77b6e84 verified; main fast-forwarded and paginated inventory zero open PRs.289 backend/246 frontend22files/700 keys, complete current three-engine leave/pending+all retained full workflows/retirement, audits/worker/Windows/container/storage proof pass. Final complete local Chromium exits0 (bootstrapEOFSnd/5WVDje, main5w34G9, retirement4gJcN4/oPbq9P). README and consistent linked guides follow separately without runtime/test/CI edits. Merge-main36826701685/later docs require separate completed checks. Full personal goal active; actual account/data/runtime and no-autosave boundary unchanged.

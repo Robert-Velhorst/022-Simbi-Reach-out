@@ -1,0 +1,36 @@
+# Interrupted requests and unverified results
+
+## For the personal operator
+
+The application waits for a complete JSON response, not just a connection or response headers. Its 20-second request deadline includes reading the response body. An empty, broken, HTML, truncated or primitive JSON response is not accepted as a successful API result. A read failure is displayed as an error, not an invented empty collection.
+
+For a write, **an interrupted response does not prove that the change failed**. The server may have saved it before the connection broke. The English warning says: “The request outcome is not confirmed.” The Dutch warning says: “De uitkomst van het verzoek is niet bevestigd.” Both tell you that local records may already have changed and to check their current state before trying again. The client never automatically retries a write.
+
+If a template form shows this warning, its entered values stay in that currently open form. Keep a private copy if necessary, close it only when ready, and reload Templates to check whether your template already exists before creating another. This is temporary in-memory form retention, not autosave, general duplicate protection or crash recovery. Other forms and actions must be checked in their own record view; not every action has the same recovery controls or duplicate-submission guard.
+
+Use the existing action-specific recovery paths where available:
+
+- Draft saves: [compare the current saved version](DRAFT_SAVING.md), preserving your working text and requiring a separate explicit save when appropriate.
+- Handoffs: retain the same request identity and inspect the persisted handoff. Preparing/recovering one is not sending on Simbi or proof of delivery.
+- Local cleanup and audit minimization: keep the exact preview/reference, inspect its completion receipt, and follow [cleanup recovery](PRIVACY_CLEANUP.md) or [audit minimization](AUDIT_PRIVACY.md). Do not replace an uncertain removal with a new preview simply because its response was lost.
+- Personal retirement: the existing read-only completion-receipt lookup can recover a completed retirement after its confirmation response becomes unreadable. Success still requires the matching verified receipt; absence is not proof that retirement failed.
+
+A cancelled request is separate from a timeout. Cancellation before dispatch starts no request. Cancellation or timeout after dispatch does not undo a server commit. Structured4xx refusals retain their specific explanation. For5xx write failures, only the inspected pre-change recovery-backup and retirement-maintenance refusals retain their specific explanation; other5xx errors remain uncertain even when their JSON is readable.
+
+## Developer boundary
+
+`frontend/src/api.ts` owns one AbortController, a deadline covering fetch plus JSON consumption, and a bounded rejection race. It removes the caller's abort listener and clears the timer on every settled exit. Caller cancellation uses `request_cancelled`; timeout uses `request_timeout`; network failure keeps `network_unavailable`; an unreadable successful response or non-object/non-array top-level JSON uses `response_unverified`. HTTP failures retain valid string codes, with `request_failed` fallback for malformed fields. Read/4xx errors retain valid messages;5xx write errors use the uncertainty warning except the two inspected pre-change refusals below. Raw unreadable response bodies/parser errors are not retained in these errors.
+
+The wrapper accepts only non-null JSON objects/arrays as the current API's top-level success shape. **This is not a complete per-endpoint schema validator.** A syntactically valid object can still contain missing, wrong or stale fields. Draft version checks and privacy/audit/retirement receipt checks remain necessary, and wider endpoint-specific response validation remains open. Do not add empty-body/204/primitive-returning endpoints without explicitly revising and testing this contract. The two5xx refusal codes are `privacy_backup_failed` and `retirement_maintenance_busy`, whose backend guards occur before the requested change. Do not expand that exception without inspecting the actual transaction/commit boundary.
+
+Local cleanup, audit minimization and personal retirement treat `response_unverified` and cancellation as potentially interrupted outcomes. Retirement retains its opaque preview-token recovery: this token can retrieve only the non-content completion receipt, not private records or account access. Exact receipt/version verification, backend authorization, CSRF, maintenance gates, data schemas and provider boundaries are unchanged. No automatic retry, private browser storage, new production endpoint, dependency or provider operation is added.
+
+## Verification and limits
+
+Fifteen shared-response regressions and two English/Dutch actual-template-form regressions demonstrated the original failures before the fix. Two further retirement regressions require unreadable/null confirmation recovery via one read-only exact receipt request. Four additional cases distinguish arbitrary/internal5xx envelopes from the two inspected pre-change refusal codes. Existing structured-rejection, handoff-identity, last-result generation and privacy/backup behavior remain tested. The two generic resource fixtures now use object-shaped API records while retaining all stale-response/unmount assertions. Old handoff/compliance/cleanup-preview/stop-contact tests now expect truthful uncertainty wording for interrupted or arbitrary503 writes while retaining same-key replay, explicit-retry choices, no-fake-empty-preview and retained-reason/focus assertions.
+
+`scripts/e2e-api-response.mjs`, appended to the existing full engine workflow, starts an owned fictional database/backend and an ephemeral loopback response proxy. It forwards the real write before replacing its response; authenticated readback requires one matching stored template and no automatic second write. It separately sends real headers and an unfinished body: an English desktop read and Dutch mobile write must reach the native 20-second deadline and close that connection. Both languages also reject malformed reads without claiming an empty result and recover through explicit read retry. Three selected error-dialog accessibility scans per engine supplement, not replace, the retained full suites.
+
+The helper uses sequential keyboard controls, 1440×1000 English desktop and 390×844 Dutch mobile, external-request blocking, identity/nonblank/overlay/overflow checks, console monitoring and screenshots outside the repository. It never opens or writes to Simbi. A failed initial helper expected POST200 instead of the real POST201; that was a fixture diagnostic, not an application failure or accepted run. Only completed runs tied to the exact revision count as acceptance; see [the current ledger](PRODUCTION_READINESS.md).
+
+This boundary is not generic write idempotency, complete form validation, durable working-copy storage, secure erasure, assistive-device certification, authenticated Simbi acceptance, or proof of Robert's installed runtime. Those remain separate personal-production gates.

@@ -17,7 +17,7 @@ Scope clarification on 2026-09-05: the owner confirmed this is a personal tool f
 | 006 Configuration guards | Implemented | Typed env parsing; production HTTPS, explicit hostname, trusted-proxy, and secure-cookie fail-safe. |
 | 007 Authentication/session | Implemented | scrypt, opaque expiry, strict cookie, login throttling, first-run setup/login tests. |
 | 008 Authorization/ownership | Implemented | Roles, owned lookups, cross-workspace test. |
-| 009 API/error envelope | Implemented | Structured code/message/details/request ID; frontend error test. |
+| 009 API/error envelope | Partial | Structured server envelope; complete fetch/body deadline, cancellation/listener cleanup, malformed-success/non-object rejection and truthful uncertain writes with retained recovery codes. REQUEST_RECOVERY.md/current ledger give actual evidence. Valid object/array shape alone is not complete per-endpoint semantic response validation; broader schemas remain open. |
 | 010 Frontend architecture | Implemented | React app shell, routes, focused page/components. |
 | 011 Core vertical slice | Implemented | Campaign through reply/report wired. |
 | 012 Provider reality | Partial | Public homepage/sign-in inspection and a one-off actual app-to-Simbi-homepage handoff/Back/Not sent check are evidenced. The latter used a fresh fictional workspace and blocked external writes. Authenticated manual-use acceptance remains open; public navigation is not messaging integration or delivery proof. |

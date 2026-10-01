@@ -90,6 +90,18 @@ describe('personal retirement controls', () => {
     expect(screen.getByRole('button', { name: 'Retire this installation' })).toBeDisabled()
     expect(screen.getByLabelText('Local account password')).toHaveValue('')
   })
+  it.each(['<proxy response>', 'null'])('recovers an unreadable confirmation body using only the retained receipt reference: %s', async (body) => {
+    const requests: string[] = []
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      requests.push(url)
+      return url.endsWith('/confirm') ? new Response(body) : response(url.includes('/receipt/') ? receipt : plan)
+    }))
+    const onRetired = vi.fn()
+    render(<RetirementControls paused onRetired={onRetired} />)
+    fireEvent.submit(authorize(await open()))
+    await waitFor(() => expect(onRetired).toHaveBeenCalledWith(receipt))
+    expect(requests).toEqual(['/api/privacy/retirement/preview', '/api/privacy/retirement/confirm', `/api/privacy/retirement/receipt/${plan.plan_id}`])
+  })
   it.each(['current_password_invalid', 'privacy_preview_changed'])('requires a fresh preview after %s', async (code) => {
     vi.stubGlobal('fetch', vi.fn(async (url: string) => url.endsWith('/confirm') ? response({ error: { code, message: 'Records changed after the preview; create a new preview' } }, 409) : response(plan)))
     render(<RetirementControls paused onRetired={vi.fn()} />)

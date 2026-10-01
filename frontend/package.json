@@ -10,7 +10,7 @@
     "lint": "eslint . --max-warnings=0",
     "test": "vitest run --pool=threads --maxWorkers=1 --no-file-parallelism",
     "test:e2e": "pnpm build && pnpm test:e2e:run",
-    "test:e2e:run": "node --test ../scripts/test-e2e-browser.mjs && node ../scripts/e2e-auth.mjs && node ../scripts/e2e.mjs && node ../scripts/e2e-retirement.mjs",
+    "test:e2e:run": "node --test ../scripts/test-e2e-browser.mjs && node ../scripts/e2e-auth.mjs && node ../scripts/e2e.mjs && node ../scripts/e2e-retirement.mjs && node ../scripts/e2e-api-response.mjs",
     "audit": "pnpm audit --audit-level high",
     "test:watch": "vitest"
   },

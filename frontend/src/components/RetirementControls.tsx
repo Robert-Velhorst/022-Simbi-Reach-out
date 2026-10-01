@@ -61,7 +61,7 @@ export default function RetirementControls({ paused, onRetired }: { paused: bool
       try {
         onRetired(verifiedReceipt(await post<RetirementReceipt>('/privacy/retirement/confirm', { plan_id: plan.plan_id, current_password: passphrase, confirmed: true, acknowledged_loss: true, typed_confirmation: typed }), plan))
       } catch (cause) {
-        if (cause instanceof ApiError && ['network_unavailable', 'request_timeout', 'authentication_required', 'session_expired', 'csrf_failed', 'internal_error', 'request_failed', 'retirement_receipt_unverified'].includes(cause.code)) {
+        if (cause instanceof ApiError && ['network_unavailable', 'request_timeout', 'request_cancelled', 'response_unverified', 'authentication_required', 'session_expired', 'csrf_failed', 'internal_error', 'request_failed', 'retirement_receipt_unverified'].includes(cause.code)) {
           // A lost response can follow a successful commit and session removal.
           // The opaque preview token can read only the non-content receipt.
           setUncertain(true)

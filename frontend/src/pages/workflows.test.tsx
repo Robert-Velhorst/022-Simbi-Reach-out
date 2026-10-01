@@ -110,7 +110,7 @@ describe('review workflow recovery', () => {
     }))
     render(<ReviewQueue member={member} onMemberChange={() => {}} />)
     fireEvent.click(await screen.findByRole('button', { name: /Copy and open provider/ }))
-    await screen.findByText(/local service is unavailable/)
+    await screen.findByText(/may already have changed local records.*before retrying/)
     fireEvent.click(screen.getByRole('button', { name: /Copy and open provider/ }))
     await screen.findByRole('dialog')
     expect(keys[0]).toBeTruthy()

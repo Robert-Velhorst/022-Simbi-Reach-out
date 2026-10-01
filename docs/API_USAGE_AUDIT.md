@@ -2,6 +2,8 @@
 
 All non-health endpoints below require an authenticated workspace member unless marked public. All writes except authentication require the CSRF header. Mutation roles are enforced server-side; UI visibility is not an authorization boundary.
 
+The shared client now rejects unreadable/primitive successful JSON, bounds the full body read, removes cancellation listeners, and reports interrupted writes as unconfirmed without retry. Specific server refusals and domain-specific recovery remain preserved. This does not validate every field in a well-formed object or add generic idempotency; see [request recovery](REQUEST_RECOVERY.md) and exact executed evidence in the production ledger.
+
 | API | Consumer | Tests/evidence |
 |---|---|---|
 | `GET /api/health/live`, `/ready` | Docker/operations | CLI/Docker health; database readiness branch. |
