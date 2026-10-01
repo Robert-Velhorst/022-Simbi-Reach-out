@@ -12,6 +12,7 @@ import { CampaignsPage, ProspectsPage, TemplatesPage } from '../pages/Resources'
 import ReviewQueue from '../pages/ReviewQueue'
 import { AuditPage, HelpPage, RemindersPage, RepliesPage, ReportsPage } from '../pages/Operations'
 import SettingsPage from '../pages/Settings'
+import type { RetirementReceipt } from './RetirementControls'
 
 const navigation = [
   { to: '/', label: 'Overview', icon: LayoutDashboard, end: true },
@@ -26,7 +27,7 @@ const navigation = [
   { to: '/settings', label: 'Settings', icon: Settings },
 ] as const
 
-export default function AppShell({ member, onMemberChange, onSignedOut }: { member: Member; onMemberChange: (member: Member) => void; onSignedOut: () => void }) {
+export default function AppShell({ member, onMemberChange, onSignedOut, onRetired }: { member: Member; onMemberChange: (member: Member) => void; onSignedOut: () => void; onRetired?: (receipt: RetirementReceipt) => void }) {
   const { t, formatCode } = useI18n()
   const [open, setOpen] = useState(false)
   const location = useLocation()
@@ -70,7 +71,7 @@ export default function AppShell({ member, onMemberChange, onSignedOut }: { memb
           <Route path="/reminders" element={<RemindersPage canEdit={canEdit} />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/audit" element={<AuditPage />} />
-          <Route path="/settings" element={<SettingsPage member={member} onMemberChange={onMemberChange} />} />
+          <Route path="/settings" element={<SettingsPage member={member} onMemberChange={onMemberChange} onRetired={onRetired} />} />
           <Route path="/help" element={<HelpPage />} />
         </Routes>
       </main>

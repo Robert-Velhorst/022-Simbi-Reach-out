@@ -34,6 +34,7 @@ The inventory below is historical, not a current all-role acceptance result. The
 | Settings | Export | Owner/admin-only full workspace JSON; intentionally sensitive. Viewers/editors receive guidance, not a download action. |
 | Settings | Privacy cleanup | Owner only: contact/age-based history, campaign or reusable-template scope; search/paging, exact names/counts, explicit acknowledgement/local password and verified backup. Campaign affected identities remain restricted; template removal preserves existing draft text/approval. Cancel is non-destructive; changed previews fail closed; scope-specific receipts recover after reload. |
 | Settings | Support data | Owner/admin-only redacted diagnostic JSON; other roles receive guidance. |
+| Settings | Retire personal installation | Sole owner/one workspace only; stop first, exact count/name preview, two acknowledgements, RETIRE and current password, verified paused backup. Cancel preserves data; receipt verifies completion; private UI removed, sibling tabs refresh, reload blocks sign-in/setup. External copies and Simbi unchanged. |
 | Settings | Add member | Owner/admin only; scrypt password and constrained role. |
 
 Accessibility controls include semantic headings, labels, table headers, focus-visible states, keyboard-operable buttons/links, dialog roles, status announcements, reduced-motion handling, and responsive navigation. Browser evidence at 1440x1000 and 390x844 is recorded in `FINAL_VERIFICATION_REPORT.md`.

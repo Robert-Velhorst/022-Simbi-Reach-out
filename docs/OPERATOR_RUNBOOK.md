@@ -26,6 +26,8 @@ Use **Settings → Privacy & cleanup** as the owner. Choose old contact history,
 
 ## Emergency stop controls
 
+For complete local retirement, use **Settings → Retire personal installation** only after enabling the safety stop and resolving uncertain actions. This refuses shared accounts/workspaces, requires exact preview/two acknowledgements/`RETIRE`/current password and a verified paused backup, removes active local account/workspace records, and permanently blocks new setup. It does not delete Simbi or external copies. Use the distinct [retirement procedure](PRIVACY_CLEANUP.md#personal-installation-retirement); record-level interrupted-response retry instructions above are not a substitute. A retired worker preserves the recovery copy by skipping automatic backup creation/pruning and HAI exports. Recovery requires offline restore, not an empty replacement database.
+
 Settings -> Emergency safety stop blocks approvals and new handoffs while preserving local investigation, export, reply recording, and audit access. Resume only after the incident is understood and recorded.
 
 ## Backup and restore

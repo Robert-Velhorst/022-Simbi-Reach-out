@@ -5,6 +5,16 @@ import App from './App'
 describe('application bootstrap', () => {
   afterEach(() => { cleanup(); vi.unstubAllGlobals() })
 
+  it('shows retirement instead of sign-in or fresh setup and never asks for private account data', async () => {
+    const fetchMock = vi.fn(async () => Response.json({ setup_required: false, installation_retired: true, environment: 'test', demo_mode: false }))
+    vi.stubGlobal('fetch', fetchMock)
+    render(<App />)
+    expect(await screen.findByRole('heading', { name: 'Local installation retired' })).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Sign in' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Create workspace' })).not.toBeInTheDocument()
+    expect(fetchMock.mock.calls).toHaveLength(1)
+  })
+
   it('shows a truthful retry state when the API is unavailable', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('connection refused')))
     render(<App />)

@@ -36,7 +36,7 @@ Scope clarification on 2026-09-05: the owner confirmed this is a personal tool f
 | 025 AI abstraction/fallback | Implemented | Deterministic renderer is the safe provider-independent default; no fake AI. |
 | 026 Human review/approval | Implemented | Four explicit checks, edit reset, role/compliance/pause guards. |
 | 027 Notifications/reminders | Implemented | User and worker reminders; no external notification claims. |
-| 028 Privacy/deletion | Partial | Owner-only contact/conversation, campaign and template cleanup has exact preview, password/CSRF/session checks, verified backup, protected uncertainty/links, durable suppression and typed receipts. Campaign deletion names affected retained identities; template deletion preserves reviewed draft text. Account/workspace-wide erasure, audit-content policy and external-copy cleanup remain incomplete. See PRIVACY_CLEANUP.md. |
+| 028 Privacy/deletion | Partial | Record-level cleanup and separate single-owner installation retirement have exact previews/current-password/CSRF/session/verified-backup gates. Retirement removes active account/workspace records and blocks fresh setup, preserving external private copies and minimal receipt/schema/maintenance metadata. Continuing-workspace audit policy, external-copy cleanup and secure erasure remain incomplete. See PRIVACY_CLEANUP.md. |
 | 029 Web security | Implemented | CSP, HSTS, trusted hosts, sanitized request IDs, COOP/CORP, frame/MIME/referrer/permissions headers, CSRF and login throttling. |
 | 030 Secrets/rotation | Blocked | Current tree clean; pre-existing Git-history credential needs owner-coordinated rewrite/rotation. |
 | 031 One-command local dev | Implemented | Docker Compose and `scripts/dev.ps1`. |
@@ -65,7 +65,7 @@ Scope clarification on 2026-09-05: the owner confirmed this is a personal tool f
 | 054 Reconciliation/repair | Implemented | Detects orphans/impossible sends; safe explicit repair. |
 | 055 Local analytics | Implemented | Schema is local/event-minimal; no external telemetry. |
 | 056 SaaS without billing | Not applicable | Owner explicitly chose a personal tool for his own account on 2026-09-05, not a shared SaaS. No tenant provisioning, workspace switching or billing is required; existing deployment and isolation controls remain preserved. |
-| 057 i18n Dutch/English | Implemented | Typed574-key English/Dutch UI catalogs, pre-auth/header selection, persistent browser preference, localized labels/notices/statuses/counts/dates, unchanged authored data and API/CSV/template values. Unit/static guards and local Dutch Chromium workflow pass. Diagnostics/CLI/docs are not automatically translated; see LOCALIZATION.md and the dated ledger. |
+| 057 i18n Dutch/English | Implemented | Typed625-key English/Dutch UI catalogs, including retirement/retired-state controls; pre-auth/header selection, persistent browser preference, localized labels/notices/statuses/counts/dates, unchanged authored data and API/CSV/template values. Unit/static guards and local Dutch Chromium workflow pass. Diagnostics/CLI/docs are not automatically translated; see LOCALIZATION.md and the dated ledger. |
 | 058 Feature flags | Implemented | Workspace-scoped flag schema; no risky feature is silently enabled. |
 | 059 State machines | Implemented | Explicit draft transition map and guarded endpoints. |
 | 060 Domain specification | Implemented | Schema and `CRITICAL_PATH.md`. |
@@ -110,7 +110,7 @@ Scope clarification on 2026-09-05: the owner confirmed this is a personal tool f
 | 099 Roadmap/blockers | Implemented | Exact remaining gaps listed here/final report. |
 | 100 Provider cleanup/account safety | Blocked | Provider password rotation/session review/history rewrite require owner actions. |
 | 101 Support bundle | Implemented | CLI/API redacted bundle and explicit test. |
-| 102 Retention/archive | Partial | Workspace retention preference and bounded old/closed contact-history cleanup implemented; preview fixes exact targets and requires manual confirmation. CLI operational cleanup remains separate. Audit/external-copy policy, full deletion coverage and long-term archival acceptance remain unfinished. |
+| 102 Retention/archive | Partial | Retention preference, bounded record cleanup and sole-owner retirement with verified paused recovery copy are implemented. Fresh setup cannot bypass lost restrictions; retired worker stops backup pruning/HAI refresh. CLI operational cleanup remains separate. Continuing-workspace audit/external-copy policy, secure erasure and long-term archival acceptance remain unfinished. |
 | 103 Prototype-to-production | Partial | Production guards, packaging, recovery and deployment configuration exist. Actual intended deployment, operator acceptance, credential response and receiving-side HAI acceptance if enabled are not complete. |
 | 104 Safety stop | Implemented | Owner/admin pause blocks approval and handoff. |
 | 105 Onboarding | Implemented | First-owner setup and guided compliance next action. |

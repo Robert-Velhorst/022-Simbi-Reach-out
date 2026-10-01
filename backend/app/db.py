@@ -84,6 +84,25 @@ def runtime_guard():
     return file_lock(Path(str(settings.database_path.resolve()) + ".runtime.lock"), exclusive=False)
 
 
+class MaintenanceBusy(RuntimeError):
+    """Another managed maintenance/export/retirement operation holds the lease."""
+
+
+@contextmanager
+def maintenance_operation_guard():
+    # Always acquire BEFORE a writer transaction. This also serializes exports
+    # and backup pruning, which continue after their database reads complete.
+    lease = file_lock(Path(str(settings.database_path.resolve()) + ".maintenance.lock"))
+    try:
+        lease.__enter__()
+    except RuntimeError as exc:
+        raise MaintenanceBusy("Another local maintenance operation is running") from exc
+    try:
+        yield
+    finally:
+        lease.__exit__(None, None, None)
+
+
 class _GuardedConnection(sqlite3.Connection):
     _runtime_lease = None
 
