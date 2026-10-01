@@ -64,7 +64,7 @@ export default function AuditPrivacyControls() {
         setReceipt(result); setReceipts(null); setPlan(null); setOpen(false)
       } catch (cause) {
         if (cause instanceof ApiError && ['privacy_preview_required', 'privacy_preview_changed', 'privacy_preview_expired'].includes(cause.code)) { setPlan(null); setOpen(false) }
-        if (cause instanceof ApiError && ['network_unavailable', 'request_timeout', 'internal_error', 'request_failed'].includes(cause.code)) throw new Error('Audit minimization is not confirmed. Keep this preview, check receipts or retry it; do not assume failure.', { cause })
+        if (cause instanceof ApiError && ['network_unavailable', 'request_timeout', 'request_cancelled', 'response_unverified', 'internal_error', 'request_failed'].includes(cause.code)) throw new Error('Audit minimization is not confirmed. Keep this preview, check receipts or retry it; do not assume failure.', { cause })
         throw cause
       } finally { form.reset(); setConfirmed(false) }
     })

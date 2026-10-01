@@ -1,5 +1,7 @@
 # Keyboard access and accessibility scope
 
+Complete-response recovery adds three selected EN-desktop/NL-mobile error-dialog scans per engine and native keyboard template creation/cancel/read-retry, preserving authored fixture text after a real commit with an unreadable response. Long mobile forms scroll; both complete action buttons must be visible after keyboard traversal. Native unfinished response bodies test read/write deadlines, not assistive-device certification or general form recovery. See [request recovery](REQUEST_RECOVERY.md) and the current exact ledger.
+
 Draft leave protection now uses the existing named native dialog and data-router navigation. With unresolved draft text or an uncertain save, app/history navigation and local editor-replacing actions ask before leaving; Escape, Close, backdrop or Keep editing preserve the current editor/checks and return focus to it. Continuation is disabled while a draft request is pending, and a settled save never automatically opens a previously blocked destination. Four additional selected English/Dutch desktop/mobile warning scans, actual Tab/Shift+Tab/Escape/focus and pending-response checks are part of the unchanged full workflow. This is not general form autosave or screen-reader/device certification. See [draft leave choices and exact scope](DRAFT_SAVING.md#before-leaving-an-unresolved-draft) and the dated ledger for observed execution/publication, not inherited pass claims.
 
 ## Using the personal application

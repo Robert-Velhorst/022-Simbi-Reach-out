@@ -286,7 +286,7 @@ describe('personal cleanup controls', () => {
     vi.stubGlobal('fetch', vi.fn(async () => response({ error: { code: 'unavailable', message: 'QA read failed' } }, 503)))
     render(<PrivacyControls retentionDays={365} onSaved={vi.fn()} />)
     fireEvent.click(screen.getByRole('button', { name: 'Preview cleanup' }))
-    await screen.findByText('QA read failed')
+    await screen.findByText(/may already have changed local records.*before retrying/)
     expect(screen.queryByText('No contacts in this preview will be removed.')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Review removal' })).not.toBeInTheDocument()
   })

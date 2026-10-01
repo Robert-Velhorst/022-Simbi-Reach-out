@@ -83,7 +83,7 @@ describe('compliance confirmation submission', () => {
     const controls = await form()
     fireEvent.submit(controls.form)
     fixture.complete(response({ error: { code: 'fixture_rejected', message: 'Fictional confirmation rejected' } }, 503))
-    await screen.findByText('Fictional confirmation rejected')
+    await screen.findByText(/may already have changed local records.*before retrying/)
     expect(controls.boxes.every((box) => box.checked)).toBe(true)
     expect(controls.button).toBeEnabled()
     expect(screen.queryByText('Compliance acknowledgement recorded in the audit log.')).not.toBeInTheDocument()

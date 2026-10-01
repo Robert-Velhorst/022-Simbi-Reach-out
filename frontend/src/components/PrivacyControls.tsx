@@ -131,7 +131,7 @@ export default function PrivacyControls({ retentionDays, onSaved }: { retentionD
         if (cause instanceof ApiError && ['privacy_preview_required', 'privacy_preview_changed', 'privacy_preview_expired'].includes(cause.code)) {
           setPlan(null); setShowConfirmation(false)
         }
-        if (cause instanceof ApiError && ['network_unavailable', 'request_timeout', 'internal_error', 'request_failed'].includes(cause.code)) throw new Error('Cleanup is not confirmed. Keep this preview, check receipts or retry it; do not assume failure.', { cause })
+        if (cause instanceof ApiError && ['network_unavailable', 'request_timeout', 'request_cancelled', 'response_unverified', 'internal_error', 'request_failed'].includes(cause.code)) throw new Error('Cleanup is not confirmed. Keep this preview, check receipts or retry it; do not assume failure.', { cause })
         throw cause
       } finally { form.reset(); setConfirmed(false) }
     })
@@ -146,7 +146,12 @@ export default function PrivacyControls({ retentionDays, onSaved }: { retentionD
     const reference = String(new FormData(event.currentTarget).get('receipt_reference')).trim()
     setLocatedReceipt(null)
     await action(async () => {
-      const result = await api<Receipt>(`/privacy/receipts/${encodeURIComponent(reference)}`)
+      let result: Receipt
+      try { result = await api<Receipt>(`/privacy/receipts/${encodeURIComponent(reference)}`) }
+      catch (cause) {
+        if (cause instanceof ApiError && cause.code === 'response_unverified') throw new Error('Cleanup receipts could not be verified.', { cause })
+        throw cause
+      }
       if (!validReceipt(result) || result.plan_id !== reference) throw new Error('Cleanup receipts could not be verified.')
       setLocatedReceipt(result)
     })

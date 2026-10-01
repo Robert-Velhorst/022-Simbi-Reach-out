@@ -58,7 +58,7 @@ describe('personal stop-contact return focus', () => {
     const reason = within(dialog).getByLabelText('Reason')
     fireEvent.change(reason, { target: { value: 'Preserve this fictional reason' } })
     fireEvent.click(within(dialog).getByRole('button', { name: 'Confirm stop contact' }))
-    await within(dialog).findByText('The stop could not be recorded.')
+    await within(dialog).findByText(/may already have changed local records.*before retrying/)
     expect(dialog).toBeInTheDocument()
     expect(reason).toHaveValue('Preserve this fictional reason')
     expect(writes).toEqual([{ prospect_id: person.id, reason: 'Preserve this fictional reason' }])

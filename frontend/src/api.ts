@@ -20,34 +20,63 @@ function cookie(name: string): string {
 
 export async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
   const method = options.method ?? 'GET'
+  const writes = !['GET', 'HEAD', 'OPTIONS'].includes(method.toUpperCase())
+  const unknownWrite = 'The request outcome is not confirmed. It may already have changed local records. Check the current state before retrying; do not assume it failed.'
+  if (options.signal?.aborted) throw new ApiError('request_cancelled', 'The request was cancelled before it was sent. No change was requested.')
   const headers = new Headers(options.headers)
   if (options.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json')
-  if (!['GET', 'HEAD', 'OPTIONS'].includes(method.toUpperCase())) {
+  if (writes) {
     headers.set('X-CSRF-Token', decodeURIComponent(cookie('simbi_csrf')))
   }
   const controller = new AbortController()
-  const timeout = window.setTimeout(() => controller.abort(), 20_000)
-  if (options.signal) {
-    if (options.signal.aborted) controller.abort()
-    else options.signal.addEventListener('abort', () => controller.abort(), { once: true })
+  let interrupt!: (cause: ApiError) => void
+  const interruption = new Promise<never>((_resolve, reject) => { interrupt = reject })
+  const cancel = () => {
+    interrupt(new ApiError('request_cancelled', writes ? unknownWrite : 'The request was cancelled. No result was loaded.'))
+    controller.abort()
   }
-  let response: Response
+  const timeout = window.setTimeout(() => {
+    interrupt(new ApiError('request_timeout', writes ? unknownWrite : 'The request timed out. Check the service and try again.'))
+    controller.abort()
+  }, 20_000)
+  options.signal?.addEventListener('abort', cancel, { once: true })
   try {
-    response = await fetch(`/api${path}`, { ...options, headers, credentials: 'include', signal: controller.signal })
-  } catch (cause) {
-    const message = controller.signal.aborted
-      ? 'The request timed out. Check the service and try again.'
-      : 'The local service is unavailable. Check that it is running and try again.'
-    throw new ApiError(controller.signal.aborted ? 'request_timeout' : 'network_unavailable', message, cause)
+    // The deadline covers headers AND the body. Racing also bounds a body reader
+    // that does not cooperate with abort; no request is automatically retried.
+    return await Promise.race([interruption, (async () => {
+      let response: Response
+      try {
+        response = await fetch(`/api${path}`, { ...options, headers, credentials: 'include', signal: controller.signal })
+      } catch {
+        throw new ApiError('network_unavailable', writes ? unknownWrite : 'The local service is unavailable. Check that it is running and try again.')
+      }
+      let payload: unknown
+      try { payload = await response.json() } catch {
+        // Do not retain parser errors or raw response bodies: they can contain
+        // private content, and an unreadable response is not a save receipt.
+        if (response.ok) throw new ApiError('response_unverified', writes ? unknownWrite : 'The local service returned an unreadable response. Reload the current records; no result was verified.')
+      }
+      if (!response.ok) {
+        const envelope = payload && typeof payload === 'object' && 'error' in payload ? payload.error : undefined
+        const error = envelope && typeof envelope === 'object' ? envelope as Record<string, unknown> : {}
+        const code = typeof error.code === 'string' && error.code ? error.code : 'request_failed'
+        // Only these inspected pre-mutation guards establish non-application.
+        // A well-formed arbitrary 5xx envelope does not establish rollback.
+        const confirmedRefusal = ['privacy_backup_failed', 'retirement_maintenance_busy'].includes(code)
+        const message = writes && response.status >= 500 && (!confirmedRefusal || typeof error.message !== 'string' || !error.message)
+          ? unknownWrite : typeof error.message === 'string' && error.message ? error.message : 'The request failed'
+        throw new ApiError(code, message, error.details)
+      }
+      if (payload === null || typeof payload !== 'object') {
+        throw new ApiError('response_unverified', writes ? unknownWrite : 'The local service returned an unreadable response. Reload the current records; no result was verified.')
+      }
+      // Endpoint-specific field/version/receipt checks remain the caller's job.
+      return payload as T
+    })()])
   } finally {
     window.clearTimeout(timeout)
+    options.signal?.removeEventListener('abort', cancel)
   }
-  const payload = await response.json().catch(() => ({}))
-  if (!response.ok) {
-    const error = payload.error ?? {}
-    throw new ApiError(error.code ?? 'request_failed', error.message ?? 'The request failed', error.details)
-  }
-  return payload as T
 }
 
 export function post<T>(path: string, body: unknown, headers?: HeadersInit): Promise<T> {

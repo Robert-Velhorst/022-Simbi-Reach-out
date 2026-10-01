@@ -4,6 +4,8 @@ This is a personal, single-owner tool. Browser checks use fresh fictional local 
 
 ## Scope of the checks
 
+After all retained bootstrap/main/retirement workflows, `scripts/e2e-api-response.mjs` runs separate English desktop1440×1000/Dutch mobile390×844 fictional fixtures through an owned ephemeral loopback response proxy. Setup alone uses its authenticated test request client; template actions use sequential keyboard controls. Real commits precede malformed201 bodies and one native unfinished body per locale (EN read/NL write). Require translated retained forms, one stored row per individual title/no automatic retry, explicit malformed-read recovery, headers before the20-second deadline and actual connection closure. Three selected error-dialog scans are added per engine. Long mobile error forms scroll: Tab to the action and native End reveals both complete buttons, with separate action-row screenshots; focus alone is not full-visibility proof. No provider navigation. Exact execution/contract limits are in [request recovery](REQUEST_RECOVERY.md) and the current ledger.
+
 The full entry command first runs `scripts/e2e-auth.mjs` in separate owned token-required test installations: English desktop/Dutch mobile sequential-keyboard setup, native no-write validation, rejected-token/form preservation, four fictional compliance checks, delayed real confirmation/repeat refusal/one audit/focus return, logout, rejected-login preservation and corrected same-owner sign-in. Six UI POST requests per locale include two rejected attempts; three selected scans/screenshots per locale and exact operational/old-audit preservation accompany the path. No pointer/provider/write-client fixture action is used. This is test-mode bootstrap operability, not production TLS/cookie/operator or actual policy/provider acceptance. See [procedure and limits](ACCESSIBILITY.md#keyboard-first-owner-setup-sign-in-and-compliance) and exact dated results.
 
 The full suite also invokes `scripts/e2e-keyboard-workflow.mjs`: an already signed-in fictional owner reaches every control through sequential Tab in English desktop1440x1000 and Dutch mobile390x844. Keyboard entry/selection/activation covers campaign, prospect, template, draft, explicit save/review, local uncertainty, native date/time reminder, reply/cancelled reminder, report and stop contact. Exactly twelve UI mutations per locale preserve all eight prior operational tables; six added selected scans and named screenshots accompany the journey. No pointer interaction, programmatic focus/input assignment, provider navigation/copy/send or API fixture write is used. Setup/sign-in/compliance, other form/error states and dedicated assistive technology remain separate. See [the detailed scope](ACCESSIBILITY.md#keyboard-only-personal-record-keeping-journey) and exact executed outcomes in the dated ledger.
@@ -28,7 +30,7 @@ Each test child must successfully bind its own loopback port before readiness is
 
 ## Run the full suite
 
-Run from the repository root in PowerShell, after the [README dependency installation](../README.md). The backend must be installed into `.venv` (the Windows harness defaults to `.venv/Scripts/python.exe`); the frontend must be installed from its frozen lockfile. The exact Playwright version is pinned in `frontend/package.json` and `frontend/pnpm-lock.yaml`. `test:e2e:run` runs selector contracts, then the complete main harness, then both retirement locales; a failing earlier command prevents later commands from running. Build and install matching browser runtimes before invoking it:
+Run from the repository root in PowerShell, after the [README dependency installation](../README.md). The backend must be installed into `.venv` (the Windows harness defaults to `.venv/Scripts/python.exe`); the frontend must be installed from its frozen lockfile. The exact Playwright version is pinned in `frontend/package.json` and `frontend/pnpm-lock.yaml`. `test:e2e:run` runs selector contracts, bilingual bootstrap, complete main workflow, both retirement locales, then both complete-response fixtures; a failing earlier command prevents later commands from running. Build and install matching browser runtimes before invoking it:
 
 ```powershell
 pnpm.cmd --dir frontend build
@@ -47,15 +49,16 @@ try {
 }
 ```
 
-The main suite defaults to4173, retirement to4178 and separate keyboard bootstrap to4179. Choose unused unprivileged ports through `SIMBI_E2E_PORT`, `SIMBI_RETIREMENT_E2E_PORT` and `SIMBI_AUTH_E2E_PORT` if needed. Each helper verifies its own child's bind before fixture writes. For example, set these variables and run the full-suite block above in that same separate temporary PowerShell window:
+The main suite defaults to4173, retirement to4178, separate keyboard bootstrap to4179 and response backend to4180 (its proxy binds an OS-selected ephemeral loopback port). Choose unused unprivileged ports through `SIMBI_E2E_PORT`, `SIMBI_RETIREMENT_E2E_PORT`, `SIMBI_AUTH_E2E_PORT` and `SIMBI_RESPONSE_E2E_PORT` if needed. Each helper verifies its own child's bind before fixture writes. For example, set these variables and run the full-suite block above in that same separate temporary PowerShell window:
 
 ```powershell
 $env:SIMBI_E2E_PORT = '4185'
 $env:SIMBI_RETIREMENT_E2E_PORT = '4186'
 $env:SIMBI_AUTH_E2E_PORT = '4196'
+$env:SIMBI_RESPONSE_E2E_PORT = '4197'
 ```
 
-Close that window afterward so its port choices do not leak into ordinary checks. Run sequentially as above; simultaneous suites must use distinct pairs of ports. These browser harnesses create distinct fresh folders; backend pytest uses a separate shared `backend/tests/.runtime` fixture directory and should not run concurrently with another backend pytest suite. No test server should be stopped merely to free a port belonging to someone else.
+Close that window afterward so its port choices do not leak into ordinary checks. Run sequentially as above; simultaneous suites must use distinct sets of all four backend ports. These browser harnesses create distinct fresh folders; backend pytest uses a separate shared `backend/tests/.runtime` fixture directory and should not run concurrently with another backend pytest suite. No test server should be stopped merely to free a port belonging to someone else.
 
 Linux CI keeps Chromium in the existing full verification job and runs the complete browser suite in independent Firefox/WebKit matrix jobs, with the exact runtime installed using `--with-deps`. The Windows standalone build/smoke remains a separate job. A passing engine selector unit test is not rendered-browser proof. Consult the exact commit's CI jobs and [dated acceptance ledger](PRODUCTION_READINESS.md#cross-browser-personal-workflow-acceptance-2026-10-01), not an older badge.
 

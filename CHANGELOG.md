@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased — complete-response request recovery (2026-10-01)
+
+- Keep the20-second deadline through body consumption; separate caller cancellation, release its listener/timer, reject unreadable or primitive successes and never automatically retry a write.
+- Explain interrupted writes as unconfirmed in English/Dutch; preserve structured refusals/backup errors and domain-specific draft/handoff/privacy/audit/retirement recovery. Retirement can recover an unreadable confirmation using its exact read-only receipt.
+- Add17 demonstrated regressions/two retirement recovery cases and a real owned streamed-response browser fixture after every retained full engine workflow. Actual stored readback proves that a commit can precede its broken response; three added selected scans per engine. Exact completed evidence, diagnostics and broader schema/form/operator limits remain in the ledger. No new backend/schema/dependency/production endpoint/private text storage/provider operation.
+
 ## Unreleased — personal explicit-save draft leave protection (2026-10-01)
 
 - Preserve current-row editor text/checks and ask before another selection/page/preparation/retry, app/history navigation or logout replaces unresolved draft state. Cancel returns focus without mutation; explicit discard never saves, approves, sends or deletes the stored draft.

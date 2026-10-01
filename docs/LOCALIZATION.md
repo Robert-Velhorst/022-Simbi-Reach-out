@@ -10,7 +10,7 @@ The selector is outside native dialogs and correctly becomes inert while a dialo
 
 ## Developer contract
 
-Current catalogs contain700 matching keys: five additive draft-leave/pending/discard labels extend the695-key keyboard-bootstrap snapshot. The earlier691-key comparison/recovery snapshot added19 labels to the672-key keyboard-navigation snapshot; later reminder/confirmation labels remain too. These are historical snapshots, not competing current totals. Choices and explanatory safety text are English/Dutch; authored subject/message text and both version field names remain unchanged. See [draft saving and leave choices](DRAFT_SAVING.md).
+Current catalogs contain704 matching keys: four additive complete-response/cancellation/uncertainty messages extend the700-key draft-leave snapshot. Five draft-leave labels previously extended695 keyboard-bootstrap keys; the earlier691-key comparison/recovery snapshot added19 to672 keyboard-navigation keys. These are historical snapshots, not competing current totals. See [request recovery](REQUEST_RECOVERY.md) and [draft saving and leave choices](DRAFT_SAVING.md); authored text/version field names remain unchanged.
 
 `frontend/src/i18n.tsx` provides a React context, typed `t` lookup, UI-message formatting, canonical code-label formatting and dates. `main.tsx` mounts one provider above the app; it must not be keyed by language or remount forms when the locale changes. The default context is English for isolated component tests. No DOM scraping/replacement, HTML parsing, remote translation service or dependency was added.
 
