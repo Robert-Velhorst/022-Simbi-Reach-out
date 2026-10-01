@@ -49,7 +49,7 @@ async function reminderForm() {
     if (options.method === 'POST') {
       const submitted = JSON.parse(String(options.body))
       writes.push(submitted)
-      return Response.json({ ...submitted, prospect_id: null, id: 1, status: 'open' })
+      return Response.json({ ...submitted, prospect_id: null, id: 1, status: 'open', creation_key: new Headers(options.headers).get('Idempotency-Key'), replayed: false })
     }
     return new Response(JSON.stringify(body), { headers: { 'Content-Type': 'application/json' } })
   }))

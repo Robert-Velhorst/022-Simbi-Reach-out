@@ -19,7 +19,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from . import audit_privacy, privacy, retirement
+from . import audit_privacy, privacy, reminder_replay, retirement
 from .config import ROOT, settings
 from .db import (
     MaintenanceBusy,
@@ -1619,19 +1619,50 @@ def list_reminders(
 
 
 @app.post("/api/reminders", status_code=201)
-def create_reminder(body: ReminderBody, member: Member):
+def create_reminder(
+    body: ReminderBody,
+    member: Member,
+    idempotency_keys: Annotated[list[str] | None, Header(alias="Idempotency-Key")] = None,
+    raw_session: Annotated[str | None, Cookie(alias=SESSION_COOKIE)] = None,
+):
     require_role(member, "owner", "admin", "editor")
+    try:
+        key = reminder_replay.validate_key(idempotency_keys)
+    except reminder_replay.ReplayError as exc:
+        raise AppError(exc.status, exc.code, exc.message) from exc
     if not body.draft_id and not body.prospect_id:
         raise AppError(422, "target_required", "Choose a draft or prospect for the reminder")
     with transaction() as connection:
+        # A receipt is never authentication. Recheck the session and current
+        # membership under the same writer reservation as replay/creation.
+        authenticated = connection.execute(
+            "SELECT m.role FROM sessions s JOIN memberships m ON m.user_id=s.user_id "
+            "WHERE s.token_hash=? AND s.expires_at>? AND m.user_id=? AND m.workspace_id=?",
+            (token_hash(raw_session or ""), now(), member["user_id"], member["workspace_id"]),
+        ).fetchone()
+        if authenticated is None:
+            raise AppError(401, "session_expired", "Your session expired; sign in again")
+        require_role({"role": authenticated["role"]}, "owner", "admin", "editor")
+        if key is not None:
+            try:
+                replay = reminder_replay.lookup(connection, member, key, body.model_dump())
+            except reminder_replay.ReplayError as exc:
+                raise AppError(exc.status, exc.code, exc.message) from exc
+            if replay is not None:
+                return replay
         draft = None
         if body.draft_id:
             draft = owned(connection, "drafts", body.draft_id, member["workspace_id"])
         if body.prospect_id:
             owned(connection, "prospects", body.prospect_id, member["workspace_id"])
-        if draft is not None and body.prospect_id is not None and draft["prospect_id"] != body.prospect_id:
+        if (
+            draft is not None
+            and body.prospect_id is not None
+            and draft["prospect_id"] != body.prospect_id
+        ):
             raise AppError(
-                422, "reminder_target_mismatch",
+                422,
+                "reminder_target_mismatch",
                 "Choose a contact that matches the selected conversation",
             )
         record_id = connection.execute(
@@ -1653,10 +1684,17 @@ def create_reminder(body: ReminderBody, member: Member):
             "reminder",
             record_id,
         )
-        created = dict(connection.execute(
-            "SELECT id,draft_id,prospect_id,title,due_at,status FROM reminders WHERE id=? AND workspace_id=?",
-            (record_id, member["workspace_id"]),
-        ).fetchone())
+        created = dict(
+            connection.execute(
+                "SELECT id,draft_id,prospect_id,title,due_at,status FROM reminders WHERE id=? AND workspace_id=?",
+                (record_id, member["workspace_id"]),
+            ).fetchone()
+        )
+        if key is not None:
+            row = dict(
+                connection.execute("SELECT * FROM reminders WHERE id=?", (record_id,)).fetchone()
+            )
+            created = reminder_replay.remember(connection, member, key, body.model_dump(), row)
     return created
 
 

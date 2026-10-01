@@ -1,5 +1,5 @@
 import { useI18n } from '../i18n'
-import { useState, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent } from 'react'
 import { BellPlus, Check, ExternalLink, MessageSquarePlus, RefreshCw, ShieldCheck } from 'lucide-react'
 import { ApiError, patch, post } from '../api'
 import { Button, EmptyState, Field, Modal, Notice, Panel, Select, Textarea, Input, Status, TableRegion } from '../components/ui'
@@ -47,14 +47,24 @@ export function RemindersPage({ canEdit }: { canEdit: boolean }) {
   const [open, setOpen] = useState(false)
   const action = usePendingMutation()
   const [message, setMessage] = useState('')
+  const creationKey = useRef<string | null>(null)
+  const [retryReference, setRetryReference] = useState<string | null>(null)
+  const retryNotice = retryReference ? <Notice tone="warning">{t('Reminder retry reference: {reference}. Retry the original values to check the same attempt. Changed values cannot reuse a committed reference. This reference is kept only while this page remains open; after navigation, reload or closure, check saved reminders before creating again.', { reference: retryReference })}</Notice> : null
   async function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (!canEdit || action.pending()) return; setMessage('')
     const values = Object.fromEntries(new FormData(event.currentTarget))
     const due = localDateTimeISO(String(values.due_at))
     if (!due) { setMessage('Enter a valid local date and time using YYYY-MM-DDTHH:mm.'); (event.currentTarget.elements.namedItem('due_at') as HTMLInputElement | null)?.focus(); return }
     if (!action.begin(event.currentTarget)) return
-    try { await post('/reminders', { draft_id: Number(values.draft_id), title: values.title, due_at: due }); setOpen(false); await Promise.all([load(), draftPage.load(0)]) }
-    catch (cause) { setMessage(cause instanceof ApiError ? cause.message : 'Reminder could not be created') }
+    try {
+      // Only an opaque reference is retained; never another private body copy.
+      // An uncertain response must not rotate it into a fresh creation attempt.
+      creationKey.current ??= crypto.randomUUID()
+      await post('/reminders', { draft_id: Number(values.draft_id), title: values.title, due_at: due }, { 'Idempotency-Key': creationKey.current })
+      creationKey.current = null; setRetryReference(null)
+      setOpen(false); await Promise.all([load(), draftPage.load(0)])
+    }
+    catch (cause) { setRetryReference(creationKey.current); setMessage(cause instanceof ApiError ? cause.message : 'Reminder could not be created') }
     finally { action.end() }
   }
   async function complete(id: number) {
@@ -65,10 +75,11 @@ export function RemindersPage({ canEdit }: { canEdit: boolean }) {
     finally { action.end() }
   }
   return <OperationPage title={t("Reminders")} detail={t("Use reminders for decisions and follow-up review, never as an automatic send schedule.")} action={canEdit ? <Button onClick={() => { setMessage(''); setOpen(true); void draftPage.load(0) }}><BellPlus size={17} />{t("New reminder")}</Button> : null}>
+    {!open ? retryNotice : null}
     <PageNavigation page={page} loading={loading} load={load} />
     {!canEdit ? <Notice>{t("Your viewer role has read-only access. Ask an owner, admin or editor to make changes.")}</Notice> : null}
     {message && !open ? <Notice tone="danger">{formatMessage(message)}</Notice> : null}{draftPage.error ? <Notice tone="danger">{formatMessage(draftPage.error)}</Notice> : null}<Panel><DataState label={t("reminders")} loading={loading} error={error} hasData={Boolean(items.length)} retry={load}>{items.length ? <div className="task-list">{items.map((item) => <article key={item.id}><div><strong>{item.title}</strong><span>{item.prospect_name ?? t("General")} · {item.campaign_name ?? t("No campaign")}</span><time>{formatDate(item.due_at)}</time></div>{canEdit ? <Button variant="secondary" disabled={action.busy} onClick={() => complete(item.id)}><Check size={16} />{t("Done")}</Button> : null}</article>)}</div> : <EmptyState title={t("No open reminders")} detail={t("The local worker adds a review reminder after seven days without a recorded reply.")} />}</DataState></Panel>
-    {canEdit && open ? <Modal title={t("Create reminder")} closeDisabled={action.busy} onClose={() => { if (!action.pending()) setOpen(false) }}>{message ? <Notice tone="danger">{formatMessage(message)}</Notice> : null}{draftPage.error ? <Notice tone="danger">{formatMessage(draftPage.error)}<Button variant="quiet" onClick={() => void draftPage.load()}>{t("Retry conversations")}</Button></Notice> : null}<PendingForm busy={action.busy} className="form-stack" onSubmit={create}><PageNavigation page={draftPage.page} loading={draftPage.loading} load={draftPage.load} /><Field label={t("Conversation")}><Select key={draftPage.page?.offset} name="draft_id" disabled={draftPage.loading || Boolean(draftPage.error)} required defaultValue=""><option value="" disabled>{t("Select draft")}</option>{drafts.map((draft) => <option value={draft.id} key={draft.id}>{draft.prospect_name} — {draft.campaign_name}</option>)}</Select></Field><Field label={t("Reminder")}><Input name="title" required minLength={2} maxLength={300} /></Field><LocalDateTimeInput name="due_at" /><div className="modal-actions"><Button type="button" variant="quiet" onClick={() => setOpen(false)}>{t("Cancel")}</Button><Button disabled={draftPage.loading || Boolean(draftPage.error)}>{t("Create reminder")}</Button></div></PendingForm></Modal> : null}
+    {canEdit && open ? <Modal title={t("Create reminder")} closeDisabled={action.busy} onClose={() => { if (!action.pending()) setOpen(false) }}>{retryNotice}{message ? <Notice tone="danger">{formatMessage(message)}</Notice> : null}{draftPage.error ? <Notice tone="danger">{formatMessage(draftPage.error)}<Button variant="quiet" onClick={() => void draftPage.load()}>{t("Retry conversations")}</Button></Notice> : null}<PendingForm busy={action.busy} className="form-stack" onSubmit={create}><PageNavigation page={draftPage.page} loading={draftPage.loading} load={draftPage.load} /><Field label={t("Conversation")}><Select key={draftPage.page?.offset} name="draft_id" disabled={draftPage.loading || Boolean(draftPage.error)} required defaultValue=""><option value="" disabled>{t("Select draft")}</option>{drafts.map((draft) => <option value={draft.id} key={draft.id}>{draft.prospect_name} — {draft.campaign_name}</option>)}</Select></Field><Field label={t("Reminder")}><Input name="title" required minLength={2} maxLength={300} /></Field><LocalDateTimeInput name="due_at" /><div className="modal-actions"><Button type="button" variant="quiet" onClick={() => setOpen(false)}>{t("Cancel")}</Button><Button disabled={draftPage.loading || Boolean(draftPage.error)}>{t("Create reminder")}</Button></div></PendingForm></Modal> : null}
   </OperationPage>
 }
 

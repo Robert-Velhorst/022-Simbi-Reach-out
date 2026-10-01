@@ -1,5 +1,11 @@
 # Codex worklog
 
+## 2026-10-01 — durable reminder creation retries
+
+- Start from clean published451074b after exact main/zero-PR/documentation-CI refresh. Preserve the personal single-owner/manual-send scope and keep README unchanged until all source PRs merge.
+- Demonstrate four failures before repair; add immutable migration005, atomic reminder/audit/receipt commitment, normalized payload binding, current authority recheck and bounded content-minimized receipts. Same-key replay is nonmutating; changed payload/row, deletion/ID reuse and capacity fail closed. Privacy tombstones persist; retirement counts/removes them; complete backups preserve them and legacy restore adds the schema without losing records.
+- Connect the existing reminder form to an opaque RAM-only reference and strict matching receipt confirmation. No automatic retry, body cache, private browser storage, dependency/provider/personal-data/runtime operation or claim of generic/cross-tab/other-endpoint idempotency. Final tests/CI/publication belong in the newest acceptance ledger, not inherited earlier counts.
+
 ## 2026-10-01 — strict stored-date display and confirmation
 
 - Continue the personal, single-owner assisted goal from clean published29bff99; current remote/zero-PR/exact documentation CI verified. Preserve README until every source PR merges first and distinguish the absent original PDF from the extracted scope reviewed.

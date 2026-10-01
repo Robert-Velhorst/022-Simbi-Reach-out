@@ -75,6 +75,12 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
       if (!validCoreCreation(path, method, options.body, payload)) {
         throw new ApiError('response_unverified', unknownWrite)
       }
+      if (path.split('?')[0] === '/reminders' && method.toUpperCase() === 'POST' && headers.has('Idempotency-Key')) {
+        const receipt = payload as Record<string, unknown>
+        if (receipt.creation_key !== headers.get('Idempotency-Key') || typeof receipt.replayed !== 'boolean') {
+          throw new ApiError('response_unverified', unknownWrite)
+        }
+      }
       // Other endpoint-specific field/version/receipt checks remain necessary.
       return payload as T
     })()])
