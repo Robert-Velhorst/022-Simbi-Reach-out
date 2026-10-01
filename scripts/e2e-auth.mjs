@@ -19,7 +19,7 @@ const python = process.env.SIMBI_E2E_PYTHON ?? (process.platform === 'win32' ? j
 const port = process.env.SIMBI_AUTH_E2E_PORT ?? '4179'
 assert.ok(/^\d+$/.test(port) && Number(port) >= 1024 && Number(port) <= 65535, 'Invalid isolated auth test port')
 const origin = `http://127.0.0.1:${port}`
-const password = 'Fictional local keyboard password only'
+const password = randomUUID() // Fresh fixture secret; never a real account password.
 const checkNames = ['reviewed_simbi_terms', 'confirmed_no_scraping', 'confirmed_manual_send', 'confirmed_suppression_process']
 
 for (const locale of ['en', 'nl']) {
