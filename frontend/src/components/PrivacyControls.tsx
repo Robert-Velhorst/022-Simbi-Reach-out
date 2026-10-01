@@ -4,11 +4,11 @@ import { useI18n, type TranslationKey } from '../i18n'
 import { Button, Field, Input, Modal, Notice, Panel, Select } from './ui'
 
 type Kind = 'retention' | 'prospect' | 'campaign' | 'template'
-type Counts = { prospects: number; drafts: number; handoffs: number; replies: number; reminders: number; campaigns?: number; templates?: number; template_links?: number; restricted_contacts?: number }
+type Counts = { prospects: number; drafts: number; handoffs: number; replies: number; reminders: number; campaigns?: number; templates?: number; template_links?: number; restricted_contacts?: number; audit_events?: number }
 type Plan = { kind?: Kind; plan_id: string; expires_at: string; cutoff: string; retention_days: number; counts: Counts; contacts: Array<{ id: number; name: string }>; records?: Array<{ id: number; name: string }>; restricted_contacts?: Array<{ id: number; name: string }>; protected_contacts: number; remaining_eligible_contacts: number }
-type Receipt = { kind?: Kind; plan_id: string; counts: Counts; backup_file: string; completed_at: string; replayed: boolean }
+type Receipt = { kind?: Kind | 'audit_redaction'; plan_id: string; counts: Partial<Counts>; backup_file: string; completed_at: string; replayed: boolean }
 type Contacts = { items: Array<{ id: number; name: string; source_url?: string }>; total: number }
-const countLabels: Record<keyof Counts, TranslationKey> = { prospects: 'Prospects', drafts: 'Drafts', handoffs: 'Handoffs', replies: 'Replies', reminders: 'Reminders', campaigns: 'Campaigns', templates: 'Templates', template_links: 'Template links cleared', restricted_contacts: 'Contacts retained as do-not-contact' }
+const countLabels: Record<keyof Counts, TranslationKey> = { prospects: 'Prospects', drafts: 'Drafts', handoffs: 'Handoffs', replies: 'Replies', reminders: 'Reminders', campaigns: 'Campaigns', templates: 'Templates', template_links: 'Template links cleared', restricted_contacts: 'Contacts retained as do-not-contact', audit_events: 'Audit events' }
 const selectionLabels: Record<Exclude<Kind, 'retention'>, { path: string; search: TranslationKey; find: TranslationKey; select: TranslationKey; choose: TranslationKey }> = {
   prospect: { path: 'prospects', search: 'Search contacts for removal', find: 'Find contacts', select: 'Contact to remove', choose: 'Choose a contact' },
   campaign: { path: 'campaigns', search: 'Search campaigns for removal', find: 'Find campaigns', select: 'Campaign to remove', choose: 'Choose a campaign' },
@@ -34,8 +34,9 @@ export default function PrivacyControls({ retentionDays, onSaved }: { retentionD
   const selection = kind === 'retention' ? null : selectionLabels[kind]
   const removalCount = plan ? plan.counts.prospects + (plan.counts.campaigns ?? 0) + (plan.counts.templates ?? 0) : 0
   function receiptText(item: Receipt) {
+    if (item.kind === 'audit_redaction') return t('Audit minimization recorded at {date}. Events updated: {count}. Recovery file: {file}.', { date: formatDate(item.completed_at), count: item.counts.audit_events ?? 0, file: item.backup_file })
     const key = item.kind === 'campaign' ? 'Cleanup recorded at {date}. Campaigns removed: {count}. Recovery file: {file}.' : item.kind === 'template' ? 'Cleanup recorded at {date}. Templates removed: {count}. Recovery file: {file}.' : 'Cleanup recorded at {date}. Contacts removed: {count}. Recovery file: {file}.'
-    return t(key, { date: formatDate(item.completed_at), count: item.kind === 'campaign' ? item.counts.campaigns ?? 0 : item.kind === 'template' ? item.counts.templates ?? 0 : item.counts.prospects, file: item.backup_file })
+    return t(key, { date: formatDate(item.completed_at), count: item.kind === 'campaign' ? item.counts.campaigns ?? 0 : item.kind === 'template' ? item.counts.templates ?? 0 : item.counts.prospects ?? 0, file: item.backup_file })
   }
 
   async function action(work: () => Promise<void>) {

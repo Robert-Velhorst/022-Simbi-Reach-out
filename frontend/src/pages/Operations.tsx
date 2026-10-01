@@ -77,7 +77,7 @@ export function AuditPage() {
   const { t, formatDate, formatCode } = useI18n()
   const { page, load, loading, error } = usePage<AuditEvent>('/audit')
   const items = page?.items ?? []
-  return <OperationPage title={t("Audit log")} detail={t("Append-only operational events show who changed local state and when. Secrets and message bodies are intentionally excluded from event details.")}>
+  return <OperationPage title={t("Audit log")} detail={t("Operational events preserve who changed local state and when. New event details are minimized; the owner can explicitly remove known duplicate text from old entries without deleting events.")}>
     <PageNavigation page={page} loading={loading} load={load} />
     <Panel><DataState label={t("audit events")} loading={loading} error={error} hasData={Boolean(items.length)} retry={load}>{items.length ? <div className="table-wrap"><table><thead><tr><th>{t("Time")}</th><th>{t("Actor")}</th><th>{t("Event")}</th><th>{t("Entity")}</th></tr></thead><tbody>{items.map((event) => <tr key={event.id}><td>{formatDate(event.created_at)}</td><td>{event.display_name ?? t("Local worker")}</td><td><strong>{formatCode(event.event_type, '.')}</strong></td><td>{formatCode(event.entity_type)} {event.entity_id}</td></tr>)}</tbody></table></div> : <EmptyState title={t("No events yet")} detail={t("Material changes will appear here automatically.")} />}</DataState></Panel>
   </OperationPage>

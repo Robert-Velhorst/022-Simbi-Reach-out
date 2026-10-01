@@ -19,7 +19,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from . import privacy, retirement
+from . import audit_privacy, privacy, retirement
 from .config import ROOT, settings
 from .db import (
     MaintenanceBusy,
@@ -105,6 +105,10 @@ class CleanupConfirmBody(StrictModel):
     plan_id: str = Field(pattern=r"^[a-f0-9]{32}$")
     current_password: str = Field(min_length=1, max_length=200)
     confirmed: Literal[True]
+
+
+class AuditPreviewBody(StrictModel):
+    after_id: int = Field(default=0, ge=0, le=9223372036854775807)
 
 
 class RetirementPreviewBody(StrictModel):
@@ -1767,6 +1771,10 @@ def cleanup_receipts(request: Request, member: Member):
 
 @app.post("/api/privacy/confirm")
 def confirm_cleanup(body: CleanupConfirmBody, request: Request, member: Member):
+    return _confirm_privacy(body, request, member, privacy.execute)
+
+
+def _confirm_privacy(body, request, member, operation):
     require_role(member, "owner")
     fingerprint = "privacy:" + login_fingerprint(request, member["email"])
     enforce_login_limit(fingerprint)
@@ -1778,7 +1786,7 @@ def confirm_cleanup(body: CleanupConfirmBody, request: Request, member: Member):
             ).fetchone()
             if not user or not verify_password(body.current_password, user["password_hash"]):
                 raise AppError(403, "current_password_invalid", "The current password is incorrect")
-            receipt = privacy.execute(connection, member, body.plan_id)
+            receipt = operation(connection, member, body.plan_id)
             connection.execute("DELETE FROM login_attempts WHERE fingerprint=?", (fingerprint,))
             return receipt
     except AppError as exc:
@@ -1787,6 +1795,40 @@ def confirm_cleanup(body: CleanupConfirmBody, request: Request, member: Member):
         raise
     except privacy.PrivacyError as exc:
         raise AppError(exc.status, exc.code, exc.message) from exc
+
+
+@app.post("/api/privacy/audit/preview")
+def preview_audit_minimization(body: AuditPreviewBody, request: Request, member: Member):
+    try:
+        with transaction() as connection:
+            require_current_owner(connection, request, member)
+            return audit_privacy.preview(connection, member, body.after_id)
+    except privacy.PrivacyError as exc:
+        raise AppError(exc.status, exc.code, exc.message) from exc
+
+
+@app.post("/api/privacy/audit/confirm")
+def confirm_audit_minimization(body: CleanupConfirmBody, request: Request, member: Member):
+    try:
+        with maintenance_operation_guard():
+            return _confirm_privacy(body, request, member, audit_privacy.execute)
+    except MaintenanceBusy as exc:
+        raise AppError(
+            409, "maintenance_busy", "Another local maintenance operation is running"
+        ) from exc
+
+
+@app.get("/api/privacy/audit/receipts")
+def audit_minimization_receipts(request: Request, member: Member):
+    with transaction() as connection:
+        require_current_owner(connection, request, member)
+        rows = connection.execute(
+            "SELECT receipt_json FROM privacy_cleanup_plans WHERE workspace_id=? AND owner_id=? "
+            "AND receipt_json IS NOT NULL AND json_extract(plan_json,'$.kind')=? "
+            "ORDER BY created_at DESC,id DESC LIMIT 10",
+            (member["workspace_id"], member["user_id"], audit_privacy.KIND),
+        ).fetchall()
+        return {"items": [json.loads(row["receipt_json"]) for row in rows]}
 
 
 @app.post("/api/privacy/retirement/preview")
