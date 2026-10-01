@@ -4,6 +4,14 @@ import { usePage } from './usePage'
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals() })
 
+it.each([{}, { items: [], total: -1, limit: 50, offset: 0 }, { items: [], total: 0, limit: 50, offset: 50 }])('rejects a readable but malformed or wrong-page result %j', async (body) => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json(body)))
+  const { result } = renderHook(() => usePage('/templates'))
+  await waitFor(() => expect(result.current.error).toMatch(/no result was verified/i))
+  expect(result.current.page).toBeNull()
+  expect(result.current.loading).toBe(false)
+})
+
 it('ignores stale search responses that arrive after a newer query', async () => {
   let finishOld!: (value: Response) => void
   vi.stubGlobal('fetch', vi.fn((url: string) => url.includes('old') ? new Promise<Response>((resolve) => { finishOld = resolve }) : Promise.resolve(new Response(JSON.stringify({ items: ['new'], total: 1, limit: 50, offset: 0 })))))

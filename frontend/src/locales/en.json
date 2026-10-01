@@ -659,5 +659,6 @@
   "Your local edits or save result are unresolved. Continuing discards this editor state, not the saved draft. Nothing is saved, approved or sent automatically.": "Your local edits or save result are unresolved. Continuing discards this editor state, not the saved draft. Nothing is saved, approved or sent automatically.",
   "A draft request is still pending. Stay here until it finishes, then check its result before leaving.": "A draft request is still pending. Stay here until it finishes, then check its result before leaving.",
   "Choose Keep editing to return and save or check the saved version yourself. Browser warnings cannot recover text after a crash or forced closure.": "Choose Keep editing to return and save or check the saved version yourself. Browser warnings cannot recover text after a crash or forced closure.",
-  "Discard local edits and continue": "Discard local edits and continue"
+  "Discard local edits and continue": "Discard local edits and continue",
+  "A request is still pending. Stay here until it finishes, then check its result before retrying or closing this form.": "A request is still pending. Stay here until it finishes, then check its result before retrying or closing this form."
 }

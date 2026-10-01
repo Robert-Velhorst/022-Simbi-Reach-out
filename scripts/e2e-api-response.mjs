@@ -31,6 +31,7 @@ for (const locale of ['en', 'nl']) {
   const catalog = JSON.parse(await readFile(join(root, 'frontend', 'src', 'locales', `${locale}.json`), 'utf8'))
   const t = (key) => { assert.ok(Object.hasOwn(catalog, key), `Missing ${locale} response key`); return catalog[key] }
   let fault = null
+  let releasePending = null
   let templateWrites = 0
   let streamed = 0
   let abortedBodies = 0
@@ -47,12 +48,28 @@ for (const locale of ['en', 'nl']) {
         outgoing.writeHead(response.statusCode, response.headers); response.pipe(outgoing); return
       }
       // Consume the upstream to establish that the actual commit/read completed.
+      const chunks = []
+      response.on('data', (chunk) => chunks.push(chunk))
       response.resume()
       response.once('end', () => {
         const headers = { ...response.headers }
         delete headers['content-length']; delete headers['transfer-encoding']
         outgoing.writeHead(response.statusCode, headers)
         if (selected.mode === 'malformed') outgoing.end('<fictional proxy response>')
+        else if (selected.mode === 'empty') {
+          // Firefox's network observer waits for an initial body chunk even
+          // after flushHeaders. JSON whitespace starts the actual body without
+          // completing it; the client must still wait for explicit release.
+          outgoing.write(' ')
+          outgoing.flushHeaders()
+          releasePending = () => { outgoing.end('{}'); releasePending = null }
+        } else if (selected.mode === 'mismatch') {
+          const saved = JSON.parse(Buffer.concat(chunks).toString())
+          outgoing.end(JSON.stringify({ ...saved, body: 'A different fictional response body, not the authored template.' }))
+        } else if (selected.mode === 'wrong-page') {
+          const actual = JSON.parse(Buffer.concat(chunks).toString())
+          outgoing.end(JSON.stringify({ ...actual, offset: actual.offset + 50 }))
+        }
         else {
           streamed++
           outgoing.write('{"unfinished":')
@@ -97,12 +114,19 @@ for (const locale of ['en', 'nl']) {
       errors.push('Unexpected external response-test request'); return route.abort('blockedbyclient')
     })
     const page = await context.newPage()
+    const templateResponses = []
+    page.on('response', (response) => { if (new URL(response.url()).pathname === '/api/templates' && response.request().method() === 'POST') templateResponses.push(response.status()) })
     page.on('pageerror', (error) => errors.push(error.message))
     page.on('console', (message) => { if (['error', 'warning'].includes(message.type())) errors.push(message.text()) })
     await page.request.post(`${origin}/api/auth/setup`, { data: { setup_token: token, display_name: 'Fictional Response Owner', workspace_name: 'Fictional Response Workspace', email: `response-${locale}@example.test`, password: secret } }).then(async (result) => assert.ok(result.ok(), 'Fixture setup failed'))
     const read = async () => { const result = await page.request.get(`${origin}/api/templates`); assert.ok(result.ok()); return result.json() }
     await page.goto(`${origin}/templates`, { waitUntil: 'networkidle' })
-    await choose(page, page.getByRole('combobox', { name: 'Language / Taal' }), locale)
+    try { await choose(page, page.getByRole('combobox', { name: 'Language / Taal' }), locale) }
+    catch (cause) {
+      await page.screenshot({ path: join(screenshots, `simbi-response-${locale}-entry-diagnostic.png`) })
+      console.error(JSON.stringify({ locale, origin, url: page.url(), title: await page.title(), errors, entry: await page.evaluate(() => ({ textLength: document.body.textContent.length, headings: [...document.querySelectorAll('h1,h2')].map((item) => item.textContent), overlay: Boolean(document.querySelector('vite-error-overlay')) })) }))
+      throw cause
+    }
     const button = (key) => page.getByRole('button', { name: t(key), exact: true })
     let scans = 0
     const capture = async (state) => {
@@ -121,6 +145,13 @@ for (const locale of ['en', 'nl']) {
       const dialog = page.getByRole('dialog', { name: t('Create template') })
       await dialog.waitFor()
       const title = `Fictional ${locale} ${mode} template`
+      if (mode === 'malformed') {
+        const before = templateWrites
+        await enter(page, dialog.getByLabel(t('Template name')), 'X')
+        await activate(page, dialog.getByRole('button', { name: t('Create template'), exact: true }))
+        assert.equal(templateWrites, before, 'Native short-name validation must not dispatch')
+        assert.ok(await dialog.getByLabel(t('Template name')).evaluate((element) => !element.validity.valid))
+      }
       try { await enter(page, dialog.getByLabel(t('Template name')), title) }
       catch (cause) {
         await page.screenshot({ path: join(screenshots, `simbi-response-${locale}-diagnostic.png`) })
@@ -132,8 +163,30 @@ for (const locale of ['en', 'nl']) {
       const headers = page.waitForResponse((result) => result.url() === `${origin}/api/templates` && result.request().method() === 'POST' && result.status() === 201)
       const started = Date.now()
       await activate(page, dialog.getByRole('button', { name: t('Create template'), exact: true }))
-      await headers // This must resolve BEFORE a stalled body finishes or times out.
+      try { await headers } // This must resolve BEFORE a stalled body finishes or times out.
+      catch (cause) {
+        await page.screenshot({ path: join(screenshots, `simbi-response-${locale}-${mode}-submit-diagnostic.png`) })
+        console.error(JSON.stringify({ locale, mode, templateWrites, templateResponses, proxyErrors, errors, form: await dialog.locator('form').evaluate((form) => ({ valid: form.checkValidity(), busy: form.getAttribute('aria-busy'), activeTag: document.activeElement?.tagName, fields: [...form.elements].filter((item) => 'validity' in item).map((item) => ({ name: item.name, disabled: item.matches(':disabled'), valid: item.validity.valid, tooShort: item.validity.tooShort, valueLength: typeof item.value === 'string' ? item.value.length : null })) })) }))
+        throw cause
+      }
       const headerElapsed = Date.now() - started
+      if (mode === 'empty') {
+        assert.ok(headerElapsed < 10_000, 'Held body headers must precede completion')
+        await dialog.getByText(t('A request is still pending. Stay here until it finishes, then check its result before retrying or closing this form.'), { exact: true }).waitFor()
+        assert.ok(await dialog.getByLabel(t('Template name')).isDisabled())
+        assert.ok(await dialog.getByRole('button', { name: t('Create template'), exact: true }).isDisabled())
+        assert.ok(await dialog.getByRole('button', { name: t('Cancel'), exact: true }).isDisabled())
+        assert.ok(await dialog.getByRole('button', { name: t('Close'), exact: true }).isDisabled())
+        await page.keyboard.press('Enter'); await page.keyboard.press('Enter'); await page.keyboard.press('Escape')
+        assert.ok(await dialog.isVisible(), 'Pending Escape must not discard the form')
+        assert.equal(templateWrites, writesBefore + 1, 'Pending Enter must not submit again')
+        assert.equal((await read()).items.filter((item) => item.name === title).length, 1)
+        await tabTo(page, dialog.locator('form'))
+        assert.ok(await dialog.locator('form').evaluate((form) => document.activeElement === form), 'Pending form must remain keyboard reachable for scrolling')
+        await capture('empty-pending')
+        assert.equal(typeof releasePending, 'function', 'Real successful response must be held')
+        releasePending()
+      }
       await dialog.getByText(t(unknownKey), { exact: true }).waitFor({ timeout: 30_000 })
       if (mode === 'stall') {
         assert.ok(headerElapsed < 10_000, 'Headers were not delivered before the deadline')
@@ -165,12 +218,16 @@ for (const locale of ['en', 'nl']) {
       assert.equal(templateWrites, writesBefore + 1)
     }
     await createUncertain('malformed')
-    fault = { method: 'GET', mode: 'malformed' }
-    await page.reload({ waitUntil: 'networkidle' })
-    await page.getByText(t(unreadableKey), { exact: true }).waitFor()
-    assert.equal(await page.getByRole('heading', { name: t('No templates'), exact: true }).count(), 0)
-    await activate(page, button('Retry'))
-    await page.getByRole('heading', { name: `Fictional ${locale} malformed template`, exact: true }).waitFor()
+    await createUncertain('empty')
+    await createUncertain('mismatch')
+    for (const mode of ['malformed', 'wrong-page']) {
+      fault = { method: 'GET', mode }
+      await page.reload({ waitUntil: 'networkidle' })
+      await page.getByText(t(unreadableKey), { exact: true }).waitFor()
+      assert.equal(await page.getByRole('heading', { name: t('No templates'), exact: true }).count(), 0)
+      await activate(page, button('Retry'))
+      await page.getByRole('heading', { name: `Fictional ${locale} malformed template`, exact: true }).waitFor()
+    }
     if (mobile) await createUncertain('stall')
     else {
       fault = { method: 'GET', mode: 'stall' }
@@ -189,10 +246,10 @@ for (const locale of ['en', 'nl']) {
     const closeDeadline = Date.now() + 3000
     while (!abortedBodies && Date.now() < closeDeadline) await new Promise((done) => setTimeout(done, 50))
     assert.equal(streamed, 1); assert.equal(abortedBodies, 1, 'Native deadline must close its streamed body')
-    assert.equal(templateWrites, mobile ? 2 : 1)
-    assert.equal(scans, mobile ? 2 : 1)
+    assert.equal(templateWrites, mobile ? 4 : 3)
+    assert.equal(scans, mobile ? 5 : 4)
     assert.deepEqual(errors, []); assert.deepEqual(proxyErrors, [])
-    console.log(JSON.stringify({ browserEngine: engine.name, browserVersion: browser.version(), locale, origin, viewport: mobile ? '390x844' : '1440x1000', completeResponseBoundary: 'passed', committedButUnverifiedWrite: 'passed', nativeBodyDeadline: 'passed', explicitReadRecovery: 'passed', templateWrites, streamed, abortedBodies, selectedScans: scans, browserErrors: errors.length, runtime }))
+    console.log(JSON.stringify({ browserEngine: engine.name, browserVersion: browser.version(), locale, origin, viewport: mobile ? '390x844' : '1440x1000', completeResponseBoundary: 'passed', committedButUnverifiedWrite: 'passed', nativeBodyDeadline: 'passed', pendingKeyboardAndSemanticResponse: 'passed', wrongPageReadRecovery: 'passed', explicitReadRecovery: 'passed', templateWrites, streamed, abortedBodies, selectedScans: scans, browserErrors: errors.length, runtime }))
   } finally {
     if (browser) await browser.close()
     proxy.closeAllConnections()

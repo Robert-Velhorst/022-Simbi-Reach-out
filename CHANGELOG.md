@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased — core pending forms and semantic confirmation (2026-10-01)
+
+- Guard campaign/prospect/CSV/template/draft/reply/reminder submissions synchronously; disable inputs and dismissal while pending, retain unverified inputs, and keep native keyboard scrolling accessible. Add one EN/NL pending notice and native field bounds matching backend models.
+- Validate seven core creation/import response contracts and paged metadata before claiming success or displaying a result. Minimal draft/reply/reminder returns and other endpoint/row schemas remain explicitly limited; no generic server idempotency or autosave.
+- Add 29 contract, three page and 15 pending-form regressions; extend the retained real response proxy with held empty/mismatched confirmations, repeated keyboard actions, wrong-page recovery and nine selected scans per engine. Exact completed proof/diagnostics remain in the readiness ledger. No backend/schema/dependency/private-text store/provider/real-data change.
+
 ## Unreleased — complete-response request recovery (2026-10-01)
 
 - Keep the20-second deadline through body consumption; separate caller cancellation, release its listener/timer, reject unreadable or primitive successes and never automatically retry a write.
