@@ -3,6 +3,7 @@
 ## Unreleased — core pending forms and semantic confirmation (2026-10-01)
 
 - Guard campaign/prospect/CSV/template/draft/reply/reminder submissions synchronously; disable inputs and dismissal while pending, retain unverified inputs, and keep native keyboard scrolling accessible. Add one EN/NL pending notice and native field bounds matching backend models.
+- Repair demonstrated lost row-action focus and disabled-control native-dialog Tab re-entry; retain pending foreground form focus without reclaiming other controls/windows. Eight added focused cases and actual enabled-Pause keyboard reachability strengthen the existing acceptance path.
 - Validate seven core creation/import response contracts and paged metadata before claiming success or displaying a result. Minimal draft/reply/reminder returns and other endpoint/row schemas remain explicitly limited; no generic server idempotency or autosave.
 - Add 29 contract, three page and 15 pending-form regressions; extend the retained real response proxy with held empty/mismatched confirmations, repeated keyboard actions, wrong-page recovery and nine selected scans per engine. Exact completed proof/diagnostics remain in the readiness ledger. No backend/schema/dependency/private-text store/provider/real-data change.
 

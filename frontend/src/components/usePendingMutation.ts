@@ -12,6 +12,7 @@ export function usePendingMutation() {
       // State alone cannot guard two events before React's next render.
       if (inFlight.current) return false
       if (form) rememberFocus(form)
+      else if (document.activeElement instanceof HTMLElement) rememberFocus(document.activeElement)
       inFlight.current = true; setBusy(true)
       return true
     },

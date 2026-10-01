@@ -97,6 +97,9 @@ export async function keyboardOutreachWorkflow(page, origin, axe, screenshots) {
       const campaignRow = page.locator('.resource-row').filter({ hasText: campaignName })
       await activate(page, button('Activate', campaignRow))
       await button('Pause', campaignRow).waitFor()
+      // The label can change during readback while the row is still disabled.
+      // Verify native reachability only after the actual pending action settles.
+      await tabTo(page, button('Pause', campaignRow))
 
       await nav('Prospects', '/prospects')
       await activate(page, button('Add prospect'))

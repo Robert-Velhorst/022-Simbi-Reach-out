@@ -134,7 +134,12 @@ try {
   await page.locator('[name=email]').fill('qa@example.test')
   await page.locator('[name=password]').fill('correct horse battery staple')
   await page.getByRole('button', { name: 'Werkruimte aanmaken', exact: true }).click()
-  await page.getByRole('heading', { name: /Goedemorgen/ }).waitFor()
+  try { await page.getByRole('heading', { name: /Goedemorgen/ }).waitFor() }
+  catch (cause) {
+    await page.screenshot({ path: join(screenshots, 'simbi-entry-diagnostic.png') })
+    console.error(JSON.stringify({ engine: engine.name, runtime, origin, browserErrors, entry: await page.evaluate(() => ({ title: document.title, headings: [...document.querySelectorAll('h1,h2')].map((item) => item.textContent), notices: [...document.querySelectorAll('[role=status]')].map((item) => item.textContent), busy: [...document.querySelectorAll('[aria-busy=true]')].length, focused: document.hasFocus(), activeTag: document.activeElement?.tagName })) }))
+    throw cause
+  }
   await page.getByRole('combobox', { name: 'Language / Taal' }).selectOption('en')
   await page.getByRole('heading', { name: /Good morning/ }).waitFor()
 
