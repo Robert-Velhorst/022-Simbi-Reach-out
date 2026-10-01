@@ -2,6 +2,11 @@
 
 ## 2026-10-01 — version-bound personal draft saves
 
+- Merge-main36814156212 passed all four jobs at905e5a2; completed results inspected, including exact289/198 counts, actual all-three-engine new/prior bilingual/retirement paths, clean audits and Windows/container/storage checks. Final README/guide/ledger reader recheck found no material contradiction;95 relative/38 heading links across13docs and whitespace pass. This separate README/publication push changes no runtime/tests/CI; its own later run is distinct proof.
+
+- PR98 merged conflict-free at905e5a2 on2026-10-01T04:14:09Z after final source36813716379/PR36813719333 passed all four jobs each at886c604. Fresh CLEAN/MERGEABLE, all eight successful checks, unchanged base419526e and matching source/merge tree6e14653 verified; paginated inventory zero open project PRs, local main fast-forwarded while keeping README separate. Completed logs inspected:289 backend/198 frontend, actual three-engine full new/existing workflows, clean audits/worker/Windows/container/storage proof. Later merge-main/docs checks remain distinct, not assumed passed.
+- Final local Firefox `run-firefox-k0HIMi` and both retirement locales pass after the measured rounding correction; six total Chromium/Firefox comparison screenshots visually inspected. Fresh docs reader understood all eight scope/recovery/API/proof questions without material ambiguity. README publication follows merge; no runtime/test/CI edits after the tested source.
+
 - Initial source d8c2bb4/PR98 Firefox bounds fail before merge; local diagnostic reproduces bottom844.0000152587891 at844px, not visible overflow. Add exact geometry output and a0.001px rounding allowance, preserving all other checks. Final local Firefox/new exact-head CI are required; initial partial WebKit/Windows passes do not substitute. README stays uncommitted until all project PRs are verified and merged.
 
 - Preserved clean base419526e and refreshed final CI36811030370; read original preserved phase021. Reproduced four unsafe/missing-version/current-state behaviors before implementation. Central editing version and shared draft serializer add required serialized preconditions, exact no-op preservation and owned readback; existing approval/handoff history unchanged.
