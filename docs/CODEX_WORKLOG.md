@@ -1,5 +1,13 @@
 # Codex worklog
 
+## 2026-10-01 — strict stored-date display and confirmation
+
+- Continue the personal, single-owner assisted goal from clean published29bff99; current remote/zero-PR/exact documentation CI verified. Preserve README until every source PR merges first and distinguish the absent original PDF from the extracted scope reviewed.
+- Reproduce32 unsupported-date display failures and seven confirmation failures before repair; add one shared explicit-component parser, escaped EN/NL unrecognized labels, no string-date guessing or stored-history rewrite. Retain localized valid dates, Not set and microsecond confirmation equality; reject UTC overflow/padded timestamps and unsupported prospect creation dates.
+-406 frontend tests29files/706 matching keys/lint/build,343 backend/Ruff/worker and clean audits pass. Complete current Chromium entry exits0 with all retained paths/new date checks and inspected desktop/mobile screenshots; read-only2886 frontend/backend parser cases agree. Local Firefox English bootstrap passes, then Dutch bootstrap locator evaluation times out before date checks; no accepted Firefox result or proven cause is claimed. Extended owned chronology fixture retains52 valid rows plus three unsupported dates per table/locale, real keyboard final-page traversal, exact API/UI raw values, eight selected scans and nine-table/no-HTTP-write preservation. Pending exact Linux engines/package/source/merge/publication results are not acceptance.
+- No schema/dependency/CI/private working-copy/provider/personal-data change. Full production goal and broader replay/forms/privacy/credential/license/device/installed-runtime/manual-account gates stay open; exact current outcomes are maintained in the newest ledger.
+- Fresh documentation-only comprehension review finds no material contradiction; personal/manual boundaries, no historical rewrite, supported grammar, microsecond versus minute precision, current failed Firefox and helper-scan scope are understood. This is not code/runtime verification.
+
 ## 2026-10-01 — conversation identity and date confirmations
 
 - PR104 merged conflict-free atda5f287 after source36846342687/PR36846350044 passed all four jobs each at0e937b8; fresh eight-success/CLEAN/MERGEABLE/basec775498/matching treeeac2f37 verified. Main fast-forwarded cleanly, paginated inventory zero open PRs, README follows separately without runtime/test/CI changes. Merge-main36847337171/later docs require independent completed results in the newest ledger.

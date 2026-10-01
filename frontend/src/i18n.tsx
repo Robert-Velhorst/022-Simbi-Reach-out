@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import en from './locales/en.json'
 import nl from './locales/nl.json'
+import { parseTimestamp } from './timestamps'
 
 export type Locale = 'en' | 'nl'
 export type TranslationKey = keyof typeof en
@@ -66,8 +67,8 @@ export function useI18n() {
   }, [t])
   const formatDate = useCallback((value: string | null | undefined): string => {
     if (!value) return t('Not set')
-    const date = new Date(value)
-    return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat(locale === 'nl' ? 'nl-NL' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' }).format(date)
+    const instant = parseTimestamp(value)
+    return instant === null ? t('Unrecognized date: {value}', { value }) : new Intl.DateTimeFormat(locale === 'nl' ? 'nl-NL' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(instant.milliseconds))
   }, [locale, t])
   return { locale, setLocale, t, formatMessage, formatDate, formatCode }
 }

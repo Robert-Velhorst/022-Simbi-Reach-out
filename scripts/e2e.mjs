@@ -650,7 +650,7 @@ try {
     local_simulated_outcome_reply_reminder_report: 'passed',
     personal_keyboard_outreach: 'passed; English desktop/Dutch mobile sequential Tab and native keyboard input through campaign, prospect, template, draft, explicit save/review, fictional uncertainty, reminder, reply, report and stop-contact; three real committed-but-mismatched creation recoveries per locale, no provider/pointer actions, twelve UI mutations per locale, prior records preserved, twelve selected accessibility scans',
     provider_delivery: 'not attempted; sent/reply records are fictional QA fixtures',
-    legacy_conversation_chronology: 'passed; 52 fictional replies and reminders per locale, offset/day-boundary/microsecond ordering, keyboard next/previous pages, English desktop/Dutch mobile, unchanged old rows and nine exported tables, zero HTTP writes and four selected accessibility scans',
+    legacy_conversation_chronology: 'passed; 52 valid plus three unsupported fictional dates per table/locale, offset/day-boundary/microsecond ordering, keyboard next/previous/final pages, English desktop/Dutch mobile unrecognized-date labels with exact raw API values, unchanged old rows and nine exported tables, zero HTTP writes and eight selected accessibility scans',
     password_change_reauthentication: 'passed',
     viewer_download_permissions: 'passed',
     viewer_read_only_routes_and_handoff_history: 'passed',
