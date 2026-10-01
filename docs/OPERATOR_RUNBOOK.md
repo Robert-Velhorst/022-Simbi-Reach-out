@@ -16,6 +16,7 @@ Intended operation: one personal workspace for the owner's own Simbi account (co
 - Open the source and verify it still matches the planned message.
 - Edit the deterministic draft; quality signals are aids, not permission.
 - Save edits, then complete all safety checks. Approval is tied to the exact saved text; reload and re-review if another editor changes it.
+- An unresolved draft asks before selection/page changes, preparation, app navigation or sign-out. Choose Keep editing to preserve the current editor; discard only deliberately. Pending draft requests cannot be left through that dialog. Reload/close warnings are browser-dependent, not crash recovery or autosave. See [draft saving and leave choices](DRAFT_SAVING.md#before-leaving-an-unresolved-draft).
 - Copy and open the provider only when still appropriate.
 - Record the exact external result. When unsure, choose **ambiguous**.
 - Record objections immediately with **Prospects → Stop contact** and a reason; never delete a suppression just to retry. Restrictions survive prospect deletion/re-import.

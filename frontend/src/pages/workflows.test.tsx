@@ -1,4 +1,5 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { renderWithDraftGuard as render } from '../test/router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import ReviewQueue from './ReviewQueue'
 import SettingsPage from './Settings'
@@ -78,11 +79,13 @@ describe('review workflow recovery', () => {
     expect(copied).toEqual([])
   })
 
-  it('replaces edited fields when the user selects another draft', async () => {
+  it('replaces edited fields only after confirming selection of another draft', async () => {
     vi.stubGlobal('fetch', vi.fn(async (url: string) => response(page(url.includes('/drafts') ? [draft(1), draft(2)] : []))))
     render(<ReviewQueue member={member} onMemberChange={() => {}} />)
     fireEvent.change(await screen.findByLabelText('Message'), { target: { value: 'Unsaved first message' } })
     fireEvent.click(screen.getByRole('button', { name: /Person 2/ }))
+    expect(screen.getByLabelText('Message')).toHaveValue('Unsaved first message')
+    fireEvent.click(within(await screen.findByRole('dialog', { name: 'Leave this draft?' })).getByRole('button', { name: 'Discard local edits and continue' }))
     expect(screen.getByLabelText('Subject')).toHaveValue('Subject 2')
     expect(screen.getByLabelText('Message')).toHaveValue('Body 2')
   })

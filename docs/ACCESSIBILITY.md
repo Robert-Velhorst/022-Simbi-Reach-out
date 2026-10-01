@@ -1,5 +1,7 @@
 # Keyboard access and accessibility scope
 
+Draft leave protection now uses the existing named native dialog and data-router navigation. With unresolved draft text or an uncertain save, app/history navigation and local editor-replacing actions ask before leaving; Escape, Close, backdrop or Keep editing preserve the current editor/checks and return focus to it. Continuation is disabled while a draft request is pending, and a settled save never automatically opens a previously blocked destination. Four additional selected English/Dutch desktop/mobile warning scans, actual Tab/Shift+Tab/Escape/focus and pending-response checks are part of the unchanged full workflow. This is not general form autosave or screen-reader/device certification. See [draft leave choices and exact scope](DRAFT_SAVING.md#before-leaving-an-unresolved-draft) and the dated ledger for observed execution/publication, not inherited pass claims.
+
 ## Using the personal application
 
 On a signed-in page, the first Tab reveals **Skip to main content** (**Ga direct naar de hoofdinhoud** in Dutch). Enter moves focus directly to the named main region without changing the route or records. Selecting a navigation link moves focus to that page's content, including selecting the current route. Page headings identify the destination; loading and error messages remain truthful while records are fetched.

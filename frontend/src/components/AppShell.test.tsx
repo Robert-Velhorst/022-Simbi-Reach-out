@@ -1,6 +1,6 @@
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { renderWithRouter } from '../test/router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import AppShell from './AppShell'
 import type { Member } from '../types'
@@ -10,7 +10,7 @@ vi.mock('../pages/Resources', () => ({ ProspectsPage: () => <h1>Prospects conten
 
 const member: Member = { user_id: 1, email: 'qa@example.test', display_name: 'QA', workspace_id: 1, workspace_name: 'QA', role: 'owner', mode: 'assisted', compliance_ack_at: null, paused_at: null, environment: 'test', demo_mode: false }
 afterEach(() => { cleanup(); vi.unstubAllGlobals() })
-function show() { return render(<MemoryRouter><AppShell member={member} onMemberChange={() => {}} onSignedOut={() => {}} /></MemoryRouter>) }
+function show() { return renderWithRouter(<AppShell member={member} onMemberChange={() => {}} onSignedOut={() => {}} />) }
 
 describe('keyboard navigation', () => {
   it('offers a first-tab bypass without changing the route or records', async () => {

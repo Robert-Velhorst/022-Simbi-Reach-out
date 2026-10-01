@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Modal, Notice, Status, TableRegion } from './ui'
 
-afterEach(cleanup)
+afterEach(() => { cleanup(); document.body.style.overflow = '' })
 
 function ModalWorkflow({ allowClose = true }: { allowClose?: boolean }) {
   const [open, setOpen] = useState(false)
@@ -19,6 +19,15 @@ function ReplacingTriggerWorkflow() {
 }
 
 describe('shared UI', () => {
+  it.each(['', 'scroll'])('keeps scrolling locked when an older dialog closes, then restores the original %s overflow', (original) => {
+    document.body.style.overflow = original
+    const view = render(<><Modal key="older" title="Navigation" onClose={() => {}}>Links</Modal><Modal key="newer" title="Leave warning" onClose={() => {}}>Keep editing</Modal></>)
+    expect(document.body.style.overflow).toBe('hidden')
+    view.rerender(<><Modal key="newer" title="Leave warning" onClose={() => {}}>Keep editing</Modal></>)
+    expect(document.body.style.overflow).toBe('hidden')
+    view.unmount()
+    expect(document.body.style.overflow).toBe(original)
+  })
   it('provides a named keyboard-focusable table region without replacing table semantics', async () => {
     render(<TableRegion label="Audit log"><table><thead><tr><th>Event</th></tr></thead><tbody><tr><td>Fictional event</td></tr></tbody></table></TableRegion>)
     await userEvent.tab()
