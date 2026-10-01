@@ -1,5 +1,11 @@
 # Codex worklog
 
+## 2026-10-01 — personal keyboard navigation and table access
+
+- Preserved clean base main6d59e7f and refreshed its completed final CI. Read original phases021/049/073 from the saved extraction; no autosave/authorization expansion. Reproduced five navigation regressions, then implemented native mobile drawer, hidden desktop sidebar, bypass/destination/return focus, Help and resize/short-screen behavior using existing shared controls and two additive English/Dutch labels.
+- Wider owner/viewer route scans found a real mobile audit-table scroll defect; shared named focusable regions repair all four table surfaces. Real backdrop dismissal exposed default mouse focus overwriting the restored trigger; prevent it and regress it. Refined drawer CSS after viewing actual screenshots. Test-authoring locator/landmark corrections preserve assertions; exact current executions/publication are in the top readiness ledger.
+- Preserve full bilingual operational/privacy/backup/recovery/retirement acceptance; add eleven-route owner/viewer desktop/mobile/short-drawer keyboard and selected automated scans, reject API writes and compare exported owner tables before/after. No backend/schema/new dependency/provider/real-record/installed-runtime mutation. Source/PR merge must pass exact-head CI before README is published separately; full goal remains active with explicit broader limits.
+
 ## 2026-10-01 — scalable personal retention and verified cleanup receipts
 
 - Published PR96 conflict-free at68875b7 after source36807704635/PR36807709181 passed all four jobs at e8b5de2. All eight exact-head checks passed and source/merge tree6b8c6bc matches; no open repo PRs remain after exhaustive paginated inventory. Completed logs confirm264 backend/179 frontend, actual Chromium/Firefox/WebKit bilingual retention/reference and full previous privacy/retirement proof, clean audits, rebuilt Windows package/operator and Linux container/storage readiness. README is published separately after merging; merge-main36808097973 subsequently passed all four jobs with completed logs read; later documentation CI remains revision-specific proof. No runtime/test/CI changes in this documentation publication. Full goal stays active and remaining personal-release gates are preserved.

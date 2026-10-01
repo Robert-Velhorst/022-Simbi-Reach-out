@@ -57,7 +57,7 @@ Scope clarification on 2026-09-05: the owner confirmed this is a personal tool f
 | 046 Cross-user isolation | Implemented | Second-workspace direct-ID test returns 404/no records. |
 | 047 Path traversal | Not applicable | No file path or upload endpoint exists; restore CLI validates explicit `.db` file. |
 | 048 Provider failure | Implemented | Ambiguous/cancelled outcomes and no blind retry; no provider call exists. |
-| 049 Accessibility | Partial | Selected automated dashboard scan and local modal keyboard regressions pass. Full route/role keyboard and dedicated assistive-technology acceptance are not established. |
+| 049 Accessibility | Partial | Native mobile navigation, hidden-sidebar focus protection, first-tab bypass, destination/return focus, Help, resize/short-screen scroll, solid focus indicators and named keyboard-scrollable tables implemented. Unit regressions and full owner/viewer eleven-route bilingual desktop/mobile checks with selected WCAG scans are in ACCESSIBILITY.md; exact executed outcomes belong in the dated ledger. Not every action/state/role, full keyboard-only outreach or screen-reader/zoom/high-contrast certification. |
 | 050 Responsive/browser | Partial | Exact Chromium/Firefox/WebKit selection and full-workflow/retirement CI jobs are implemented. Current dated browser acceptance is in PRODUCTION_READINESS.md and reproduction in BROWSER_COMPATIBILITY.md. Playwright engines/resized desktop viewports do not certify branded browsers, physical devices or virtual keyboards. |
 | 051 Performance/indexing | Implemented | Domain indexes, bounded queries/imports, production bundle baseline. |
 | 052 Large dataset/pagination | Implemented | 10,000-prospect/draft benchmark: 0.014s query baseline and 3.7 MB database on the verification machine. |
@@ -65,7 +65,7 @@ Scope clarification on 2026-09-05: the owner confirmed this is a personal tool f
 | 054 Reconciliation/repair | Implemented | Detects orphans/impossible sends; safe explicit repair. |
 | 055 Local analytics | Implemented | Schema is local/event-minimal; no external telemetry. |
 | 056 SaaS without billing | Not applicable | Owner explicitly chose a personal tool for his own account on 2026-09-05, not a shared SaaS. No tenant provisioning, workspace switching or billing is required; existing deployment and isolation controls remain preserved. |
-| 057 i18n Dutch/English | Implemented | Typed670-key English/Dutch UI catalogs, including retention continuation, older receipt lookup, historical audit and retirement/retired-state controls; pre-auth/header selection, persistent browser preference, localized labels/notices/statuses/counts/dates, unchanged authored data and API/CSV/template values. Unit/static guards and local Dutch Chromium workflow pass. Diagnostics/CLI/docs are not automatically translated; see LOCALIZATION.md and the dated ledger. |
+| 057 i18n Dutch/English | Implemented | Typed672-key English/Dutch UI catalogs, including main-content/bypass labels, retention continuation, older receipt lookup, historical audit and retirement/retired-state controls; pre-auth/header selection, persistent browser preference, localized labels/notices/statuses/counts/dates, unchanged authored data and API/CSV/template values. Unit/static guards and local Dutch Chromium workflow pass. Diagnostics/CLI/docs are not automatically translated; see LOCALIZATION.md and the dated ledger. |
 | 058 Feature flags | Implemented | Workspace-scoped flag schema; no risky feature is silently enabled. |
 | 059 State machines | Implemented | Explicit draft transition map and guarded endpoints. |
 | 060 Domain specification | Implemented | Schema and `CRITICAL_PATH.md`. |
@@ -81,7 +81,7 @@ Scope clarification on 2026-09-05: the owner confirmed this is a personal tool f
 | 070 Operator runbook | Implemented | Start, stop, backup, restore, incident and troubleshooting. |
 | 071 User guide/help | Implemented | README plus page-specific safe guidance and empty states. |
 | 072 Error catalog | Implemented | Runbook maps operational error codes to safe action. |
-| 073 UI action audit | Partial | Viewer-role gaps and shared-modal keyboard/focus defects are locally repaired. Frontend98 tests and expanded real-session browser workflow pass, including viewport bounds, Tab/Escape, live/replacement trigger focus and short-screen scrolling. Full role-by-role accessibility/action audit and dedicated assistive-technology acceptance remain open. See the production acceptance ledger. |
+| 073 UI action audit | Partial | Viewer-role gaps/shared-modal defects repaired; native navigation and named table scroll regions now have focused regressions and full-harness owner/viewer eleven-route bilingual desktop/mobile/short-drawer checks. Navigation rejects API writes and owner export tables are compared before/after. Exact current test/CI outcomes are in the ledger, not old totals. Every action/state/optional role and dedicated assistive-technology acceptance remain open. |
 | 074 Endpoint usage audit | Implemented | Endpoint/consumer/test map in `API_USAGE_AUDIT.md`. |
 | 075 Documentation truth | Implemented | Claims distinguish implemented, partial, blocked and external. |
 | 076 Technical debt | Implemented | Partial/N/A/blocked gaps retained in this matrix and final report. |

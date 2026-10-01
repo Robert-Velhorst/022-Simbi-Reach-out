@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — personal keyboard navigation (2026-10-01)
+
+- Hide the desktop sidebar from mobile focus order; use a named native navigation dialog with contained Tab/Shift+Tab, Escape/return focus, Help, short-screen scrolling and desktop-breakpoint dismissal.
+- Add an English/Dutch first-tab content shortcut, named main destination and route focus without changing saved records or explicit approval/save behaviour.
+- Make dashboard/prospect/report/audit table regions named and keyboard-focusable; provide solid focus indicators and actual horizontal keyboard scrolling.
+- Add unit regressions and full-harness owner/viewer eleven-route bilingual desktop/mobile/short-drawer checks with zero navigation-related writes and selected automated accessibility scans. Exact execution evidence is in the dated ledger; no claim of full WCAG/screen-reader/device certification. No migration, new dependency, provider action or real-data change.
+
 ## Unreleased — scalable personal retention and verified cleanup receipts (2026-10-01)
 
 - Age-based cleanup now reaches contacts beyond1000 through explicit scan-page continuation/restart and50-contact confirmation batches. Exact page-only counts distinguish protected and oversized histories; recent/inconsistent/invalid-date histories remain protected.

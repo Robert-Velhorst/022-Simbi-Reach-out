@@ -15,6 +15,10 @@ export function Panel({ children, className = '', title, action }: { children: R
   )
 }
 
+export function TableRegion({ label, children }: { label: string; children: ReactNode }) {
+  return <div className="table-wrap" role="region" aria-label={label} tabIndex={0}>{children}</div>
+}
+
 export function Field({ label, hint, error, children }: { label: string; hint?: string; error?: string; children: ReactNode }) {
   return (
     <label className="field">
@@ -54,7 +58,7 @@ export function EmptyState({ title, detail, action }: { title: string; detail: s
   return <div className="empty"><h3>{title}</h3><p>{detail}</p>{action}</div>
 }
 
-export function Modal({ title, children, onClose, returnFocusRef, closeDisabled = false }: { title: string; children: ReactNode; onClose: () => void; returnFocusRef?: RefObject<HTMLElement | null>; closeDisabled?: boolean }) {
+export function Modal({ title, children, onClose, returnFocusRef, closeDisabled = false, className = '', id }: { title: string; children: ReactNode; onClose: () => void; returnFocusRef?: RefObject<HTMLElement | null>; closeDisabled?: boolean; className?: string; id?: string }) {
   const { t } = useI18n()
   const dialogRef = useRef<HTMLDialogElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
@@ -78,7 +82,7 @@ export function Modal({ title, children, onClose, returnFocusRef, closeDisabled 
   }, [returnFocusRef])
 
   return (
-    <dialog ref={dialogRef} className="modal" aria-labelledby={titleId}
+    <dialog ref={dialogRef} id={id} className={`modal ${className}`} aria-labelledby={titleId}
       onCancel={(event) => { event.preventDefault(); onClose() }}
       onKeyDown={(event) => {
         if (event.key !== 'Tab') return
@@ -92,7 +96,12 @@ export function Modal({ title, children, onClose, returnFocusRef, closeDisabled 
       onMouseDown={(event) => {
         if (event.target !== event.currentTarget) return
         const bounds = event.currentTarget.getBoundingClientRect()
-        if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) onClose()
+        if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) {
+          // Closing on mousedown must not let its later default focus action
+          // replace the restored trigger with the page body.
+          event.preventDefault()
+          onClose()
+        }
       }}>
       <header><h2 id={titleId}>{title}</h2><button ref={closeRef} type="button" className="icon-button" onClick={onClose} disabled={closeDisabled} aria-label={t("Close")}><X size={20} /></button></header>
       {children}

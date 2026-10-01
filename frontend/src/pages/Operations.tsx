@@ -2,7 +2,7 @@ import { useI18n } from '../i18n'
 import { useState, type FormEvent } from 'react'
 import { BellPlus, Check, ExternalLink, MessageSquarePlus, RefreshCw, ShieldCheck } from 'lucide-react'
 import { ApiError, patch, post } from '../api'
-import { Button, EmptyState, Field, Modal, Notice, Panel, Select, Textarea, Input, Status } from '../components/ui'
+import { Button, EmptyState, Field, Modal, Notice, Panel, Select, Textarea, Input, Status, TableRegion } from '../components/ui'
 import type { AuditEvent, Draft, Reminder } from '../types'
 import { usePage } from '../usePage'
 import { PageNavigation } from '../components/PageNavigation'
@@ -69,7 +69,7 @@ export function ReportsPage() {
   const funnel = report?.funnel ?? {}
   return <OperationPage title={t("Reports")} detail={t("Local operational reporting focuses on workflow health, review quality and outcomes—not vanity metrics.")} action={<Button variant="secondary" disabled={loading} onClick={() => void load()}><RefreshCw size={17} />{t("Refresh")}</Button>}>
     <DataState label={t("reports")} loading={loading} error={error} hasData={Boolean(report)} retry={load}><div className="metric-rail">{['total', 'needs_review', 'approved', 'prepared', 'sent', 'replied', 'suppressed'].map((key) => <div key={key}><span>{formatCode(key)}</span><strong>{funnel[key] ?? '—'}</strong></div>)}</div>
-    <Panel title={t("Campaign quality and outcomes")}>{report?.campaigns.length ? <div className="table-wrap"><table><thead><tr><th>{t("Campaign")}</th><th>{t("Status")}</th><th>{t("Drafts")}</th><th>{t("Sent manually")}</th><th>{t("Replies")}</th><th>{t("Avg. quality")}</th></tr></thead><tbody>{report.campaigns.map((campaign) => <tr key={campaign.id}><td><strong>{campaign.name}</strong></td><td><Status value={campaign.status} /></td><td>{campaign.drafts}</td><td>{campaign.sent ?? 0}</td><td>{campaign.replied ?? 0}</td><td>{campaign.average_quality ?? '—'}</td></tr>)}</tbody></table></div> : <EmptyState title={t("No report data")} detail={t("Campaign results appear after drafts enter the workflow.")} />}</Panel></DataState>
+    <Panel title={t("Campaign quality and outcomes")}>{report?.campaigns.length ? <TableRegion label={t("Campaign quality and outcomes")}><table><thead><tr><th>{t("Campaign")}</th><th>{t("Status")}</th><th>{t("Drafts")}</th><th>{t("Sent manually")}</th><th>{t("Replies")}</th><th>{t("Avg. quality")}</th></tr></thead><tbody>{report.campaigns.map((campaign) => <tr key={campaign.id}><td><strong>{campaign.name}</strong></td><td><Status value={campaign.status} /></td><td>{campaign.drafts}</td><td>{campaign.sent ?? 0}</td><td>{campaign.replied ?? 0}</td><td>{campaign.average_quality ?? '—'}</td></tr>)}</tbody></table></TableRegion> : <EmptyState title={t("No report data")} detail={t("Campaign results appear after drafts enter the workflow.")} />}</Panel></DataState>
   </OperationPage>
 }
 
@@ -79,7 +79,7 @@ export function AuditPage() {
   const items = page?.items ?? []
   return <OperationPage title={t("Audit log")} detail={t("Operational events preserve who changed local state and when. New event details are minimized; the owner can explicitly remove known duplicate text from old entries without deleting events.")}>
     <PageNavigation page={page} loading={loading} load={load} />
-    <Panel><DataState label={t("audit events")} loading={loading} error={error} hasData={Boolean(items.length)} retry={load}>{items.length ? <div className="table-wrap"><table><thead><tr><th>{t("Time")}</th><th>{t("Actor")}</th><th>{t("Event")}</th><th>{t("Entity")}</th></tr></thead><tbody>{items.map((event) => <tr key={event.id}><td>{formatDate(event.created_at)}</td><td>{event.display_name ?? t("Local worker")}</td><td><strong>{formatCode(event.event_type, '.')}</strong></td><td>{formatCode(event.entity_type)} {event.entity_id}</td></tr>)}</tbody></table></div> : <EmptyState title={t("No events yet")} detail={t("Material changes will appear here automatically.")} />}</DataState></Panel>
+    <Panel><DataState label={t("audit events")} loading={loading} error={error} hasData={Boolean(items.length)} retry={load}>{items.length ? <TableRegion label={t("Audit log")}><table><thead><tr><th>{t("Time")}</th><th>{t("Actor")}</th><th>{t("Event")}</th><th>{t("Entity")}</th></tr></thead><tbody>{items.map((event) => <tr key={event.id}><td>{formatDate(event.created_at)}</td><td>{event.display_name ?? t("Local worker")}</td><td><strong>{formatCode(event.event_type, '.')}</strong></td><td>{formatCode(event.entity_type)} {event.entity_id}</td></tr>)}</tbody></table></TableRegion> : <EmptyState title={t("No events yet")} detail={t("Material changes will appear here automatically.")} />}</DataState></Panel>
   </OperationPage>
 }
 
