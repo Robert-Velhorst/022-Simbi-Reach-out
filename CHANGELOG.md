@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased — strict stored-date display and confirmation (2026-10-01)
+
+- Interpret stored timestamps using one strict frontend parser matching the backend's four-digit-year, calendar-valid, seconds/timezone-explicit, at-most-six-fraction contract. Do not use browser string-date heuristics. Preserve microseconds in confirmation comparisons and refuse UTC year overflow or whitespace-padded values.
+- Show unsupported nonempty values as `Unrecognized date: …` / `Onherkende datum: …`, retaining the original text as escaped React content; valid dates remain locally formatted and empty values remain Not set. No historical repair, migration, new dependency or account/provider action.
+- Add66 frontend regression cases and extend the retained chronology browser fixture with three unsupported raw dates per table/locale, actual final-page navigation, exact API/display readback, unchanged nine-table snapshots and four added scans (eight total in this helper). Exact completed versus pending evidence is in the readiness ledger; broader production gates remain open.
+
 ## Unreleased — conversation target integrity and legacy chronology (2026-10-01)
 
 - Reject a newly created reminder that names both a conversation and a different contact, after both workspace ownership checks and before record/audit writes. Conversation-only, contact-only and matching combined targets remain supported; old records are not rewritten.

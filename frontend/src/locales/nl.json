@@ -660,5 +660,6 @@
   "A draft request is still pending. Stay here until it finishes, then check its result before leaving.": "Een verzoek voor dit concept is nog bezig. Blijf hier tot het klaar is en controleer het resultaat voordat je de pagina verlaat.",
   "Choose Keep editing to return and save or check the saved version yourself. Browser warnings cannot recover text after a crash or forced closure.": "Kies Verder bewerken om terug te gaan en zelf op te slaan of de opgeslagen versie te controleren. Browserwaarschuwingen kunnen tekst niet herstellen na een crash of gedwongen afsluiting.",
   "Discard local edits and continue": "Lokale wijzigingen wissen en doorgaan",
-  "A request is still pending. Stay here until it finishes, then check its result before retrying or closing this form.": "Een verzoek is nog bezig. Blijf hier tot het klaar is en controleer het resultaat voordat je het opnieuw probeert of dit formulier sluit."
+  "A request is still pending. Stay here until it finishes, then check its result before retrying or closing this form.": "Een verzoek is nog bezig. Blijf hier tot het klaar is en controleer het resultaat voordat je het opnieuw probeert of dit formulier sluit.",
+  "Unrecognized date: {value}": "Onherkende datum: {value}"
 }

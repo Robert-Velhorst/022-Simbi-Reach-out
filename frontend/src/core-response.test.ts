@@ -15,6 +15,19 @@ const reminderResult = { ...reminderInput, prospect_id: null, id: 6, status: 'op
 
 describe('core creation response contracts', () => {
   it.each([
+    ['/replies', replyInput, { ...replyResult, received_at: '0001-01-01T00:00:00+00:01' }],
+    ['/replies', replyInput, { ...replyResult, received_at: '9999-12-31T23:59:59-00:01' }],
+    ['/replies', replyInput, { ...replyResult, received_at: ' 2026-10-01T12:00:00Z ' }],
+    ['/reminders', { ...reminderInput, due_at: '0001-01-01T00:00:00+00:01' }, { ...reminderResult, due_at: '0001-01-01T00:00:00+00:01' }],
+    ['/reminders', { ...reminderInput, due_at: '9999-12-31T23:59:59-00:01' }, { ...reminderResult, due_at: '9999-12-31T23:59:59-00:01' }],
+    ['/prospects', prospect, { ...prospect, id: 1, created_at: '2026-02-30T12:00:00Z' }],
+    ['/prospects', prospect, { ...prospect, id: 1, created_at: '2026-10-01T12:00:00' }],
+  ])('does not confirm an unsupported stored timestamp from %s or retry', async (path, submitted, result) => {
+    const fetch = vi.fn().mockResolvedValue(Response.json(result)); vi.stubGlobal('fetch', fetch)
+    await expect(post(String(path), submitted)).rejects.toMatchObject({ code: 'response_unverified' })
+    expect(fetch).toHaveBeenCalledTimes(1)
+  })
+  it.each([
     ['/campaigns', campaign, { ...campaign, id: 1, status: 'draft' }],
     ['/templates', template, { ...template, id: 1, version: 1 }],
     ['/prospects', prospect, { ...prospect, id: 1, created_at: '2026-10-01T12:00:00Z' }],

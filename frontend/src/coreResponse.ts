@@ -1,5 +1,6 @@
 // Validate the actual backend's core creation contracts before a form is
 // dismissed. This is confirmation checking, not a rollback/duplicate receipt.
+import { parseTimestamp } from './timestamps'
 type RecordValue = Record<string, unknown>
 const record = (value: unknown): value is RecordValue => Boolean(value && typeof value === 'object' && !Array.isArray(value))
 const integer = (value: unknown, minimum = 0): value is number => Number.isSafeInteger(value) && Number(value) >= minimum
@@ -14,14 +15,7 @@ function sameId(result: RecordValue, submitted: RecordValue, field: string, opti
   return optional && expected === null ? result[field] === null : integer(expected, 1) && result[field] === expected
 }
 function instant(value: unknown): string | null {
-  if (typeof value !== 'string') return null
-  const parts = /^(\d{4})-(\d{2})-(\d{2})T([01]\d|2[0-3]):([0-5]\d):([0-5]\d)(?:\.(\d{1,6}))?(Z|[+-]([01]\d|2[0-3]):[0-5]\d)$/.exec(value.trim())
-  if (!parts || Number(parts[1]) < 1) return null
-  const calendar = new Date(0)
-  calendar.setUTCFullYear(Number(parts[1]), Number(parts[2]) - 1, Number(parts[3]))
-  if (calendar.getUTCFullYear() !== Number(parts[1]) || calendar.getUTCMonth() + 1 !== Number(parts[2]) || calendar.getUTCDate() !== Number(parts[3])) return null
-  const milliseconds = Date.parse(value.trim())
-  return Number.isFinite(milliseconds) ? `${milliseconds}:${(parts[7] ?? '').padEnd(6, '0').slice(3)}` : null
+  return parseTimestamp(value)?.instantKey ?? null
 }
 function sameInstant(result: unknown, submitted: unknown) {
   const expected = instant(submitted)
@@ -59,7 +53,7 @@ export function validCoreCreation(path: string, method: string, rawBody: BodyIni
         && value.provider === text(submitted.provider, 'simbi').toLowerCase()
         && expectedSource !== null && source(value.source_url) === expectedSource
         && [submitted.consent_status ?? 'unknown', 'opted_out'].includes(value.consent_status as string)
-        && typeof value.created_at === 'string' && Number.isFinite(Date.parse(value.created_at))
+        && instant(value.created_at) !== null
     }
     case '/templates':
       return integer(value.id, 1) && integer(value.version, 1) && boundedText(value.name, 2, 120) && boundedText(value.provider, 2, 40) && boundedText(value.subject, 0, 200) && boundedText(value.body, 20, 5000)

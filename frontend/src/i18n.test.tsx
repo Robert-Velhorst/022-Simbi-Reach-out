@@ -33,6 +33,41 @@ function Probe() {
   return <><LanguagePicker /><h1>{t('Overview')}</h1><input aria-label="original" value={note} onChange={(event) => setNote(event.target.value)} /><p>{formatDate('2026-09-05T12:00:00Z')}</p><p>{formatDate(null)}</p><p>{formatDate('original invalid date')}</p><p>{formatCode('needs_review')}</p><p>{formatMessage('opaque provider diagnostic $&')}</p><p>{formatMessage({ key: '{count} row(s) need attention. First error: line {line} — {detail}', params: { count: 1, line: 2 }, detail: 'Name is required' })}</p></>
 }
 
+function DateProbe({ value }: { value: string | null | undefined }) {
+  const { formatDate } = useI18n()
+  return <><LanguagePicker /><time>{formatDate(value)}</time></>
+}
+
+describe.each(['en', 'nl'] as const)('stored date display in %s', (locale) => {
+  it.each([
+    '2026-02-30T12:00:00Z', '1900-02-29T12:00:00Z', '2026-10-01',
+    '2026-10-01T12:00:00', '2026-10-01T12:00Z', '2026-10-01T24:00:00Z',
+    '2026-10-01T12:00:60Z', '0000-01-01T12:00:00Z',
+    '0001-01-01T00:00:00+00:01', '9999-12-31T23:59:59-00:01',
+    '2026-10-01T12:00:00.1234567Z', '2026-10-01T12:00:00+24:00',
+    '2026-10-01T12:00:00+0200', ' 2026-10-01T12:00:00Z ',
+    'Thu, 01 Oct 2026 12:00:00 GMT', '<img src=x onerror=alert(1)>',
+  ])('labels %s as unrecognized without interpreting or changing the stored value', (value) => {
+    const fetch = vi.fn(); vi.stubGlobal('fetch', fetch)
+    render(<I18nProvider initialLocale={locale}><DateProbe value={value} /></I18nProvider>)
+    expect(document.querySelector('time')).toBeVisible()
+    expect(document.querySelector('time')?.textContent).toBe(`${locale === 'nl' ? 'Onherkende datum' : 'Unrecognized date'}: ${value}`)
+    expect(document.querySelector('img')).toBeNull()
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['2026-10-01T14:00:00.123456+02:00', '2026-10-01T12:00:00.123Z'],
+    ['2026-09-30T23:30:00-12:00', '2026-10-01T11:30:00Z'],
+    ['2000-02-29T23:59:59.999999Z', '2000-02-29T23:59:59.999Z'],
+    ['0001-01-01T12:00:00Z', '0001-01-01T12:00:00Z'],
+  ])('localizes the valid instant %s without losing timezone meaning', (value, utc) => {
+    render(<I18nProvider initialLocale={locale}><DateProbe value={value} /></I18nProvider>)
+    const expected = new Intl.DateTimeFormat(locale === 'nl' ? 'nl-NL' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(utc))
+    expect(screen.getByText(expected)).toBeVisible()
+  })
+})
+
 describe('English and Dutch catalogs', () => {
   it('have identical keys, nonempty values and exactly preserved interpolation fields', () => {
     expect(Object.keys(nl).sort()).toEqual(Object.keys(en).sort())
@@ -80,7 +115,7 @@ describe('language preference and state preservation', () => {
     expect(fetch).not.toHaveBeenCalled()
     expect(screen.getByText('beoordeling nodig')).toBeVisible()
     expect(screen.getByText('Niet ingesteld')).toBeVisible()
-    expect(screen.getByText('original invalid date')).toBeVisible()
+    expect(screen.getByText('Onherkende datum: original invalid date')).toBeVisible()
     expect(screen.getByText(new Intl.DateTimeFormat('nl-NL', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date('2026-09-05T12:00:00Z')))).toBeVisible()
     cleanup()
     render(<I18nProvider><Probe /></I18nProvider>)
