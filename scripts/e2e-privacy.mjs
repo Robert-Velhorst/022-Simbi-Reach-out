@@ -75,9 +75,71 @@ export async function privacyWorkflow(page, origin, root, password, axe) {
     await button('Check cleanup receipts').click()
     await page.getByText(new RegExp(locale === 'nl' ? 'Herstelbestand:' : 'Recovery file:')).first().waitFor()
     const receipts = await (await page.request.get(`${origin}/api/privacy/receipts`)).json()
-    if (receipts.items.length !== (locale === 'en' ? 1 : 2)) throw new Error('Cleanup receipts did not survive reload')
+    if (receipts.items.length !== (locale === 'en' ? 1 : 4)) throw new Error('Cleanup receipts did not survive reload')
     const receipt = receipts.items.find(({ counts }) => counts.prospects === 1)
     if (!receipt?.backup_file) throw new Error('Missing cleanup backup receipt')
+    // Create fictional linked records through the same local API, then remove
+    // them through the rendered UI. Never navigate or send to a provider.
+    const csrf = (await page.context().cookies(origin)).find(({ name }) => name === 'simbi_csrf')?.value
+    async function create(path, data) {
+      const result = await page.request.post(`${origin}/api/${path}`, { headers: { 'X-CSRF-Token': csrf }, data })
+      if (!result.ok()) throw new Error(`Privacy fixture creation failed ${path}: ${await result.text()}`)
+      return result.json()
+    }
+    const campaign = await create('campaigns', { name: `Fictional Removal Campaign ${locale}`, purpose: 'Fixture-only privacy acceptance', lawful_basis: 'Isolated fictional records only' })
+    const contact = await create('prospects', { name: `Fictional Remaining ${locale}`, source_url: `https://simbi.com/fictional-remain-${locale}`, consent_status: 'contextual' })
+    const template = await create('templates', { name: `Fictional Removal Template ${locale}`, body: 'Hello {name}, this is an isolated fictional acceptance fixture, not a message to send.' })
+    const draft = await create('drafts', { campaign_id: campaign.id, prospect_id: contact.id, template_id: template.id })
+    for (const kind of ['template', 'campaign']) {
+      const scopeBefore = await (await page.request.get(`${origin}/api/export`)).json()
+      const name = kind === 'template' ? template.name : campaign.name
+      await page.getByLabel(t('Cleanup scope')).selectOption(kind)
+      await page.getByLabel(t(kind === 'template' ? 'Search templates for removal' : 'Search campaigns for removal')).fill(name)
+      await button(kind === 'template' ? 'Find templates' : 'Find campaigns').click()
+      const picker = page.getByLabel(t(kind === 'template' ? 'Template to remove' : 'Campaign to remove'))
+      await picker.getByRole('option', { name, exact: true }).waitFor({ state: 'attached' })
+      await picker.selectOption(String(kind === 'template' ? template.id : campaign.id))
+      await button('Preview cleanup').click()
+      await page.getByRole('heading', { name: t('Removal preview') }).waitFor()
+      await page.getByText(name, { exact: true }).last().waitFor()
+      if (kind === 'template') await page.getByText(t('Template links cleared')).waitFor()
+      else await page.getByRole('heading', { name: t('Contacts retained as do-not-contact') }).waitFor()
+      await button('Review removal').click()
+      const scopeDialog = page.getByRole('dialog', { name: t('Confirm local removal') })
+      await scopeDialog.waitFor()
+      await page.setViewportSize({ width: kind === 'template' ? 1440 : 390, height: kind === 'template' ? 1000 : 450 })
+      if (await scopeDialog.evaluate((element) => { const rect = element.getBoundingClientRect(); return rect.left < -1 || rect.right > innerWidth + 1 || rect.top < -1 || rect.bottom > innerHeight + 1 || element.scrollWidth > element.clientWidth + 1 })) throw new Error(`Clipped ${kind} cleanup dialog`)
+      await page.screenshot({ path: resolve(root, '..', `simbi-${kind}-cleanup-${locale}.png`) })
+      await page.addScriptTag({ content: axe.source })
+      const scopedAxe = await page.evaluate(async () => window.axe.run(document, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] } }))
+      if (scopedAxe.violations.length) throw new Error(`${kind} privacy accessibility violations: ${JSON.stringify(scopedAxe.violations.map(({ id }) => id))}`)
+      await scopeDialog.getByRole('button', { name: t('Cancel'), exact: true }).click()
+      const scopeCancelled = await (await page.request.get(`${origin}/api/export`)).json()
+      for (const table of ['campaigns', 'templates', 'prospects', 'drafts', 'handoffs', 'replies', 'reminders', 'suppressions']) {
+        if (JSON.stringify(scopeBefore[table]) !== JSON.stringify(scopeCancelled[table])) throw new Error(`${kind} cancel mutated ${table}`)
+      }
+      await button('Review removal').click()
+      await scopeDialog.getByRole('checkbox').check()
+      await scopeDialog.getByLabel(t('Local account password')).fill(password)
+      await scopeDialog.getByRole('button', { name: t('Confirm removal'), exact: true }).click()
+      await scopeDialog.waitFor({ state: 'hidden' })
+      await page.getByRole('status').filter({ hasText: new RegExp(locale === 'nl' ? `Verwijderde ${kind === 'campaign' ? 'campagnes' : 'sjablonen'}: 1` : `${kind === 'campaign' ? 'Campaigns' : 'Templates'} removed: 1`) }).waitFor()
+      const scopeAfter = await (await page.request.get(`${origin}/api/export`)).json()
+      if (JSON.stringify(scopeAfter.prospects) !== JSON.stringify(scopeBefore.prospects)) throw new Error(`${kind} removal deleted contact records`)
+      const priorDraft = scopeBefore.drafts.find(({ id }) => id === draft.id)
+      const remainingDraft = scopeAfter.drafts.find(({ id }) => id === draft.id)
+      if (kind === 'template') {
+        if (scopeAfter.templates.some(({ id }) => id === template.id) || JSON.stringify(remainingDraft) !== JSON.stringify({ ...priorDraft, template_id: null })) throw new Error('Template removal changed draft text/state or failed to clear link')
+      } else if (scopeAfter.campaigns.some(({ id }) => id === campaign.id) || remainingDraft || !scopeAfter.suppressions.some(({ prospect_id }) => prospect_id === contact.id)) throw new Error('Campaign cleanup failed cascade/restriction contract')
+      for (const table of ['drafts', 'handoffs', 'replies', 'reminders']) {
+        const unaffected = scopeBefore[table].filter((row) => table === 'drafts' ? row.id !== draft.id : row.draft_id !== draft.id)
+        if (JSON.stringify(unaffected) !== JSON.stringify(scopeAfter[table].filter((row) => table === 'drafts' ? row.id !== draft.id : row.draft_id !== draft.id))) throw new Error(`${kind} changed unrelated ${table}`)
+      }
+      await page.setViewportSize({ width: 1440, height: 1000 })
+      await page.reload({ waitUntil: 'networkidle' })
+      await button('Check cleanup receipts').click()
+      await page.getByText(new RegExp(locale === 'nl' ? `Verwijderde ${kind === 'campaign' ? 'campagnes' : 'sjablonen'}: 1` : `${kind === 'campaign' ? 'Campaigns' : 'Templates'} removed: 1`)).first().waitFor()
+    }
   }
   await page.getByRole('combobox', { name: 'Language / Taal' }).selectOption('en')
 }
