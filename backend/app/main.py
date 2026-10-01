@@ -99,6 +99,7 @@ class CleanupPreviewBody(StrictModel):
     prospect_id: int | None = Field(default=None, ge=1)
     campaign_id: int | None = Field(default=None, ge=1)
     template_id: int | None = Field(default=None, ge=1)
+    after_id: int = Field(default=0, strict=True, ge=0, le=9223372036854775807)
 
 
 class CleanupConfirmBody(StrictModel):
@@ -1745,14 +1746,18 @@ def preview_cleanup(body: CleanupPreviewBody, request: Request, member: Member):
         "campaign": body.campaign_id,
         "template": body.template_id,
     }
-    if any((body.kind == kind) != (value is not None) for kind, value in selected.items()):
+    if any((body.kind == kind) != (value is not None) for kind, value in selected.items()) or (
+        body.kind != "retention" and "after_id" in body.model_fields_set
+    ):
         raise AppError(
             422, "privacy_selection_invalid", "Choose retention cleanup or exactly one record"
         )
     try:
         with transaction() as connection:
             require_current_owner(connection, request, member)
-            return privacy.preview(connection, member, body.kind, selected.get(body.kind))
+            return privacy.preview(
+                connection, member, body.kind, selected.get(body.kind), body.after_id
+            )
     except privacy.PrivacyError as exc:
         raise AppError(exc.status, exc.code, exc.message) from exc
 
@@ -1774,12 +1779,34 @@ def confirm_cleanup(body: CleanupConfirmBody, request: Request, member: Member):
     return _confirm_privacy(body, request, member, privacy.execute)
 
 
+@app.get("/api/privacy/receipts/{plan_id}")
+def find_cleanup_receipt(plan_id: str, request: Request, member: Member):
+    with transaction() as connection:
+        require_current_owner(connection, request, member)
+        row = (
+            connection.execute(
+                "SELECT receipt_json FROM privacy_cleanup_plans WHERE id=? AND workspace_id=? AND owner_id=? "
+                "AND receipt_json IS NOT NULL",
+                (plan_id, member["workspace_id"], member["user_id"]),
+            ).fetchone()
+            if re.fullmatch(r"[a-f0-9]{32}", plan_id)
+            else None
+        )
+        if not row:
+            raise AppError(
+                404,
+                "privacy_receipt_not_found",
+                "No completed cleanup receipt matches this reference. Absence is not proof of failure; do not start a replacement removal.",
+            )
+        return json.loads(row["receipt_json"])
+
+
 def _confirm_privacy(body, request, member, operation):
     require_role(member, "owner")
     fingerprint = "privacy:" + login_fingerprint(request, member["email"])
     enforce_login_limit(fingerprint)
     try:
-        with transaction() as connection:
+        with maintenance_operation_guard(), transaction() as connection:
             require_current_owner(connection, request, member)
             user = connection.execute(
                 "SELECT password_hash FROM users WHERE id=?", (member["user_id"],)
@@ -1795,6 +1822,10 @@ def _confirm_privacy(body, request, member, operation):
         raise
     except privacy.PrivacyError as exc:
         raise AppError(exc.status, exc.code, exc.message) from exc
+    except MaintenanceBusy as exc:
+        raise AppError(
+            409, "maintenance_busy", "Another local maintenance operation is running"
+        ) from exc
 
 
 @app.post("/api/privacy/audit/preview")
@@ -1809,13 +1840,7 @@ def preview_audit_minimization(body: AuditPreviewBody, request: Request, member:
 
 @app.post("/api/privacy/audit/confirm")
 def confirm_audit_minimization(body: CleanupConfirmBody, request: Request, member: Member):
-    try:
-        with maintenance_operation_guard():
-            return _confirm_privacy(body, request, member, audit_privacy.execute)
-    except MaintenanceBusy as exc:
-        raise AppError(
-            409, "maintenance_busy", "Another local maintenance operation is running"
-        ) from exc
+    return _confirm_privacy(body, request, member, audit_privacy.execute)
 
 
 @app.get("/api/privacy/audit/receipts")

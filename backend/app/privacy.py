@@ -15,6 +15,7 @@ from .security import validate_provider_url
 
 BATCH_SIZE = 50
 SCAN_LIMIT = 1000
+HISTORY_LIMIT = 1000
 
 
 class PrivacyError(Exception):
@@ -24,6 +25,34 @@ class PrivacyError(Exception):
 
 def encoded(value) -> str:
     return json.dumps(value, sort_keys=True, separators=(",", ":"))
+
+
+def restrictions_digest(connection, workspace_id: int) -> str:
+    # Hash each row once without duplicating the entire private registry into
+    # every contact graph. SQLite's cursor streams the workspace-scoped rows.
+    digest = hashlib.sha256()
+    for row in connection.execute(
+        "SELECT * FROM suppressions WHERE workspace_id=? ORDER BY id", (workspace_id,)
+    ):
+        digest.update(encoded(dict(row)).encode())
+        digest.update(b"\n")
+    return digest.hexdigest()
+
+
+def _history_rows(connection, rows: dict, query: str, parameters: tuple) -> list[dict]:
+    remaining = HISTORY_LIMIT - sum(len(items) for items in rows.values())
+    if remaining < 0:
+        raise PrivacyError(
+            409, "privacy_scan_limit", "Too many linked records for one cleanup preview"
+        )
+    selected = [
+        dict(row) for row in connection.execute(query + " LIMIT ?", (*parameters, remaining + 1))
+    ]
+    if len(selected) > remaining:
+        raise PrivacyError(
+            409, "privacy_scan_limit", "Too many linked records for one cleanup preview"
+        )
+    return selected
 
 
 def graph(connection, workspace_id: int, prospect_id: int) -> dict:
@@ -58,12 +87,9 @@ def graph(connection, workspace_id: int, prospect_id: int) -> dict:
     }
     for table, condition in queries.items():
         parameters = (prospect_id, prospect_id) if table == "reminders" else (prospect_id,)
-        rows[table] = [
-            dict(row)
-            for row in connection.execute(
-                f"SELECT * FROM {table} WHERE {condition} ORDER BY id", parameters
-            )
-        ]
+        rows[table] = _history_rows(
+            connection, rows, f"SELECT * FROM {table} WHERE {condition} ORDER BY id", parameters
+        )
         # Foreign keys alone do not enforce a workspace boundary. Fail closed on
         # historical inconsistent links rather than cascade-delete foreign data.
         if any(row["workspace_id"] != workspace_id for row in rows[table]):
@@ -78,25 +104,18 @@ def graph(connection, workspace_id: int, prospect_id: int) -> dict:
             "privacy_inconsistent",
             "Cleanup found inconsistent record links; reconcile the database first",
         )
-    rows["campaigns"] = [
-        dict(row)
-        for row in connection.execute(
-            "SELECT * FROM campaigns WHERE id IN (SELECT campaign_id FROM drafts WHERE prospect_id=?) ORDER BY id",
-            (prospect_id,),
-        )
-    ]
+    rows["campaigns"] = _history_rows(
+        connection,
+        rows,
+        "SELECT * FROM campaigns WHERE id IN (SELECT campaign_id FROM drafts WHERE prospect_id=?) ORDER BY id",
+        (prospect_id,),
+    )
     if any(row["workspace_id"] != workspace_id for row in rows["campaigns"]):
         raise PrivacyError(
             409,
             "privacy_inconsistent",
             "Cleanup found inconsistent record links; reconcile the database first",
         )
-    rows["suppressions"] = [
-        dict(row)
-        for row in connection.execute(
-            "SELECT * FROM suppressions WHERE workspace_id=? ORDER BY id", (workspace_id,)
-        )
-    ]
     # Recent reminder completions have no updated_at column; include the audit
     # events for this graph when calculating age and detecting stale previews.
     rows["audit_events"] = []
@@ -110,8 +129,9 @@ def graph(connection, workspace_id: int, prospect_id: int) -> dict:
         if ids:
             placeholders = ",".join("?" for _ in ids)
             rows["audit_events"].extend(
-                dict(row)
-                for row in connection.execute(
+                _history_rows(
+                    connection,
+                    rows,
                     f"SELECT * FROM audit_events WHERE workspace_id=? AND entity_type=? AND entity_id IN ({placeholders}) ORDER BY id",
                     (workspace_id, entity, *ids),
                 )
@@ -140,6 +160,8 @@ def old_and_closed(rows: dict, cutoff: str) -> bool:
         "audit_events",
     ):
         for row in rows[table]:
+            if not row.get("created_at"):
+                return False
             for column in (
                 "created_at",
                 "updated_at",
@@ -151,12 +173,12 @@ def old_and_closed(rows: dict, cutoff: str) -> bool:
                 "due_at",
             ):
                 value = row.get(column)
-                if value:
+                if column in row and value is not None:
                     try:
                         date = datetime.fromisoformat(value)
                         if date.tzinfo is None or date >= datetime.fromisoformat(cutoff):
                             return False
-                    except ValueError:
+                    except (ValueError, TypeError):
                         return False
     return True
 
@@ -167,7 +189,8 @@ def snapshot(connection, workspace_id: int, ids: list[int]) -> tuple[str, dict, 
         table: sum(len(item[table]) for item in rows)
         for table in ("prospects", "drafts", "handoffs", "replies", "reminders")
     }
-    digest = hashlib.sha256(encoded(rows).encode()).hexdigest()
+    state = {"histories": rows, "restrictions": restrictions_digest(connection, workspace_id)}
+    digest = hashlib.sha256(encoded(state).encode()).hexdigest()
     contacts = [
         {"id": item["prospects"][0]["id"], "name": item["prospects"][0]["name"]} for item in rows
     ]
@@ -235,18 +258,27 @@ def container_snapshot(connection, workspace_id: int, kind: str, record_id: int)
         counts["template_links"] = len(drafts)
     # Include complete related histories in the digest: additions, link changes,
     # changed restrictions and foreign-workspace references invalidate preview.
-    state = {"record": dict(record), "drafts": drafts, "histories": histories}
+    state = {
+        "record": dict(record),
+        "drafts": drafts,
+        "histories": histories,
+        "restrictions": restrictions_digest(connection, workspace_id),
+    }
     digest = hashlib.sha256(encoded(state).encode()).hexdigest()
     return digest, counts, [{"id": record_id, "name": record["name"]}], list(histories)
 
 
-def preview(connection, member: dict, kind: str, selected_id: int | None) -> dict:
+def preview(
+    connection, member: dict, kind: str, selected_id: int | None, after_id: int = 0
+) -> dict:
     workspace_id = member["workspace_id"]
     days = connection.execute(
         "SELECT retention_days FROM workspaces WHERE id=?", (workspace_id,)
     ).fetchone()[0]
     cutoff = (datetime.now(UTC) - timedelta(days=days)).replace(microsecond=0).isoformat()
     protected = 0
+    oversized = 0
+    scanned, has_more, next_after_id = [], False, None
     records = []
     restricted_contacts = []
     if kind in {"campaign", "template"}:
@@ -274,18 +306,29 @@ def preview(connection, member: dict, kind: str, selected_id: int | None) -> dic
         ids, remaining = [selected_id], 0
     else:
         candidates = connection.execute(
-            "SELECT id FROM prospects WHERE workspace_id=? AND updated_at<? ORDER BY id LIMIT ?",
-            (workspace_id, cutoff, SCAN_LIMIT + 1),
+            "SELECT id FROM prospects WHERE workspace_id=? AND id>? ORDER BY id LIMIT ?",
+            (workspace_id, after_id, SCAN_LIMIT + 1),
         ).fetchall()
-        if len(candidates) > SCAN_LIMIT:
+        if SCAN_LIMIT < 1:
             raise PrivacyError(
                 409,
                 "privacy_scan_limit",
-                "Too many old contacts for one cleanup scan; export and remove selected contacts instead",
+                "Too many linked records for one cleanup preview",
             )
+        scanned = candidates[:SCAN_LIMIT]
+        has_more = len(candidates) > SCAN_LIMIT
+        next_after_id = scanned[-1]["id"] if has_more else None
         eligible = []
-        for candidate in candidates:
-            if old_and_closed(graph(connection, workspace_id, candidate["id"]), cutoff):
+        for candidate in scanned:
+            try:
+                history = graph(connection, workspace_id, candidate["id"])
+            except PrivacyError as exc:
+                if exc.code not in {"privacy_scan_limit", "privacy_inconsistent"}:
+                    raise
+                oversized += int(exc.code == "privacy_scan_limit")
+                protected += 1
+                continue
+            if old_and_closed(history, cutoff):
                 eligible.append(candidate["id"])
             else:
                 protected += 1
@@ -334,6 +377,11 @@ def preview(connection, member: dict, kind: str, selected_id: int | None) -> dic
         "restricted_contacts": restricted_contacts,
         "protected_contacts": protected,
         "remaining_eligible_contacts": remaining,
+        "after_id": after_id if kind == "retention" else None,
+        "scanned_contacts": len(scanned),
+        "oversized_contacts": oversized,
+        "has_more_contacts": has_more,
+        "next_after_id": next_after_id,
     }
 
 
@@ -352,17 +400,17 @@ def execute(connection, member: dict, plan_id: str) -> dict:
         raise PrivacyError(
             409, "audit_confirmation_required", "Use the separate audit minimization confirmation"
         )
-    if record["receipt_json"]:
-        return {**json.loads(record["receipt_json"]), "replayed": True}
-    if record["expires_at"] <= db.now():
-        raise PrivacyError(
-            409, "privacy_preview_expired", "The cleanup preview expired; create a new preview"
-        )
     if plan["kind"] == "retirement":
         raise PrivacyError(
             409,
             "retirement_confirmation_required",
             "Use the separate personal retirement confirmation",
+        )
+    if record["receipt_json"]:
+        return {**json.loads(record["receipt_json"]), "replayed": True}
+    if record["expires_at"] <= db.now():
+        raise PrivacyError(
+            409, "privacy_preview_expired", "The cleanup preview expired; create a new preview"
         )
     if not plan["ids"]:
         raise PrivacyError(409, "privacy_empty", "This preview contains no contacts to remove")
