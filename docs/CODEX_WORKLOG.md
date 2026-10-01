@@ -2,6 +2,8 @@
 
 ## 2026-10-01 — core creation confirmation and pending forms
 
+- PR103 merged conflict-free at792bff7 on2026-10-01T09:01:22Z after source36839050275/PR36839055753 passed all four jobs each at988ec08. Eight successful checks/CLEAN/MERGEABLE/base165db40/matching treed9146de verified; main fast-forwarded and exhaustive paginated inventory zero open PRs.289 backend/324 frontend28files/705 keys, three-engine full new/existing workflow/retirement, clean audits/worker/Windows/container/storage proof pass. Final full local Chromium/Firefox pass, current mobile screenshots inspected. README follows separately; merge-main36840033224 independently completed all four jobs at792bff7 with completed logs checked; later docs require their own result. No runtime/test/CI change in documentation publication; personal goal active, actual account/data/runtime untouched.
+
 - Final focus refinement:324 frontend28files/705 keys/build/lint pass. Inspected cb9d0a5 source/PR logs show repeated Linux Firefox navigation/WebKit pending Tab failures; verify/Windows success is not merge acceptance. Eight new cases/two demonstrated unit failures repair foreground non-form restoration, retained pending form focus and native-dialog Tab re-entry without stealing other controls/windows. Native Pause reachability waits for actual post-readback enablement; no test assertion/deadline is weakened. Current complete local and new exact-head publication checks remain distinct; early local Firefox main setup timeout is a failed diagnostic, not accepted proof.
 
 - Reconfirm sole-owner/own-account scope. Refresh clean main165db40/all-four-success README CI36832358268/zero PRs, preserve README until source merges first.
