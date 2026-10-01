@@ -10,6 +10,8 @@ Campaign, prospect, CSV import, template, draft preparation, reply and reminder 
 
 Keep a private copy if necessary, close only when ready, and check the current records before creating another. For a template, reload Templates and inspect the authored text, not just its name. For CSV, inspect the relevant contacts before repeating an uncertain commit. This is temporary in-memory retention, not autosave, server-side generic duplicate protection or crash recovery. Other actions must be checked in their own record view; not every action has the same recovery controls. Wider route/reload/closure protection for these creation forms remains open; the separate unresolved-draft editor has its own leave guard.
 
+Check uncertain campaigns in **Campaigns** (name, purpose and limits), contacts/imports in **Prospects** (name and source URL), and prepared drafts in **Review queue** (the selected contact/campaign/template and rendered text). Check recorded replies in **Replies** (conversation and text) and reminders in **Reminders** (conversation, title and due time). Reload and inspect relevant pages; absence from one page or from the open-reminder view is not proof that no write occurred. If you cannot establish whether the matching record exists, stop repeating the creation and investigate with redacted diagnostics or a maintainer. Do not send a message, invent a sent outcome or disclose private exports to resolve a local uncertainty.
+
 Use the existing action-specific recovery paths where available:
 
 - Draft saves: [compare the current saved version](DRAFT_SAVING.md), preserving your working text and requiring a separate explicit save when appropriate.
