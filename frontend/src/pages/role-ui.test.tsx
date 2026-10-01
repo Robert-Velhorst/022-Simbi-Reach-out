@@ -1,5 +1,5 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { cleanup, fireEvent, screen } from '@testing-library/react'
+import { renderWithRouter } from '../test/router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import AppShell from '../components/AppShell'
 import type { Draft, Member } from '../types'
@@ -25,7 +25,7 @@ function show(path: string, role: Member['role'], empty = false, state = 'needs_
     if (!items) throw new Error(`Unexpected read: ${url}`)
     return Response.json({ items, total: items.length, limit: 50, offset: 0 })
   }))
-  return render(<MemoryRouter initialEntries={[path]}><AppShell member={{ ...member, role }} onMemberChange={() => {}} onSignedOut={() => {}} /></MemoryRouter>)
+  return renderWithRouter(<AppShell member={{ ...member, role }} onMemberChange={() => {}} onSignedOut={() => {}} />, [path])
 }
 
 const pages = [

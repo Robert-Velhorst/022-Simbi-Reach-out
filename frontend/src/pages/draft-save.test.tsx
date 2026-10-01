@@ -1,4 +1,5 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { renderWithDraftGuard as render } from '../test/router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import ReviewQueue from './ReviewQueue'
 import type { Draft, Member } from '../types'

@@ -635,6 +635,7 @@ try {
     interrupted_handoff_recovery: 'passed',
     exact_content_approval: 'passed',
     version_bound_draft_saves_and_uncertain_response_recovery: 'passed in English/Dutch with real sibling tabs, two stale-save refusals per locale, nonmutating compare/cancel/rebase and explicit saved-version recovery; Dutch post-commit response really aborted; no duplicate save or message storage',
+    explicit_save_draft_leave_protection: 'passed in English/Dutch: same-row preservation, other-row/preparation/sign-out cancellation, desktop/mobile route and real Back protection, Escape/tab containment/editor focus, explicit discard, pending response refusal/no auto-navigation; four added selected scans, nine stored arrays unchanged and zero guard-related writes; native reload cancellation driven only on Chromium; no autosave/crash guarantee',
     operator_stop_contact: 'passed',
     new_audit_metadata_minimization: 'passed; original restriction reason and provider setting preserved',
     historical_audit_exact_fields_backup_cancel_unverified_response_and_idempotent_retry: 'passed in English and Dutch; operational restrictions, settings and core event evidence preserved',

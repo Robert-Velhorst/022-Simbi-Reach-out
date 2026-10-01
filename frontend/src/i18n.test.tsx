@@ -5,6 +5,7 @@ import en from './locales/en.json'
 import nl from './locales/nl.json'
 import { I18nProvider, LANGUAGE_STORAGE_KEY, LanguagePicker, readLocale, translate, useI18n } from './i18n'
 import ReviewQueue from './pages/ReviewQueue'
+import { renderWithDraftGuard } from './test/router'
 import { ProspectsPage } from './pages/Resources'
 import { SetupScreen } from './components/Auth'
 import type { Draft, Member } from './types'
@@ -121,7 +122,7 @@ describe('language preference and state preservation', () => {
   it('keeps the review checks and unsaved message tied to the same saved hash', async () => {
     const draft: Draft = { id: 1, campaign_id: 1, prospect_id: 1, template_id: 1, prospect_name: 'Original English', organization: '', source_url: 'https://simbi.com/original', consent_status: 'consented', campaign_name: 'Campaign', template_name: 'Template', subject: 'Subject', body: 'Untouched original body', state: 'needs_review', quality_score: 100, content_hash: 'same-hash', edit_version: 'b'.repeat(64), safety_flags: [], updated_at: '2026-09-05T12:00:00Z' }
     vi.stubGlobal('fetch', vi.fn(async (url: string) => response({ items: url.includes('/drafts') ? [draft] : [], total: 1, offset: 0, limit: 50 })))
-    render(<I18nProvider><LanguagePicker /><ReviewQueue member={member} onMemberChange={() => {}} /></I18nProvider>)
+    renderWithDraftGuard(<I18nProvider><LanguagePicker /><ReviewQueue member={member} onMemberChange={() => {}} /></I18nProvider>)
     await screen.findByLabelText('Message')
     screen.getAllByRole('checkbox').forEach((checkbox) => fireEvent.click(checkbox))
     fireEvent.change(screen.getByRole('combobox', { name: 'Language / Taal' }), { target: { value: 'nl' } })

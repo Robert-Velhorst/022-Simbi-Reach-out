@@ -650,5 +650,10 @@
   "Enter date and time as text": "Enter date and time as text",
   "Use YYYY-MM-DDTHH:mm in your browser's local time, for example 2027-11-02T07:58.": "Use YYYY-MM-DDTHH:mm in your browser's local time, for example 2027-11-02T07:58.",
   "Enter a valid local date and time using YYYY-MM-DDTHH:mm.": "Enter a valid local date and time using YYYY-MM-DDTHH:mm.",
-  "Recording acknowledgement…": "Recording acknowledgement…"
+  "Recording acknowledgement…": "Recording acknowledgement…",
+  "Leave this draft?": "Leave this draft?",
+  "Your local edits or save result are unresolved. Continuing discards this editor state, not the saved draft. Nothing is saved, approved or sent automatically.": "Your local edits or save result are unresolved. Continuing discards this editor state, not the saved draft. Nothing is saved, approved or sent automatically.",
+  "A draft request is still pending. Stay here until it finishes, then check its result before leaving.": "A draft request is still pending. Stay here until it finishes, then check its result before leaving.",
+  "Choose Keep editing to return and save or check the saved version yourself. Browser warnings cannot recover text after a crash or forced closure.": "Choose Keep editing to return and save or check the saved version yourself. Browser warnings cannot recover text after a crash or forced closure.",
+  "Discard local edits and continue": "Discard local edits and continue"
 }

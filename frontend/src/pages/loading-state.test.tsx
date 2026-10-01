@@ -1,5 +1,5 @@
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
+import { renderWithRouter } from '../test/router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import AppShell from '../components/AppShell'
 import type { Member } from '../types'
@@ -22,7 +22,7 @@ const routes = [
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals() })
 function show(path: string) {
-  return render(<MemoryRouter initialEntries={[path]}><AppShell member={member} onMemberChange={() => {}} onSignedOut={() => {}} /></MemoryRouter>)
+  return renderWithRouter(<AppShell member={member} onMemberChange={() => {}} onSignedOut={() => {}} />, [path])
 }
 
 describe('truthful loading states on every operational route', () => {

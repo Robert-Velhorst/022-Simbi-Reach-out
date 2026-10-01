@@ -29,7 +29,7 @@ Scope clarification on 2026-09-05: the owner confirmed this is a personal tool f
 | 018 Limits/cooldowns | Implemented | Daily campaign limit and per-prospect cooldown enforced server-side. |
 | 019 Audit history | Implemented | Material events persisted without bodies/credentials. |
 | 020 Dashboard/next action | Implemented | Exception-first dashboard and real empty states. |
-| 021 Forms/validation/autosave | Partial | Explicit manual saves now require serialized editing versions, reject stale overwrites, preserve no-op approval/history and offer verified current-state comparison/recovery without implicit writes. RAM-only unsaved text can be lost on selection/navigation/reload; no durable autosave/crash recovery. See DRAFT_SAVING.md and exact dated evidence. |
+| 021 Forms/validation/autosave | Partial | Explicit version-bound saves/conflict recovery remain. Unresolved drafts now ask before another selection/page, preparation, app/history navigation or logout, preserve editor/checks on cancel, refuse pending continuation and never auto-replay navigation. Same-row selection preserves text; reload/close warnings are conditional/best effort. RAM-only text can still be lost on explicit discard/crash/forced closure/security revocation; no durable autosave. Private working-copy storage and wider forms remain open. See DRAFT_SAVING.md/current exact ledger. |
 | 022 Search/filter/sort/page | Implemented | Bounded server search/sort/pagination helpers; draft filters. |
 | 023 Import/export | Implemented | Atomic CSV preview/commit and authenticated JSON export. |
 | 024 Templates/defaults | Implemented | Reusable versioned templates with four explicit fields. |

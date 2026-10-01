@@ -8,6 +8,7 @@ import { usePage } from '../usePage'
 import { PageNavigation } from '../components/PageNavigation'
 import { DataState } from '../components/DataState'
 import { hasEditVersion, verifiedDraft } from '../draftSave'
+import { useDraftProtection } from '../components/DraftLeaveGuard'
 
 type Handoff = { id: number; draft_id: number; provider_url: string; subject: string; body: string; status: string; instruction: string; can_open_provider: boolean }
 const checks = [
@@ -48,8 +49,26 @@ export default function ReviewQueue({ member }: { member: Member; onMemberChange
   const selectedKey = selected ? `${selected.id}:${selected.content_hash}` : ''
   const editor = edited?.id === selected?.id ? edited : { id: selected?.id ?? 0, key: selectedKey, version: selected?.edit_version ?? '', subject: selected?.subject ?? '', body: selected?.body ?? '' }
   const dirty = selected ? editor.subject !== selected.subject || editor.body !== selected.body : false
+  const unresolved = dirty || Boolean(selected && saveIssue === selected.id)
+  const requestLeave = useDraftProtection(unresolved, busy && unresolved, editorForm)
   const checked = reviewChecks.key === selectedKey ? reviewChecks.values : []
   function setChecked(values: string[]) { setReviewChecks({ key: selectedKey, values }) }
+
+  function discardEditor() {
+    setChecked([]); setEdited(null); setSaveIssue(null); setComparison(null); setMessage('')
+  }
+  function selectDraft(id: number) {
+    // Clicking the already displayed row is not an instruction to discard.
+    if (id === selected?.id) return
+    requestLeave(() => { discardEditor(); setSelectedId(id) })
+  }
+  async function changeDraftPage(offset: number) {
+    requestLeave(() => { discardEditor(); setSelectedId(null); void drafts.load(offset) })
+  }
+  function prepareDraft() {
+    if (busy) return
+    requestLeave(() => { discardEditor(); setCreateOpen(true) })
+  }
 
   async function createDraft(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (!canEdit) return; setMessage(''); setBusy(true)
@@ -211,15 +230,15 @@ export default function ReviewQueue({ member }: { member: Member; onMemberChange
 
   return <div className="page review-page">
     {comparisonDialog}
-    <header className="page-hero"><div><h1>{t("Review queue")}</h1><p>{t("Every message stays here until a human reviews its source, wording, policy context and intended manual action.")}</p></div>{canEdit ? <Button onClick={() => { setMessage(''); setCreateOpen(true) }}><FilePlus2 size={17} />{t("Prepare draft")}</Button> : null}</header>
+    <header className="page-hero"><div><h1>{t("Review queue")}</h1><p>{t("Every message stays here until a human reviews its source, wording, policy context and intended manual action.")}</p></div>{canEdit ? <Button disabled={busy} onClick={prepareDraft}><FilePlus2 size={17} />{t("Prepare draft")}</Button> : null}</header>
     {!canEdit ? <Notice>{t("Your viewer role has read-only access. Ask an owner, admin or editor to make changes.")}</Notice> : null}
     {!member.compliance_ack_at ? <Notice tone="warning">{t("Approval is locked until an owner or admin completes the compliance review in Settings.")}</Notice> : null}
     {message ? <Notice tone="danger">{formatMessage(message)}</Notice> : null}
     {[campaigns, prospects, templates].map((source, index) => source.error ? <Notice key={index} tone="danger">{formatMessage(source.error)}<Button variant="quiet" onClick={() => void source.load()}>{t("Retry")}</Button></Notice> : null)}
-    <PageNavigation page={drafts.page} loading={drafts.loading || busy} load={async (offset) => { setChecked([]); setEdited(null); setSelectedId(null); await drafts.load(offset) }} />
-    <DataState label={t("drafts")} loading={drafts.loading} error={drafts.error} hasData={Boolean(data.drafts.length)} retry={drafts.load}>{data.drafts.length ? <div className="review-layout">
+    <PageNavigation page={drafts.page} loading={drafts.loading || busy} load={changeDraftPage} />
+    <DataState label={t("drafts")} loading={drafts.loading} error={drafts.error} hasData={Boolean(data.drafts.length)} retry={async () => { requestLeave(() => { discardEditor(); void drafts.load() }) }}>{data.drafts.length ? <div className="review-layout">
       <Panel className="review-list" title={t(data.drafts.length === 1 ? '{count} draft' : '{count} drafts', { count: data.drafts.length })}>
-        {data.drafts.map((draft) => <button key={draft.id} disabled={busy} className={`review-item ${draft.id === selectedId ? 'selected' : ''}`} onClick={() => { setSelectedId(draft.id); setChecked([]); setEdited(null); setMessage('') }}><div><strong>{draft.prospect_name}</strong><Status value={draft.state} /></div><span>{draft.campaign_name}</span><small>{t("Quality")}{' '}{draft.quality_score}/100 · {formatDate(draft.updated_at)}</small></button>)}
+        {data.drafts.map((draft) => <button key={draft.id} disabled={busy} className={`review-item ${draft.id === selected?.id ? 'selected' : ''}`} onClick={() => selectDraft(draft.id)}><div><strong>{draft.prospect_name}</strong><Status value={draft.state} /></div><span>{draft.campaign_name}</span><small>{t("Quality")}{' '}{draft.quality_score}/100 · {formatDate(draft.updated_at)}</small></button>)}
       </Panel>
       {selected ? <Panel className="review-detail" title={selected.prospect_name} action={<Status value={selected.state} />}>
         <div className="review-context"><div><span>{t("Campaign")}</span><strong>{selected.campaign_name}</strong></div><div><span>{t("Source context")}</span><a href={selected.source_url} target="_blank" rel="noreferrer">{t("Open reviewed source")}{' '}<ArrowUpRight size={14} /></a></div><div><span>{t("Consent")}</span><Status value={selected.consent_status} /></div><div><span>{t("Quality")}</span><strong>{selected.quality_score}/100</strong></div></div>

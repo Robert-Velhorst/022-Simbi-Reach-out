@@ -14,6 +14,7 @@ import { AuditPage, HelpPage, RemindersPage, RepliesPage, ReportsPage } from '..
 import SettingsPage from '../pages/Settings'
 import type { RetirementReceipt } from './RetirementControls'
 import { Modal } from './ui'
+import DraftLeaveGuard, { useDraftLeave } from './DraftLeaveGuard'
 
 const navigation = [
   { to: '/', label: 'Overview', icon: LayoutDashboard, end: true },
@@ -45,7 +46,12 @@ function NavigationContent({ member, onNavigate, onSignOut, includeHelp = false 
 }
 
 export default function AppShell({ member, onMemberChange, onSignedOut, onRetired }: { member: Member; onMemberChange: (member: Member) => void; onSignedOut: () => void; onRetired?: (receipt: RetirementReceipt) => void }) {
+  return <DraftLeaveGuard><Shell member={member} onMemberChange={onMemberChange} onSignedOut={onSignedOut} onRetired={onRetired} /></DraftLeaveGuard>
+}
+
+function Shell({ member, onMemberChange, onSignedOut, onRetired }: { member: Member; onMemberChange: (member: Member) => void; onSignedOut: () => void; onRetired?: (receipt: RetirementReceipt) => void }) {
   const { t } = useI18n()
+  const requestLeave = useDraftLeave()
   const [open, setOpen] = useState(false)
   const location = useLocation()
   const mainRef = useRef<HTMLElement>(null)
@@ -83,9 +89,14 @@ export default function AppShell({ member, onMemberChange, onSignedOut, onRetire
     mainRef.current?.focus()
   }
 
-  async function signOut() {
+  async function completeSignOut() {
     await post('/auth/logout', {})
     onSignedOut()
+  }
+
+  async function signOut() {
+    navigate()
+    requestLeave(() => { void completeSignOut() })
   }
 
   return <div className="app-shell">

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { draftLeaveWorkflow } from './e2e-draft-leave.mjs'
 
 const catalogs = Object.fromEntries(['en', 'nl'].map((locale) => [locale, JSON.parse(readFileSync(new URL(`../frontend/src/locales/${locale}.json`, import.meta.url), 'utf8'))]))
 const tables = ['campaigns', 'prospects', 'templates', 'drafts', 'handoffs', 'replies', 'reminders', 'suppressions', 'audit_events']
@@ -80,9 +81,35 @@ export async function draftSaveWorkflow(owner, origin, axe, screenshots) {
       }
       const initial = await current()
       const localBody = `Fictional local edits ${locale}: $& {name}. These words must survive a conflicting save; never send them.`
-      await second.locator('[name=body]').fill(localBody)
+      totalScans += await draftLeaveWorkflow(second, origin, t, locale, `Save conflict person ${locale}`, localBody, snapshot, axe, screenshots)
       await first.locator('[name=subject]').fill(`Newer first-tab saved subject ${locale}`)
-      await save(first, 200)
+      // Hold the real committed response, not a fake write, while trying to leave.
+      let release
+      let reached
+      const pendingResponse = new Promise((resolve) => { release = resolve })
+      const reachedServer = new Promise((resolve) => { reached = resolve })
+      await first.route(path, async (route) => {
+        if (route.request().method() !== 'PATCH') return route.continue()
+        const result = await route.fetch()
+        assert.ok(result.ok())
+        reached()
+        await pendingResponse
+        await route.fulfill({ response: result })
+      })
+      const savedResponse = first.waitForResponse((response) => response.url() === path && response.request().method() === 'PATCH' && response.status() === 200)
+      await button(first, 'Save and return to review').click()
+      await reachedServer
+      await first.getByRole('link', { name: t('Help'), exact: true }).click()
+      const leavePending = first.getByRole('dialog', { name: t('Leave this draft?') })
+      await leavePending.waitFor()
+      assert.equal(await leavePending.getByRole('button', { name: t('Discard local edits and continue'), exact: true }).isEnabled(), false)
+      await first.screenshot({ path: join(screenshots, `simbi-draft-leave-${locale}-pending.png`), fullPage: false })
+      release(); await savedResponse; await first.unroute(path)
+      await first.waitForFunction(() => document.querySelector('.draft-editor input')?.disabled === false)
+      assert.equal(new URL(first.url()).pathname, '/review', 'Save settlement must not automatically replay blocked navigation')
+      await leavePending.getByRole('button', { name: t('Keep editing'), exact: true }).focus()
+      await first.keyboard.press('Enter'); await leavePending.waitFor({ state: 'hidden' })
+      assert.ok(await first.locator('.draft-editor').evaluate((element) => element === document.activeElement))
       const winner = await current()
       assert.notEqual(winner.edit_version, initial.edit_version)
       const beforeConflict = await snapshot()
@@ -177,10 +204,10 @@ export async function draftSaveWorkflow(owner, origin, axe, screenshots) {
       assert.deepEqual(errors, [])
       const stored = await second.evaluate(() => [...Object.values(localStorage), ...Object.values(sessionStorage)])
       assert.ok(stored.every((value) => !value.includes(localBody)), 'Unsaved message content must not be stored in the browser')
-      process.stdout.write(`Draft save: ${locale}, real sibling tabs, two rejected stale versions, explicit no-write comparison/rebase/cancel, four changes, verified uncertain-response readback without duplicate writes; aborts=${aborted}; browser errors=0.\n`)
+      process.stdout.write(`Draft save: ${locale}, real sibling tabs, pending leave disabled/no auto-navigation/focus, two rejected stale versions, explicit no-write comparison/rebase/cancel, four changes, verified uncertain-response readback without duplicate writes; aborts=${aborted}; browser errors=0.\n`)
     } finally { await first.close(); await second.close() }
   }
-  assert.equal(totalScans, 4)
+  assert.equal(totalScans, 8)
   await owner.setViewportSize({ width: 1440, height: 1000 })
   await owner.getByRole('combobox', { name: 'Language / Taal' }).selectOption('en')
 }

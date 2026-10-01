@@ -1,5 +1,5 @@
 import { useI18n } from '../i18n'
-import { useEffect, useId, useRef, type ComponentProps, type InputHTMLAttributes, type ReactNode, type RefObject, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react'
+import { useLayoutEffect, useId, useRef, type ComponentProps, type InputHTMLAttributes, type ReactNode, type RefObject, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react'
 import { AlertTriangle, CheckCircle2, Info, X } from 'lucide-react'
 
 export function Button({ className = '', variant = 'primary', ...props }: ComponentProps<'button'> & { variant?: 'primary' | 'secondary' | 'danger' | 'quiet' }) {
@@ -58,26 +58,43 @@ export function EmptyState({ title, detail, action }: { title: string; detail: s
   return <div className="empty"><h3>{title}</h3><p>{detail}</p>{action}</div>
 }
 
+// Navigation can hand off to a warning before its own dialog disappears. One
+// document-level lock restores the original style only after our last dialog
+// closes, regardless of which one closes first (including StrictMode cleanup).
+const modalScrollLocks = new WeakMap<Document, { dialogs: Set<HTMLDialogElement>; overflow: string }>()
+function lockModalScroll(dialog: HTMLDialogElement) {
+  const owner = dialog.ownerDocument
+  let lock = modalScrollLocks.get(owner)
+  if (!lock) { lock = { dialogs: new Set(), overflow: owner.body.style.overflow }; modalScrollLocks.set(owner, lock) }
+  lock.dialogs.add(dialog)
+  owner.body.style.overflow = 'hidden'
+  return () => {
+    lock.dialogs.delete(dialog)
+    if (lock.dialogs.size) owner.body.style.overflow = 'hidden'
+    else { owner.body.style.overflow = lock.overflow; modalScrollLocks.delete(owner) }
+  }
+}
+
 export function Modal({ title, children, onClose, returnFocusRef, closeDisabled = false, className = '', id }: { title: string; children: ReactNode; onClose: () => void; returnFocusRef?: RefObject<HTMLElement | null>; closeDisabled?: boolean; className?: string; id?: string }) {
   const { t } = useI18n()
   const dialogRef = useRef<HTMLDialogElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
   const titleId = useId()
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const dialog = dialogRef.current!
     const previousFocus = returnFocusRef?.current ?? document.activeElement
-    const previousOverflow = document.body.style.overflow
+    const unlockScroll = lockModalScroll(dialog)
     dialog.showModal()
     closeRef.current?.focus({ preventScroll: true })
-    document.body.style.overflow = 'hidden'
     return () => {
       dialog.close()
-      document.body.style.overflow = previousOverflow
+      unlockScroll()
       // The trigger may have been replaced by the next workflow action while open.
       // eslint-disable-next-line react-hooks/exhaustive-deps -- Restore the live replacement, not its removed predecessor.
       const returnTarget = returnFocusRef?.current ?? previousFocus
-      if (returnTarget instanceof HTMLElement && returnTarget.isConnected) returnTarget.focus({ preventScroll: true })
+      const openDialogs = Array.from(dialog.ownerDocument.querySelectorAll<HTMLDialogElement>('dialog[open]'))
+      if (returnTarget instanceof HTMLElement && returnTarget.isConnected && (!openDialogs.length || openDialogs.some((open) => open.contains(returnTarget)))) returnTarget.focus({ preventScroll: true })
     }
   }, [returnFocusRef])
 
