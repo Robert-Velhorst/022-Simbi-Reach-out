@@ -82,6 +82,40 @@ jobs:
         if: always()
         run: docker compose down --volumes
 
+  browser-compatibility:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [firefox, webkit]
+    env:
+      SIMBI_E2E_BROWSER: ${{ matrix.browser }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.16.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - name: Install backend
+        run: pip install -e ".[dev]"
+      - name: Install frontend
+        run: pnpm --dir frontend install --frozen-lockfile
+      - name: Frontend build
+        run: pnpm --dir frontend build
+      - name: Install exact browser runtime
+        run: pnpm --dir frontend exec playwright install --with-deps ${{ matrix.browser }}
+      - name: Full bilingual workflow, privacy, and retirement acceptance
+        run: pnpm --dir frontend test:e2e:run
+
   windows-standalone:
     runs-on: windows-latest
     timeout-minutes: 30

@@ -4,10 +4,13 @@ import { mkdir, mkdtemp, readFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { selectBrowser } from './e2e-browser.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const require = createRequire(join(root, 'frontend', 'package.json'))
-const { chromium } = require('playwright')
+const engine = selectBrowser(require('playwright'))
+const screenshots = resolve(root, '..', 'browser-qa', engine.name)
+await mkdir(screenshots, { recursive: true })
 const axe = require('axe-core')
 const python = process.env.SIMBI_E2E_PYTHON ?? (process.platform === 'win32' ? join(root, '.venv', 'Scripts', 'python.exe') : 'python')
 const port = process.env.SIMBI_RETIREMENT_E2E_PORT ?? '4178'
@@ -18,7 +21,7 @@ await mkdir(runtimeRoot, { recursive: true })
 const PASSPHRASE = 'correct horse battery staple' // Isolated fictional owner only.
 
 for (const locale of ['en', 'nl']) {
-  const runtime = await mkdtemp(join(runtimeRoot, `retirement-${locale}-`))
+  const runtime = await mkdtemp(join(runtimeRoot, `retirement-${engine.name}-${locale}-`))
   const catalog = JSON.parse(await readFile(join(root, 'frontend', 'src', 'locales', `${locale}.json`), 'utf8'))
   const t = (key) => { assert.ok(catalog[key], `Missing ${locale} translation: ${key}`); return catalog[key] }
   const logs = []
@@ -43,7 +46,7 @@ for (const locale of ['en', 'nl']) {
       if (!ready) await new Promise((done) => setTimeout(done, 250))
     }
     assert.ok(ready, 'Isolated retirement server did not become ready')
-    browser = await chromium.launch({ headless: true })
+    browser = await engine.type.launch({ headless: true })
     const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, bypassCSP: true })
     const errors = []
     await context.route(/^https?:\/\//, (route) => {
@@ -66,6 +69,7 @@ for (const locale of ['en', 'nl']) {
     const template = await post('/templates', { name: 'Fictional Personal Template', body: 'Hello {name}, fictional content for an isolated test, never a message to send.' })
     await post('/drafts', { campaign_id: campaign.id, prospect_id: prospect.id, template_id: template.id })
     await page.goto(`${origin}/settings`, { waitUntil: 'networkidle' })
+    assert.ok(page.url().startsWith(origin) && (await page.title()).includes('Simbi'), 'Wrong application identity')
     await page.getByRole('combobox', { name: 'Language / Taal' }).selectOption(locale)
     const button = (key) => page.getByRole('button', { name: t(key), exact: true })
     assert.ok(await button('Preview personal retirement').isDisabled())
@@ -83,7 +87,7 @@ for (const locale of ['en', 'nl']) {
     await dialog.getByLabel(t('Local account password')).fill(PASSPHRASE)
     await dialog.getByLabel(t('Type RETIRE to confirm')).fill('RETIRE')
     for (const box of await dialog.getByRole('checkbox').all()) await box.check()
-    await page.screenshot({ path: resolve(root, '..', `simbi-retirement-${locale}-desktop.png`) })
+    await page.screenshot({ path: join(screenshots, `simbi-retirement-${locale}-desktop.png`) })
     await page.keyboard.press('Escape')
     await dialog.waitFor({ state: 'hidden' })
     assert.ok(await button('Review personal retirement').evaluate((element) => document.activeElement === element))
@@ -99,7 +103,7 @@ for (const locale of ['en', 'nl']) {
     await page.addScriptTag({ content: axe.source })
     const findings = await page.evaluate(async () => window.axe.run(document, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] } }))
     assert.equal(findings.violations.length, 0, JSON.stringify(findings.violations.map(({ id }) => id)))
-    await page.screenshot({ path: resolve(root, '..', `simbi-retirement-${locale}-mobile.png`) })
+    await page.screenshot({ path: join(screenshots, `simbi-retirement-${locale}-mobile.png`) })
     let receipt
     if (locale === 'nl') {
       // Real isolated commit succeeds, but the browser never receives its body.
@@ -124,7 +128,7 @@ for (const locale of ['en', 'nl']) {
     assert.equal((await page.request.post(`${origin}/api/auth/setup`, { data: { display_name: 'Fictional Replacement', workspace_name: 'Fictional Replacement', email: 'replacement@example.test', password: PASSPHRASE } })).status(), 409)
     const replay = await (await page.request.get(`${origin}/api/privacy/retirement/receipt/${receipt.plan_id}`)).json()
     assert.ok(replay.replayed); assert.deepEqual(replay.counts, receipt.counts)
-    await page.screenshot({ path: resolve(root, '..', `simbi-retired-${locale}.png`) })
+    await page.screenshot({ path: join(screenshots, `simbi-retired-${locale}.png`) })
     await page.reload({ waitUntil: 'networkidle' })
     await page.getByRole('heading', { name: t('Local installation retired') }).waitFor()
     assert.equal(await page.getByText('Fictional Personal Owner', { exact: true }).count(), 0)
@@ -133,7 +137,7 @@ for (const locale of ['en', 'nl']) {
     const retiredFindings = await page.evaluate(async () => window.axe.run(document, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] } }))
     assert.equal(retiredFindings.violations.length, 0, JSON.stringify(retiredFindings.violations.map(({ id }) => id)))
     assert.deepEqual(errors, [])
-    console.log(JSON.stringify({ locale, runtime, counts: receipt.counts, interruptedResponseRecovered: locale === 'nl', crossTabRetired: true, browserErrors: errors.length, accessibilityViolations: findings.violations.length + retiredFindings.violations.length }))
+    console.log(JSON.stringify({ browserEngine: engine.name, browserVersion: browser.version(), locale, runtime, screenshotDirectory: screenshots, counts: receipt.counts, interruptedResponseRecovered: locale === 'nl', crossTabRetired: true, browserErrors: errors.length, accessibilityViolations: findings.violations.length + retiredFindings.violations.length }))
   } finally {
     await browser?.close()
     const exited = new Promise((done) => server.once('exit', done))

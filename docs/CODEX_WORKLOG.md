@@ -1,5 +1,11 @@
 # Codex worklog
 
+## 2026-10-01 — cross-browser personal workflow acceptance
+
+- Extended existing full bilingual/authorization/handoff/reply/report/privacy/retirement acceptance to exact Chromium/Firefox/WebKit engines, without dropping assertions or creating a smaller demo path. Added strict selector unit contracts and Linux Firefox/WebKit CI jobs. Runtime/schema/dependency versions remain unchanged.
+- Made controlled failure accounting engine-independent through real HTTP responses; new session probe assertions retain stronger evidence. Hardened the main harness against occupied ports; isolated foreign-listener probe fails safely with zero requests.
+- Initial Firefox networkidle/setup timeout was investigated with minimal fetch and real-app isolated probes. Initial document-load waiting repairs the harness without raising application timeouts or removing expected UI checks. Current final local/CI outcomes belong in PRODUCTION_READINESS.md; compatibility guide preserves branded-browser/device/assistive-technology/provider limits. README publication will follow merging, as requested. Real records/provider account/installed runtime are untouched; overall goal is not complete.
+
 ## 2026-10-01 — single-owner installation retirement
 
 - Published PR92 at679368e without conflicts after final-head source36797534872 and PR36797539312 passed Linux/Windows at829a18d. Trees matchb4263c5, local main fast-forwarded and no open PRs remain; separate README/publication documentation follows the merge. Final180 backend/134 frontend tests,625-key parity and full existing/new retirement browser proof pass. Sourceguard/audits/worker contracts pass; actual CI includes container/storage and built/smoked Windows package proof. Later main/docs runs are distinct. Reader review identified and then confirmed repaired restore-target/token-reload clarity; README now links historical proof rather than repeating competing current totals. No real records/provider account were changed.

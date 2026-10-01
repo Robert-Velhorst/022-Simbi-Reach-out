@@ -58,7 +58,7 @@ Scope clarification on 2026-09-05: the owner confirmed this is a personal tool f
 | 047 Path traversal | Not applicable | No file path or upload endpoint exists; restore CLI validates explicit `.db` file. |
 | 048 Provider failure | Implemented | Ambiguous/cancelled outcomes and no blind retry; no provider call exists. |
 | 049 Accessibility | Partial | Selected automated dashboard scan and local modal keyboard regressions pass. Full route/role keyboard and dedicated assistive-technology acceptance are not established. |
-| 050 Responsive/browser | Partial | Chromium desktop, mobile and short-mobile dialog paths are verified. Other browser engines and physical-device/virtual-keyboard behavior remain unverified; no broader compatibility claim is supported. |
+| 050 Responsive/browser | Partial | Exact Chromium/Firefox/WebKit selection and full-workflow/retirement CI jobs are implemented. Current dated browser acceptance is in PRODUCTION_READINESS.md and reproduction in BROWSER_COMPATIBILITY.md. Playwright engines/resized desktop viewports do not certify branded browsers, physical devices or virtual keyboards. |
 | 051 Performance/indexing | Implemented | Domain indexes, bounded queries/imports, production bundle baseline. |
 | 052 Large dataset/pagination | Implemented | 10,000-prospect/draft benchmark: 0.014s query baseline and 3.7 MB database on the verification machine. |
 | 053 Backup/restore | Implemented | SQLite backup API, integrity/schema-checked restore, backup-first behavior. |

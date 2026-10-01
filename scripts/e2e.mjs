@@ -5,17 +5,20 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { bilingualWorkflow } from './e2e-locales.mjs'
 import { privacyWorkflow } from './e2e-privacy.mjs'
+import { selectBrowser } from './e2e-browser.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const require = createRequire(join(root, 'frontend', 'package.json'))
 const axe = require('axe-core')
-const { chromium } = require('playwright')
+const engine = selectBrowser(require('playwright'))
+const screenshots = resolve(root, '..', 'browser-qa', engine.name)
+await mkdir(screenshots, { recursive: true })
 const runtimeRoot = resolve(root, '.e2e-runtime')
 if (dirname(runtimeRoot) !== root || !runtimeRoot.endsWith('.e2e-runtime')) {
   throw new Error(`Unsafe E2E runtime path: ${runtimeRoot}`)
 }
 await mkdir(runtimeRoot, { recursive: true })
-const runtime = await mkdtemp(join(runtimeRoot, 'run-'))
+const runtime = await mkdtemp(join(runtimeRoot, `run-${engine.name}-`))
 
 const python = process.env.SIMBI_E2E_PYTHON
   ?? (process.platform === 'win32' ? join(root, '.venv', 'Scripts', 'python.exe') : 'python')
@@ -49,6 +52,11 @@ async function waitUntilReady() {
   const deadline = Date.now() + 60_000
   while (Date.now() < deadline) {
     if (server.exitCode !== null) throw new Error(`E2E server exited early:\n${serverOutput.join('')}`)
+    // Health from a different listener is not evidence that OUR child owns the port.
+    if (!serverOutput.join('').includes(`Uvicorn running on ${origin}`)) {
+      await new Promise((resolveWait) => setTimeout(resolveWait, 250))
+      continue
+    }
     try {
       const response = await fetch(`${origin}/api/health/ready`)
       if (response.ok) return
@@ -63,7 +71,7 @@ async function waitUntilReady() {
 let browser
 try {
   await waitUntilReady()
-  browser = await chromium.launch({ headless: true })
+  browser = await engine.type.launch({ headless: true })
   const ownerContext = await browser.newContext({
     viewport: { width: 1440, height: 1000 },
     bypassCSP: true,
@@ -71,29 +79,39 @@ try {
   const page = await ownerContext.newPage()
   const browserErrors = []
   // These are fictional local workflow records, never evidence of provider delivery.
-  await ownerContext.route(/^https?:\/\//, (route) => {
-    if (new URL(route.request().url()).origin === origin) return route.continue()
-    browserErrors.push(`Unexpected external request: ${new URL(route.request().url()).origin}`)
-    return route.abort('blockedbyclient')
-  })
+  async function guardContext(context) {
+    await context.route(/^https?:\/\//, (route) => {
+      if (new URL(route.request().url()).origin === origin) return route.continue()
+      browserErrors.push(`Unexpected external request: ${new URL(route.request().url()).origin}`)
+      return route.abort('blockedbyclient')
+    })
+  }
+  await guardContext(ownerContext)
   let signedOutProbeExpected = false
   let signedOutProbes = 0
   let sessionFailureExpected = false
   let sessionFailureProbes = 0
   let expectedDataFailurePath = ''
   let dataFailureProbes = 0
+  // Count HTTP outcomes, not Chromium-specific console diagnostics. Firefox and
+  // WebKit need not log failed fetches, and one response can produce many logs.
+  page.on('response', (response) => {
+    if (expectedDataFailurePath && response.url().startsWith(`${origin}/api${expectedDataFailurePath}`) && response.status() === 503) dataFailureProbes++
+    if (sessionFailureExpected && response.url() === `${origin}/api/me` && response.status() === 503) sessionFailureProbes++
+    if (signedOutProbeExpected && response.url() === `${origin}/api/me` && response.status() === 401) signedOutProbes++
+  })
   page.on('console', (message) => {
     if (expectedDataFailurePath && message.location().url.startsWith(`${origin}/api${expectedDataFailurePath}`)
-      && message.text().includes('503')) { dataFailureProbes++; return }
+      && message.text().includes('503')) return
     if (sessionFailureExpected && message.location().url === `${origin}/api/me`
-      && message.text().includes('503')) { sessionFailureProbes++; return }
+      && message.text().includes('503')) return
     if (signedOutProbeExpected && message.location().url === `${origin}/api/me`
-      && message.text().includes('401')) { signedOutProbes++; return }
+      && message.text().includes('401')) return
     if (message.type() === 'error') browserErrors.push(`console: ${message.text()}`)
   })
   page.on('pageerror', (error) => browserErrors.push(`page: ${error.message}`))
 
-  await page.goto(origin, { waitUntil: 'networkidle' })
+  await page.goto(origin, { waitUntil: 'load' })
   if (!(await page.title()).includes('Simbi') || !page.url().startsWith(origin)) {
     throw new Error('Unexpected application identity')
   }
@@ -121,6 +139,7 @@ try {
   let viewerStorageState
   const viewerContext = await browser.newContext({ viewport: { width: 1440, height: 1000 } })
   try {
+    await guardContext(viewerContext)
     const viewer = await viewerContext.newPage()
     let viewerSignInExpected = true
     viewer.on('pageerror', (error) => browserErrors.push(`viewer page: ${error.message}`))
@@ -258,6 +277,7 @@ try {
   // A real viewer session can inspect the same pending handoff without changing it.
   const historyContext = await browser.newContext({ storageState: viewerStorageState, viewport: { width: 1440, height: 1000 } })
   try {
+    await guardContext(historyContext)
     const viewer = await historyContext.newPage()
     viewer.on('pageerror', (error) => browserErrors.push(`viewer history page: ${error.message}`))
     viewer.on('console', (message) => {
@@ -293,10 +313,10 @@ try {
       }
     }
     await checkDialogViewport('desktop')
-    await viewer.screenshot({ path: resolve(root, '..', 'simbi-viewer-handoff.png'), fullPage: false })
+    await viewer.screenshot({ path: join(screenshots, 'simbi-viewer-handoff.png'), fullPage: false })
     await viewer.setViewportSize({ width: 390, height: 844 })
     await checkDialogViewport('mobile')
-    await viewer.screenshot({ path: resolve(root, '..', 'simbi-viewer-handoff-mobile.png'), fullPage: false })
+    await viewer.screenshot({ path: join(screenshots, 'simbi-viewer-handoff-mobile.png'), fullPage: false })
     if (!(await viewer.getByRole('dialog').evaluate((dialog) => dialog.contains(document.activeElement)))) {
       throw new Error('Opening the dialog left keyboard focus outside it')
     }
@@ -401,7 +421,7 @@ try {
   await page.getByText(replyText, { exact: true }).waitFor()
   await page.reload({ waitUntil: 'networkidle' })
   await page.getByText(replyText, { exact: true }).waitFor()
-  await page.screenshot({ path: resolve(root, '..', 'simbi-qa-reply.png'), fullPage: false })
+  await page.screenshot({ path: join(screenshots, 'simbi-qa-reply.png'), fullPage: false })
 
   await page.getByRole('link', { name: 'Reminders', exact: true }).click()
   await page.getByRole('heading', { name: 'No open reminders' }).waitFor()
@@ -424,7 +444,7 @@ try {
     const metric = page.locator('.metric-rail > div').filter({ has: page.getByText(label, { exact: true }) })
     if (await metric.locator('strong').innerText() !== expected) throw new Error(`Incorrect ${label} report metric`)
   }
-  await page.screenshot({ path: resolve(root, '..', 'simbi-qa-report.png'), fullPage: false })
+  await page.screenshot({ path: join(screenshots, 'simbi-qa-report.png'), fullPage: false })
   await page.setViewportSize({ width: 390, height: 844 })
   await page.waitForFunction(() => document.querySelector('.sidebar').getBoundingClientRect().right <= 0)
   const mobileReport = await page.locator('.table-wrap').evaluate((table) => {
@@ -440,7 +460,7 @@ try {
     throw new Error(`Mobile report overflows the page or cannot reveal its final column: ${JSON.stringify(mobileReport)}`)
   }
   await page.locator('.table-wrap').evaluate((table) => { table.scrollLeft = 0 })
-  await page.screenshot({ path: resolve(root, '..', 'simbi-qa-report-mobile.png'), fullPage: false })
+  await page.screenshot({ path: join(screenshots, 'simbi-qa-report-mobile.png'), fullPage: false })
   await page.setViewportSize({ width: 1440, height: 1000 })
   await page.waitForFunction(() => document.querySelector('.sidebar').getBoundingClientRect().left >= 0)
 
@@ -468,11 +488,11 @@ try {
       }
       if (nav === 'Reports' && await page.locator('.metric-rail').count()) throw new Error('Pending report invented metrics')
       if (nav === 'Campaigns') {
-        await page.screenshot({ path: resolve(root, '..', 'simbi-loading-desktop.png'), fullPage: false })
+        await page.screenshot({ path: join(screenshots, 'simbi-loading-desktop.png'), fullPage: false })
         await page.setViewportSize({ width: 390, height: 844 })
         await page.waitForFunction(() => document.querySelector('.sidebar').getBoundingClientRect().right <= 0)
         if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)) throw new Error('Mobile loading state overflows')
-        await page.screenshot({ path: resolve(root, '..', 'simbi-loading-mobile.png'), fullPage: false })
+        await page.screenshot({ path: join(screenshots, 'simbi-loading-mobile.png'), fullPage: false })
         await page.setViewportSize({ width: 1440, height: 1000 })
       }
       releaseRead()
@@ -486,7 +506,7 @@ try {
   await page.getByRole('link', { name: 'Campaigns', exact: true }).click()
   await page.getByText('No result is available for campaigns.').waitFor()
   if (await page.getByRole('heading', { name: 'No campaigns', exact: true }).count()) throw new Error('Failed campaign read declared no campaigns')
-  await page.screenshot({ path: resolve(root, '..', 'simbi-loading-error.png'), fullPage: false })
+  await page.screenshot({ path: join(screenshots, 'simbi-loading-error.png'), fullPage: false })
   await page.unroute(`${origin}/api/campaigns*`)
   await page.getByRole('button', { name: 'Retry', exact: true }).click()
   await page.locator('.resource-row h3').filter({ hasText: 'Production readiness outreach' }).waitFor()
@@ -523,7 +543,7 @@ try {
   const dutchAccessibility = await page.evaluate(async () => window.axe.run(document, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] } }))
   if (dutchAccessibility.violations.length) throw new Error(`Dutch accessibility violations: ${JSON.stringify(dutchAccessibility.violations.map((item) => ({ id: item.id, nodes: item.nodes.map((node) => node.target) })))}`)
   await page.getByRole('combobox', { name: 'Language / Taal' }).selectOption('en')
-  await privacyWorkflow(page, origin, root, 'a different long QA password', axe)
+  await privacyWorkflow(page, origin, root, 'a different long QA password', axe, screenshots)
   await page.addScriptTag({ content: axe.source })
   const accessibility = await page.evaluate(async () => window.axe.run(document, {
     runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] },
@@ -547,7 +567,11 @@ try {
   await page.screenshot({ path: join(runtime, 'mobile.png'), fullPage: true })
 
   if (browserErrors.length) throw new Error(`Browser errors:\n${browserErrors.join('\n')}`)
+  if (sessionFailureProbes !== 1 || signedOutProbes !== 1) throw new Error(`Unexpected session probe counts: ${sessionFailureProbes}/${signedOutProbes}`)
   process.stdout.write(`${JSON.stringify({
+    browser_engine: engine.name,
+    browser_version: browser.version(),
+    screenshot_directory: screenshots,
     critical_path: 'passed',
     personal_cleanup_preview_cancel_backup_confirmation_and_receipt_recovery: 'passed in English and Dutch',
     campaign_and_template_cleanup_counts_cancel_backup_preservation_and_receipts: 'passed in English and Dutch',
