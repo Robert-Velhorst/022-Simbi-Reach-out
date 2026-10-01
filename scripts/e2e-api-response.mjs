@@ -7,7 +7,7 @@ import { createRequire } from 'node:module'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { selectBrowser } from './e2e-browser.mjs'
-import { activate, choose, enter } from './e2e-keyboard-controls.mjs'
+import { activate, choose, enter, tabTo } from './e2e-keyboard-controls.mjs'
 
 // An owned loopback proxy, not a production endpoint. It forwards the real
 // fictional write first, then damages its RESPONSE. Native streaming bodies
@@ -143,7 +143,22 @@ for (const locale of ['en', 'nl']) {
       assert.equal(templateWrites, writesBefore + 1, 'No automatic write retry')
       assert.equal((await read()).items.filter((item) => item.name === title).length, 1, 'A real commit can precede unreadable response')
       await capture(mode)
-      await activate(page, dialog.getByRole('button', { name: t('Cancel'), exact: true }))
+      const cancel = dialog.getByRole('button', { name: t('Cancel'), exact: true })
+      await tabTo(page, cancel)
+      if (mobile) await page.keyboard.press('End')
+      // A long localized warning can push the action row below the first
+      // viewport. Native End scrolling must reveal BOTH complete actions;
+      // merely focusing a partially visible button is not sufficient proof.
+      try { await page.waitForFunction(() => {
+        const buttons = [...document.querySelectorAll('dialog[open] .modal-actions button')]
+        return buttons.length === 2 && buttons.every((item) => { const box = item.getBoundingClientRect(); return box.top >= 0 && box.bottom <= innerHeight && box.left >= 0 && box.right <= innerWidth })
+      }, undefined, { timeout: 3000 }) } catch (cause) {
+        await page.screenshot({ path: join(screenshots, `simbi-response-${locale}-${mode}-bounds-diagnostic.png`) })
+        console.error(JSON.stringify({ locale, mode, actionBounds: await page.evaluate(() => ({ width: innerWidth, height: innerHeight, active: document.activeElement?.tagName, buttons: [...document.querySelectorAll('dialog[open] .modal-actions button')].map((item) => { const box = item.getBoundingClientRect(); return { top: box.top, bottom: box.bottom, left: box.left, right: box.right } }), scrollers: [...document.querySelectorAll('dialog[open], dialog[open] .modal-content')].map((item) => ({ scroll: item.scrollTop, client: item.clientHeight, height: item.scrollHeight })) })) }))
+        throw cause
+      }
+      if (mobile) await page.screenshot({ path: join(screenshots, `simbi-response-${locale}-${mode}-actions.png`), fullPage: false })
+      await activate(page, cancel)
       await dialog.waitFor({ state: 'hidden' })
       await page.reload({ waitUntil: 'networkidle' })
       await page.getByRole('heading', { name: title, exact: true }).waitFor()

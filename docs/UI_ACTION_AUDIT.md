@@ -1,5 +1,7 @@
 # UI action audit
 
+Current shared response handling rejects unreadable/primitive success, bounds headers plus body, releases cancellation listeners and never automatically retries a write. Read errors do not invent an empty result; uncertain write responses retain that distinction. Selected EN/NL template forms keep their current inputs, and existing draft/handoff/privacy/audit/retirement recovery remains specific to each action, not universal receipt/idempotency/autosave. Actual executed tests and broader semantic-validation/form gaps are in [request recovery](REQUEST_RECOVERY.md) and the current ledger.
+
 Audited 2026-08-08. Every visible control below is wired to a route, local state change, download, or explicit external browser action. No disabled future/placeholder control is shown.
 
 The inventory below is historical, not a current all-role acceptance result. The 2026-09-05 follow-ups repaired misleading viewer actions and modal keyboard behavior, added a fictional local sent/reply/reminder/report browser journey, and separately verified the app's public Simbi homepage handoff/Back/Not sent path; see [the current production acceptance ledger](PRODUCTION_READINESS.md). A wired action or successful public-page navigation is not automatically a verified messaging integration. Authenticated provider operation and the complete role/accessibility audit remain separate gates.
