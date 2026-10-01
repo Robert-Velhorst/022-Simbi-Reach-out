@@ -6,6 +6,7 @@ import { Button, Field, Input, Notice, Panel, Select } from '../components/ui'
 import type { Member } from '../types'
 import PrivacyControls from '../components/PrivacyControls'
 import AuditPrivacyControls from '../components/AuditPrivacyControls'
+import { useSubmitFocus } from '../components/useSubmitFocus'
 import RetirementControls, { type RetirementReceipt } from '../components/RetirementControls'
 
 type SettingsData = {
@@ -23,27 +24,19 @@ export default function SettingsPage({ member, onMemberChange, onRetired = () =>
   const [passwordBusy, setPasswordBusy] = useState(false)
   const [complianceBusy, setComplianceBusy] = useState(false)
   const complianceInFlight = useRef(false)
-  const complianceFocus = useRef<HTMLElement | null>(null)
+  const rememberComplianceFocus = useSubmitFocus(complianceBusy)
   const [reauthenticate, setReauthenticate] = useState(false)
   const canAdmin = ['owner', 'admin'].includes(member.role)
   async function load() { setData(await api<SettingsData>('/settings')) }
   async function refreshMember() { onMemberChange(await api<Member>('/me')) }
   useEffect(() => { void load().catch((cause) => setMessage({ tone: 'danger', text: cause instanceof Error ? cause.message : 'Settings could not be loaded' })) }, [])
-  useEffect(() => {
-    if (complianceBusy) return
-    const target = complianceFocus.current
-    complianceFocus.current = null
-    // A disabled submitter can leave Firefox on BODY. Restore it after enabling,
-    // but never steal focus from another control or from outside the document.
-    if (target?.isConnected && document.hasFocus() && document.activeElement === document.body) target.focus()
-  }, [complianceBusy])
 
   async function compliance(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!canAdmin || complianceInFlight.current) return
     const form = new FormData(event.currentTarget)
     const names = ['reviewed_simbi_terms', 'confirmed_no_scraping', 'confirmed_manual_send', 'confirmed_suppression_process']
-    complianceFocus.current = document.activeElement instanceof HTMLElement && event.currentTarget.contains(document.activeElement) ? document.activeElement : null
+    rememberComplianceFocus(event.currentTarget)
     complianceInFlight.current = true; setComplianceBusy(true); setMessage(null)
     try { await post('/settings/compliance', Object.fromEntries(names.map((name) => [name, form.get(name) === 'on']))); await Promise.all([load(), refreshMember()]); setMessage({ tone: 'success', text: 'Compliance acknowledgement recorded in the audit log.' }) }
     catch (cause) { setMessage({ tone: 'danger', text: cause instanceof ApiError ? cause.message : 'Could not save compliance review' }) }

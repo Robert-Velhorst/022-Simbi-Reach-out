@@ -3,7 +3,7 @@
 ## Unreleased — personal keyboard bootstrap and compliance (2026-10-01)
 
 - Refuse repeated pending compliance submissions/read-only form events, retain backend authorization, add bilingual pending feedback and preserve choices for an explicit retry.
-- Restore a submitting control after disabled-control BODY focus loss only if the document has focus and the operator did not choose another control. Seven regression cases cover repeat/role/retry/focus/localization.
+- Restore a setup/sign-in/compliance submitting control after disabled-control BODY focus loss only if the document has focus and the operator did not choose another control. Thirteen regression cases cover repeat/role/retry/focus/localization and background-document refusal through one shared focus hook.
 - Include separate token-required English-desktop/Dutch-mobile keyboard setup/login/compliance fixtures before every full engine workflow. Require native no-write validation, refused-token/password correction, one real audit despite repeated Enter, same-owner recovery, six UI POST requests per locale and six added selected scans; no pointer/provider/write-client fixtures.
 - Preserve all previous workflow/retirement assertions through unchanged shared traversal. One additive locale key; no backend/schema/dependency/real-account/data/runtime change. Production/assistive/device/provider and private draft-recovery storage remain separate.
 
