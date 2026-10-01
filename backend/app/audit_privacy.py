@@ -8,6 +8,7 @@ import sqlite3
 import uuid
 from contextlib import closing
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 
 from . import db, privacy
 from .domain import APPROVAL_CHECKS
@@ -43,6 +44,14 @@ def _invalid_constant(_value):
     raise ValueError("Nonstandard JSON value")
 
 
+def _exact_float(value: str) -> float:
+    number = float(value)
+    # Canonical JSON encoding must not round unknown evidence or emit Infinity.
+    if Decimal(str(number)) != Decimal(value):
+        raise ValueError("Legacy JSON number cannot be preserved exactly")
+    return number
+
+
 def minimized(row: dict, cutoff: str) -> tuple[dict | None, list[str], bool]:
     """Return replacement, field names and protection flag; never expose old text."""
     try:
@@ -50,7 +59,10 @@ def minimized(row: dict, cutoff: str) -> tuple[dict | None, list[str], bool]:
         if date.tzinfo is None or date >= datetime.fromisoformat(cutoff):
             return None, [], True
         details = json.loads(
-            row["details"], object_pairs_hook=_unique_object, parse_constant=_invalid_constant
+            row["details"],
+            object_pairs_hook=_unique_object,
+            parse_constant=_invalid_constant,
+            parse_float=_exact_float,
         )
         if not isinstance(details, dict) or not _within_depth(details):
             return None, [], True

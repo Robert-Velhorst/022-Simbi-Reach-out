@@ -438,3 +438,26 @@ def test_explicit_detail_depth_boundary(client, nested_lists, protected):
             db.fetch_one("SELECT details FROM audit_events WHERE id=?", (event_id,))["details"]
         )
         assert "reason" not in updated and updated["other"] == json.loads(details)["other"]
+
+
+@pytest.mark.parametrize(
+    ("number", "protected"),
+    [("1e400", True), ("0.12345678901234567890123456789", True), ("0.5", False)],
+)
+def test_unknown_numeric_evidence_cannot_be_rounded_or_overflowed(client, number, protected):
+    setup_owner(client)
+    details = '{"reason":"private","score":' + number + "}"
+    event_id = legacy(details=details)
+    plan = preview(client)
+    assert plan["protected_events"] == int(protected)
+    assert plan["counts"]["audit_events"] == int(not protected)
+    if protected:
+        assert (
+            db.fetch_one("SELECT details FROM audit_events WHERE id=?", (event_id,))["details"]
+            == details
+        )
+    else:
+        assert confirm(client, plan).status_code == 200
+        assert json.loads(
+            db.fetch_one("SELECT details FROM audit_events WHERE id=?", (event_id,))["details"]
+        ) == {"score": 0.5}
