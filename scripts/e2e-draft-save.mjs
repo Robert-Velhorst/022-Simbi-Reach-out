@@ -102,7 +102,11 @@ export async function draftSaveWorkflow(owner, origin, axe, screenshots) {
         assert.deepEqual(scan.violations.map((item) => ({ id: item.id, targets: item.nodes.map((node) => node.target) })), [])
         totalScans++
         const bounds = await dialog.evaluate((element) => { const rect = element.getBoundingClientRect(); return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, width: innerWidth, height: innerHeight, scroll: element.scrollWidth, client: element.clientWidth } })
-        assert.ok(bounds.left >= 0 && bounds.right <= bounds.width && bounds.top >= 0 && bounds.bottom <= bounds.height)
+        process.stdout.write(`Draft comparison geometry: ${locale}, ${viewport.width}x${viewport.height}, ${JSON.stringify(bounds)}\n`)
+        // Gecko represents the flush bottom edge as844.000015 in an844px viewport.
+        // Allow only floating-point rounding, not a CSS pixel of real overflow.
+        const rounding = 0.001
+        assert.ok(bounds.left >= -rounding && bounds.right <= bounds.width + rounding && bounds.top >= -rounding && bounds.bottom <= bounds.height + rounding, JSON.stringify(bounds))
         assert.ok(bounds.scroll <= bounds.client + 1, 'Comparison must not cause horizontal overflow')
         await second.screenshot({ path: join(screenshots, `simbi-draft-save-${locale}-${viewport.width === 390 ? 'mobile' : 'desktop'}.png`), fullPage: false })
       }
