@@ -442,7 +442,12 @@ def test_explicit_detail_depth_boundary(client, nested_lists, protected):
 
 @pytest.mark.parametrize(
     ("number", "protected"),
-    [("1e400", True), ("0.12345678901234567890123456789", True), ("0.5", False)],
+    [
+        ("1e400", True),
+        ("1e99999999999999999999999", True),
+        ("0.12345678901234567890123456789", True),
+        ("0.5", False),
+    ],
 )
 def test_unknown_numeric_evidence_cannot_be_rounded_or_overflowed(client, number, protected):
     setup_owner(client)

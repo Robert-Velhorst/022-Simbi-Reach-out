@@ -8,7 +8,7 @@ import sqlite3
 import uuid
 from contextlib import closing
 from datetime import UTC, datetime, timedelta
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 from . import db, privacy
 from .domain import APPROVAL_CHECKS
@@ -84,7 +84,7 @@ def minimized(row: dict, cutoff: str) -> tuple[dict | None, list[str], bool]:
                 details["checks"] = [item for item in checks if item in APPROVAL_CHECKS]
                 fields.append("checks")
         return (details if fields else None), fields, False
-    except (ValueError, TypeError, OverflowError, RecursionError):
+    except (ValueError, TypeError, OverflowError, RecursionError, InvalidOperation):
         return None, [], True
 
 
