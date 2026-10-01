@@ -6,6 +6,7 @@ All non-health endpoints below require an authenticated workspace member unless 
 |---|---|---|
 | `GET /api/health/live`, `/ready` | Docker/operations | CLI/Docker health; database readiness branch. |
 | `GET /api/auth/status` | App bootstrap (public) | First-run UI. |
+| `POST /api/privacy/retirement/preview`, `/confirm`; `GET /api/privacy/retirement/receipt/{plan_id}` | Owner Settings retirement; completion receipt is capability-only public read | Sole-owner/safety-stop/current session/password/CSRF/acknowledgement gates; exact snapshots, backup/rollback, no bootstrap after retirement, revoked sessions, maintenance/export serialization, response-loss recovery. See PRIVACY_CLEANUP.md. |
 | `POST /api/auth/setup`, `/login` | Auth UI (public, one-time/credential guarded) | All backend suites. |
 | `POST /api/auth/logout`, `GET /api/me` | App shell | CSRF/security tests. |
 | `GET /api/overview` | Dashboard | Frontend dashboard test and critical path. |

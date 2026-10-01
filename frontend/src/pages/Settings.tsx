@@ -5,6 +5,7 @@ import { api, ApiError, post } from '../api'
 import { Button, Field, Input, Notice, Panel, Select } from '../components/ui'
 import type { Member } from '../types'
 import PrivacyControls from '../components/PrivacyControls'
+import RetirementControls, { type RetirementReceipt } from '../components/RetirementControls'
 
 type SettingsData = {
   workspace: { name: string; compliance_ack_at: string | null; paused_at: string | null; retention_days: number }
@@ -14,7 +15,7 @@ type SettingsData = {
   demo_mode: boolean
 }
 
-export default function SettingsPage({ member, onMemberChange }: { member: Member; onMemberChange: (member: Member) => void }) {
+export default function SettingsPage({ member, onMemberChange, onRetired = () => window.location.reload() }: { member: Member; onMemberChange: (member: Member) => void; onRetired?: (receipt: RetirementReceipt) => void }) {
   const { t, formatMessage, formatCode, formatDate } = useI18n()
   const [data, setData] = useState<SettingsData | null>(null)
   const [message, setMessage] = useState<{ tone: 'success' | 'danger'; text: string } | null>(null)
@@ -78,6 +79,7 @@ export default function SettingsPage({ member, onMemberChange }: { member: Membe
       <Panel title={t("Data controls")}><p className="panel-intro">{t("Exports contain workspace records. Support bundles are separately redacted and contain only diagnostics.")}</p>{canAdmin ? <div className="button-stack"><a className="button button-secondary" href="/api/export" target="_blank" rel="noreferrer"><Download size={17} />{t("Export workspace JSON")}</a><a className="button button-secondary" href="/api/support-bundle" target="_blank" rel="noreferrer"><DatabaseBackup size={17} />{t("Download redacted support data")}</a></div> : <Notice>{t("Ask a workspace owner or admin to export workspace records or download redacted support data.")}</Notice>}<small>{t('Retention window: {days} days. Suppression records are retained so opt-outs are not forgotten.', { days: data?.workspace.retention_days ?? '—' })}</small></Panel>
       <Panel title={t("Local team")}><div className="member-list">{data?.members.map((item) => <div key={item.id}><span className="avatar">{item.display_name[0]}</span><div><strong>{item.display_name}</strong><small>{item.email}</small></div><span>{formatCode(item.role)}</span></div>)}</div>{canAdmin ? <form className="form-grid compact" onSubmit={addMember}><Field label={t("Name")}><Input name="display_name" required /></Field><Field label={t("Email")}><Input name="email" type="email" required /></Field><Field label={t("Temporary password")}><Input name="password" type="password" minLength={12} required /></Field><Field label={t("Role")}><Select name="role" defaultValue="viewer"><option value="viewer">{t("Viewer")}</option><option value="editor">{t("Editor")}</option><option value="admin">{t("Admin")}</option></Select></Field><Button><UserPlus size={17} />{t("Add member")}</Button></form> : null}</Panel>
       <Panel title={t("Runtime")}><dl className="definition-list"><div><dt>{t("Environment")}</dt><dd>{data?.environment ? formatCode(data.environment) : '—'}</dd></div><div><dt>{t("Mode")}</dt><dd>{data?.demo_mode ? t("Demo — handoffs blocked") : t("Local assisted")}</dd></div><div><dt>{t("Authentication")}</dt><dd>{t("Local session + CSRF")}</dd></div><div><dt>{t("Storage")}</dt><dd>{t("SQLite on this machine")}</dd></div></dl></Panel>
+      {member.role === 'owner' && data ? <RetirementControls paused={Boolean(data.workspace.paused_at)} onRetired={onRetired} /> : null}
     </div>
   </div>
 }

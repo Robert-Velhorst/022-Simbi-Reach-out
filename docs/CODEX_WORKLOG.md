@@ -1,5 +1,11 @@
 # Codex worklog
 
+## 2026-10-01 — single-owner installation retirement
+
+- Added immutable migration004, exact18-table retirement snapshot/counts, sole-owner/workspace/current-auth/password/CSRF/acknowledgement/safety-stop gates, verified paused recovery backup and transaction rollback. Active account/workspace records are removed only by explicit owner confirmation; fresh setup is blocked so deletion cannot bypass lost do-not-contact history. Minimal receipt/schema/operational metadata and external private copies remain.
+- Serialized retirement with managed worker backup pruning/HAI publication through an operation lease. Retired maintenance skips personal data operations; concurrent failed sign-in cannot recreate fingerprints. Capability-only non-content receipt lookup recovers response loss and obsolete cookie clearing without another deletion/backup.
+- Added English/Dutch review/retired screens, guarded pending/cancel state, matching-receipt validation and private-view removal/sibling refresh. Isolated backend180 and frontend133 tests passed before final response-validation additions; latest full reruns/publication are recorded in the readiness ledger. Real browser retirement/cancel/reload/response-loss checks passed; visual QA caught and repaired result-heading scroll/focus. No real-data/provider mutation occurred; overall goal remains open.
+
 ## 2026-10-01 — campaign and template cleanup
 
 - Published through PR91 after source36794586233 and PR36794604778 passed Linux/Windows at931ae31; merged conflict-free at8db8a0e. Source/merge tree155bc5f matches, local main fast-forwarded cleanly and no open PRs remained.68 relative documentation links/anchors pass. Final README publication follows this merge; later main/documentation runs are separate checks. The published code/package is not claimed installed into real personal data.

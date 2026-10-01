@@ -7,11 +7,34 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from .config import settings
-from .db import audit, create_backup, fetch_one, file_lock, migrate, now, runtime_guard, transaction
-from .hai import export_hai_feed
+from .db import (
+    MaintenanceBusy,
+    audit,
+    create_backup,
+    fetch_one,
+    file_lock,
+    maintenance_operation_guard,
+    migrate,
+    now,
+    runtime_guard,
+    transaction,
+)
+from .hai import _export_hai_feed
 
 
 def _run_once() -> dict[str, int]:
+    if fetch_one("SELECT 1 FROM installation_retirement"):
+        return {
+            name: 0
+            for name in (
+                "reminders_created",
+                "sessions_expired",
+                "login_attempts_expired",
+                "backups_created",
+                "backups_deleted",
+                "hai_feed_exports",
+            )
+        }
     created = 0
     expired_sessions = 0
     expired_login_attempts = 0
@@ -81,7 +104,7 @@ def _run_once() -> dict[str, int]:
                     backups_deleted += 1
     # First-time setup has no workspace yet. Do not fabricate a feed or block bootstrap.
     if settings.hai_feed_path and fetch_one("SELECT id FROM workspaces LIMIT 1"):
-        _, _, changed = export_hai_feed(
+        _, _, changed = _export_hai_feed(
             settings.hai_feed_path, include_content=settings.hai_include_content
         )
         hai_feed_exports = int(changed)
@@ -105,6 +128,16 @@ def _record_state(name: str, value: str) -> None:
 
 
 def run_once() -> dict[str, int]:
+    try:
+        with maintenance_operation_guard():
+            return _guarded_run_once()
+    except MaintenanceBusy:
+        # A deliberate skip is neither success nor a crash. Do not refresh the
+        # health heartbeat or prune/export while retirement holds this lease.
+        return {"maintenance_skipped": 1}
+
+
+def _guarded_run_once() -> dict[str, int]:
     try:
         result = _run_once()
     except Exception:

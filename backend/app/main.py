@@ -7,7 +7,7 @@ import io
 import json
 import re
 import sqlite3
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, closing
 from datetime import UTC, datetime, timedelta
 from typing import Annotated, Any, Literal
 
@@ -19,14 +19,16 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from . import privacy
+from . import privacy, retirement
 from .config import ROOT, settings
 from .db import (
+    MaintenanceBusy,
     audit,
     connect,
     database_size,
     fetch_all,
     fetch_one,
+    maintenance_operation_guard,
     migrate,
     now,
     runtime_guard,
@@ -103,6 +105,15 @@ class CleanupConfirmBody(StrictModel):
     plan_id: str = Field(pattern=r"^[a-f0-9]{32}$")
     current_password: str = Field(min_length=1, max_length=200)
     confirmed: Literal[True]
+
+
+class RetirementPreviewBody(StrictModel):
+    pass
+
+
+class RetirementConfirmBody(CleanupConfirmBody):
+    acknowledged_loss: Literal[True]
+    typed_confirmation: Literal["RETIRE"]
 
 
 class CampaignBody(StrictModel):
@@ -376,6 +387,8 @@ def record_login_failure(fingerprint: str) -> None:
         .isoformat()
     )
     with transaction() as connection:
+        if retirement.is_retired(connection):
+            return  # A concurrent failed sign-in must not recreate account fingerprints.
         attempt = connection.execute(
             "SELECT * FROM login_attempts WHERE fingerprint=?", (fingerprint,)
         ).fetchone()
@@ -497,17 +510,37 @@ def ready():
 
 @app.get("/api/auth/status")
 def auth_status():
-    count = fetch_one("SELECT COUNT(*) AS count FROM users")
+    with closing(connect()) as connection:
+        # One statement gives a consistent read even if retirement commits now.
+        count, retired = connection.execute(
+            "SELECT (SELECT COUNT(*) FROM users), EXISTS(SELECT 1 FROM installation_retirement)"
+        ).fetchone()
     return {
-        "setup_required": count["count"] == 0,
+        "setup_required": count == 0 and not retired,
+        "installation_retired": retired,
         "setup_token_required": settings.environment == "production" or bool(settings.setup_token),
         "environment": settings.environment,
         "demo_mode": settings.demo_mode,
     }
 
 
+def require_active_installation(connection=None):
+    retired = (
+        retirement.is_retired(connection)
+        if connection is not None
+        else fetch_one("SELECT 1 FROM installation_retirement")
+    )
+    if retired:
+        raise AppError(
+            409,
+            "installation_retired",
+            "This local installation is retired; use offline backup recovery, not fresh setup",
+        )
+
+
 @app.post("/api/auth/setup", status_code=201)
 def setup(body: SetupBody, response: Response):
+    require_active_installation()
     if fetch_one("SELECT id FROM users LIMIT 1"):
         raise AppError(409, "setup_complete", "Initial setup has already been completed")
     if settings.environment == "production" or settings.setup_token:
@@ -523,6 +556,7 @@ def setup(body: SetupBody, response: Response):
     except ValueError as exc:
         raise AppError(422, "validation_failed", str(exc)) from exc
     with transaction() as connection:
+        require_active_installation(connection)
         if connection.execute("SELECT id FROM users LIMIT 1").fetchone():
             raise AppError(409, "setup_complete", "Initial setup has already been completed")
         timestamp = now()
@@ -556,6 +590,7 @@ def setup(body: SetupBody, response: Response):
 
 @app.post("/api/auth/login")
 def login(body: LoginBody, request: Request, response: Response):
+    require_active_installation()
     try:
         email = validate_email(body.email)
     except ValueError as exc:
@@ -568,6 +603,7 @@ def login(body: LoginBody, request: Request, response: Response):
         record_login_failure(fingerprint)
         raise AppError(401, "invalid_credentials", "Email or password is incorrect")
     with transaction() as connection:
+        require_active_installation(connection)
         current_user = connection.execute(
             "SELECT password_hash FROM users WHERE id=?", (user["id"],)
         ).fetchone()
@@ -1749,6 +1785,67 @@ def confirm_cleanup(body: CleanupConfirmBody, request: Request, member: Member):
         if exc.code == "current_password_invalid":
             record_login_failure(fingerprint)
         raise
+    except privacy.PrivacyError as exc:
+        raise AppError(exc.status, exc.code, exc.message) from exc
+
+
+@app.post("/api/privacy/retirement/preview")
+def preview_retirement(body: RetirementPreviewBody, request: Request, member: Member):
+    del body
+    try:
+        with transaction() as connection:
+            require_current_owner(connection, request, member)
+            return retirement.preview(connection, member)
+    except privacy.PrivacyError as exc:
+        raise AppError(exc.status, exc.code, exc.message) from exc
+
+
+@app.post("/api/privacy/retirement/confirm")
+def confirm_retirement(
+    body: RetirementConfirmBody, request: Request, response: Response, member: Member
+):
+    require_role(member, "owner")
+    fingerprint = "privacy:" + login_fingerprint(request, member["email"])
+    enforce_login_limit(fingerprint)
+    try:
+        # Acquire outside the database transaction: worker/export take the same
+        # lease before reserving a writer, so there is no reversed lock order.
+        with maintenance_operation_guard(), transaction() as connection:
+            require_current_owner(connection, request, member)
+            user = connection.execute(
+                "SELECT password_hash FROM users WHERE id=?", (member["user_id"],)
+            ).fetchone()
+            if not user or not verify_password(body.current_password, user["password_hash"]):
+                raise AppError(403, "current_password_invalid", "The current password is incorrect")
+            receipt = retirement.execute(connection, member, body.plan_id)
+    except MaintenanceBusy as exc:
+        raise AppError(
+            503,
+            "retirement_maintenance_busy",
+            "Another local maintenance operation is running; retry this preview shortly",
+        ) from exc
+    except AppError as exc:
+        if exc.code == "current_password_invalid":
+            record_login_failure(fingerprint)
+        raise
+    except privacy.PrivacyError as exc:
+        raise AppError(exc.status, exc.code, exc.message) from exc
+    response.delete_cookie(SESSION_COOKIE, path="/")
+    response.delete_cookie(CSRF_COOKIE, path="/")
+    return receipt
+
+
+@app.get("/api/privacy/retirement/receipt/{plan_id}")
+def retirement_receipt(plan_id: str, response: Response):
+    if not re.fullmatch(r"[a-f0-9]{32}", plan_id):
+        raise AppError(404, "not_found", "The requested receipt was not found")
+    try:
+        with closing(connect()) as connection:
+            receipt = retirement.completed_receipt(connection, plan_id)
+        # Recover cookie clearing too if the original committed response was lost.
+        response.delete_cookie(SESSION_COOKIE, path="/")
+        response.delete_cookie(CSRF_COOKIE, path="/")
+        return receipt
     except privacy.PrivacyError as exc:
         raise AppError(exc.status, exc.code, exc.message) from exc
 

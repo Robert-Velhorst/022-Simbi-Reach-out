@@ -7,7 +7,7 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Any
 
-from .db import fetch_all, fetch_one, migrate
+from .db import fetch_all, fetch_one, maintenance_operation_guard, migrate
 
 ACTIONABLE_STATES = ("needs_review", "approved", "handoff_created", "ambiguous")
 
@@ -94,6 +94,14 @@ def build_hai_feed(
 def export_hai_feed(
     destination: Path, workspace_id: int | None = None, include_content: bool = False
 ) -> tuple[Path, int, bool]:
+    with maintenance_operation_guard():
+        return _export_hai_feed(destination, workspace_id, include_content)
+
+
+def _export_hai_feed(
+    destination: Path, workspace_id: int | None = None, include_content: bool = False
+) -> tuple[Path, int, bool]:
+    """Caller holds the maintenance lease through atomic publication."""
     target = destination.resolve()
     if target.suffix.lower() != ".json":
         raise ValueError("HAI feed destination must be a .json file")

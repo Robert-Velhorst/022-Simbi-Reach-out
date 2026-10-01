@@ -354,6 +354,8 @@ def execute(connection, member: dict, plan_id: str) -> dict:
             409, "privacy_preview_expired", "The cleanup preview expired; create a new preview"
         )
     plan = json.loads(record["plan_json"])
+    if plan["kind"] == "retirement":
+        raise PrivacyError(409, "retirement_confirmation_required", "Use the separate personal retirement confirmation")
     if not plan["ids"]:
         raise PrivacyError(409, "privacy_empty", "This preview contains no contacts to remove")
     days = connection.execute(
