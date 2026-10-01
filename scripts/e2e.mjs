@@ -8,6 +8,7 @@ import { bilingualWorkflow } from './e2e-locales.mjs'
 import { privacyWorkflow } from './e2e-privacy.mjs'
 import { auditPrivacyWorkflow } from './e2e-audit-privacy.mjs'
 import { selectBrowser } from './e2e-browser.mjs'
+import { retentionPagesWorkflow } from './e2e-retention-pages.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const require = createRequire(join(root, 'frontend', 'package.json'))
@@ -95,6 +96,11 @@ try {
   let sessionFailureProbes = 0
   let expectedDataFailurePath = ''
   let dataFailureProbes = 0
+  let cleanupAbortExpected = false
+  let cleanupAborts = 0
+  page.on('requestfailed', (request) => {
+    if (cleanupAbortExpected && request.url() === `${origin}/api/privacy/confirm`) cleanupAborts++
+  })
   // Count HTTP outcomes, not Chromium-specific console diagnostics. Firefox and
   // WebKit need not log failed fetches, and one response can produce many logs.
   page.on('response', (response) => {
@@ -103,6 +109,7 @@ try {
     if (signedOutProbeExpected && response.url() === `${origin}/api/me` && response.status() === 401) signedOutProbes++
   })
   page.on('console', (message) => {
+    if (cleanupAbortExpected && message.location().url === `${origin}/api/privacy/confirm` && message.text().includes('ERR_FAILED')) return
     if (expectedDataFailurePath && message.location().url.startsWith(`${origin}/api${expectedDataFailurePath}`)
       && message.text().includes('503')) return
     if (sessionFailureExpected && message.location().url === `${origin}/api/me`
@@ -579,6 +586,8 @@ try {
   await page.getByRole('combobox', { name: 'Language / Taal' }).selectOption('en')
   await privacyWorkflow(page, origin, root, 'a different long QA password', axe, screenshots)
   await auditPrivacyWorkflow(page, origin, root, runtime, python, 'a different long QA password', axe, screenshots)
+  await retentionPagesWorkflow(page, origin, root, runtime, python, 'a different long QA password', axe, screenshots, (expected) => { cleanupAbortExpected = expected })
+  assert.equal(cleanupAborts, 1, 'Expected exactly one actual post-commit cleanup response abort')
   await page.addScriptTag({ content: axe.source })
   const accessibility = await page.evaluate(async () => window.axe.run(document, {
     runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] },
@@ -619,6 +628,7 @@ try {
     operator_stop_contact: 'passed',
     new_audit_metadata_minimization: 'passed; original restriction reason and provider setting preserved',
     historical_audit_exact_fields_backup_cancel_unverified_response_and_idempotent_retry: 'passed in English and Dutch; operational restrictions, settings and core event evidence preserved',
+    retention_scan_pages_batches_backup_preservation_and_verified_retry: 'passed in English and Dutch beyond 1000 contacts; 50+3 exact batches; English wrong-count receipt and Dutch actual post-commit response abort recovered without duplicate removal; exact older-receipt lookup after reload preserved operational/audit records',
     local_simulated_outcome_reply_reminder_report: 'passed',
     provider_delivery: 'not attempted; sent/reply records are fictional QA fixtures',
     password_change_reauthentication: 'passed',

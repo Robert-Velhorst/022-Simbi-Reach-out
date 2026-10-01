@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased — scalable personal retention and verified cleanup receipts (2026-10-01)
+
+- Age-based cleanup now reaches contacts beyond1000 through explicit scan-page continuation/restart and50-contact confirmation batches. Exact page-only counts distinguish protected and oversized histories; recent/inconsistent/invalid-date histories remain protected.
+- Bound each linked contact graph before materialization; hash the complete workspace restriction registry once instead of copying it into each graph. Restriction changes still invalidate previews and cleanup still preserves do-not-contact identities.
+- All ordinary cleanup confirmations now share the worker/HAI maintenance lease before writer reservation and verified original backup. Existing external copies are not deleted. Old uncompleted previews may need renewal after upgrade; completed receipts remain retryable.
+- Validate preview shape and exact confirmation kind/plan/counts/backup/time/replay before showing success; clear attempted credentials and retain uncertain previews for safe retry. English/Dutch controls and isolated regression/browser coverage accompany the change. No migration, new dependency, automatic personal purge or provider operation.
+- Display cleanup references before confirmation and in receipts. Current owners can look up exact older completed receipts outside the last-ten list without mutation; missing/unknown/pending/foreign references do not imply failed removal.
+
 ## Unreleased — English/Dutch personal workflow (2026-10-01)
 
 - Added typed English/Dutch UI catalogs and an accessible language selector before authentication and in the app. The versioned browser preference contains only `en` or `nl` and falls back safely when storage is unavailable.

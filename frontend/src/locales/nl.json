@@ -612,5 +612,18 @@
   "Audit receipts could not be verified.": "De logbevestigingen konden niet worden gecontroleerd.",
   "This preview contains no audit fields to minimize": "Dit overzicht bevat geen logvelden die kunnen worden beperkt",
   "Use the separate audit minimization confirmation": "Gebruik de afzonderlijke bevestiging voor beperking van logdetails",
-  "Another local maintenance operation is running": "Er loopt een andere lokale onderhoudstaak"
+  "Another local maintenance operation is running": "Er loopt een andere lokale onderhoudstaak",
+  "Restart contact scan": "Contactscan opnieuw beginnen",
+  "Next contact scan page": "Volgende pagina van de contactscan",
+  "Only activity before {date} is eligible. This scan page: {scanned} checked, {protected} protected, including {oversized} oversized histories. Selected: {selected}; further eligible contacts on this page: {remaining}.": "Alleen activiteit vóór {date} komt in aanmerking. Deze scanpagina: {scanned} gecontroleerd, {protected} beschermd, waaronder {oversized} te grote geschiedenissen. Geselecteerd: {selected}; overige geschikte contacten op deze pagina: {remaining}.",
+  "At most 1000 contacts are scanned per page and 50 removed per confirmation. Each linked history is limited to 1000 records. Protected records remain; scan counts are not workspace totals. Restart to recheck earlier contacts after changes.": "Per pagina worden maximaal 1000 contacten gecontroleerd en per bevestiging maximaal 50 verwijderd. Elke gekoppelde geschiedenis is beperkt tot 1000 records. Beschermde records blijven behouden; aantallen gelden voor de scanpagina, niet de hele werkruimte. Begin opnieuw om eerdere contacten na wijzigingen opnieuw te controleren.",
+  "More contacts remain beyond this scan page. Finish its selected batches before moving to the next page.": "Na deze scanpagina zijn er meer contacten. Rond de geselecteerde groepen op deze pagina af voordat je naar de volgende pagina gaat.",
+  "The cleanup preview could not be verified; no confirmation is available.": "Het verwijderingsvoorbeeld kon niet worden geverifieerd; bevestigen is niet mogelijk.",
+  "Cleanup is not confirmed. Keep this preview, check receipts or retry it; do not assume failure.": "De verwijdering is niet bevestigd. Bewaar dit voorbeeld, bekijk de bevestigingen of probeer opnieuw; neem niet aan dat de verwijdering is mislukt.",
+  "Cleanup receipts could not be verified.": "De verwijderingsbevestigingen konden niet worden geverifieerd.",
+  "Cleanup reference: {reference}.": "Opschoonreferentie: {reference}.",
+  "Cleanup reference": "Opschoonreferentie",
+  "Keep the preview reference before closing this page. Look up an older receipt after reload; absence from the last ten is not proof of failure.": "Bewaar de referentie van het overzicht voordat je deze pagina sluit. Zoek na opnieuw laden een oudere bevestiging op; ontbreken bij de laatste tien bewijst niet dat de verwijdering is mislukt.",
+  "Find cleanup receipt by reference": "Opschoonbevestiging zoeken op referentie",
+  "No completed cleanup receipt matches this reference. Absence is not proof of failure; do not start a replacement removal.": "Er is geen voltooide opschoonbevestiging met deze referentie. Dat bewijst niet dat de verwijdering is mislukt; begin geen vervangende verwijdering."
 }

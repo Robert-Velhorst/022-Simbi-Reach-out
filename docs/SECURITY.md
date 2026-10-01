@@ -56,6 +56,8 @@ The API and worker never call the provider. The provider is a separate trust bou
 
 The product stores names, organization/context, source URLs, messages, replies, and operational events. It does not need provider passwords, browser cookies, financial information, or unrelated profile data. Use free-text notes sparingly. Workspace export and prospect deletion provide access/erasure paths; suppressions are retained to prevent renewed contact. Local analytics contain event types and timestamps only.
 
+Owner-confirmed record cleanup uses exact previews, current authorization/password/CSRF, stale content/restriction digests, a managed maintenance lease before writer reservation, verified original backup, atomic updates and idempotent receipts. Page-only retention scans are bounded, traverse all ages with semantic date checks and protect oversized/inconsistent histories. The browser does not claim success for a mismatched or malformed receipt; it retains the same preview for safe recovery after an uncertain response. Suppression registry contents are streamed into snapshot hashes, not repeatedly copied into every contact graph or stored plan. See [the operator/API and retained-copy contract](PRIVACY_CLEANUP.md). These controls do not delete an existing HAI feed, external export, provider record or recovery copy, and are not secure erasure or universal anonymization.
+
 ## Pre-existing credential exposure
 
 The starting `main.py` at commit `6c3c7cb` contained a plaintext email and password. The current tree removes it and no new secret was added. Required owner actions:

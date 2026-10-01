@@ -612,5 +612,18 @@
   "Audit receipts could not be verified.": "Audit receipts could not be verified.",
   "This preview contains no audit fields to minimize": "This preview contains no audit fields to minimize",
   "Use the separate audit minimization confirmation": "Use the separate audit minimization confirmation",
-  "Another local maintenance operation is running": "Another local maintenance operation is running"
+  "Another local maintenance operation is running": "Another local maintenance operation is running",
+  "Restart contact scan": "Restart contact scan",
+  "Next contact scan page": "Next contact scan page",
+  "Only activity before {date} is eligible. This scan page: {scanned} checked, {protected} protected, including {oversized} oversized histories. Selected: {selected}; further eligible contacts on this page: {remaining}.": "Only activity before {date} is eligible. This scan page: {scanned} checked, {protected} protected, including {oversized} oversized histories. Selected: {selected}; further eligible contacts on this page: {remaining}.",
+  "At most 1000 contacts are scanned per page and 50 removed per confirmation. Each linked history is limited to 1000 records. Protected records remain; scan counts are not workspace totals. Restart to recheck earlier contacts after changes.": "At most 1000 contacts are scanned per page and 50 removed per confirmation. Each linked history is limited to 1000 records. Protected records remain; scan counts are not workspace totals. Restart to recheck earlier contacts after changes.",
+  "More contacts remain beyond this scan page. Finish its selected batches before moving to the next page.": "More contacts remain beyond this scan page. Finish its selected batches before moving to the next page.",
+  "The cleanup preview could not be verified; no confirmation is available.": "The cleanup preview could not be verified; no confirmation is available.",
+  "Cleanup is not confirmed. Keep this preview, check receipts or retry it; do not assume failure.": "Cleanup is not confirmed. Keep this preview, check receipts or retry it; do not assume failure.",
+  "Cleanup receipts could not be verified.": "Cleanup receipts could not be verified.",
+  "Cleanup reference: {reference}.": "Cleanup reference: {reference}.",
+  "Cleanup reference": "Cleanup reference",
+  "Keep the preview reference before closing this page. Look up an older receipt after reload; absence from the last ten is not proof of failure.": "Keep the preview reference before closing this page. Look up an older receipt after reload; absence from the last ten is not proof of failure.",
+  "Find cleanup receipt by reference": "Find cleanup receipt by reference",
+  "No completed cleanup receipt matches this reference. Absence is not proof of failure; do not start a replacement removal.": "No completed cleanup receipt matches this reference. Absence is not proof of failure; do not start a replacement removal."
 }
