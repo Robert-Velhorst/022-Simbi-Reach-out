@@ -646,7 +646,7 @@ try {
     historical_audit_exact_fields_backup_cancel_unverified_response_and_idempotent_retry: 'passed in English and Dutch; operational restrictions, settings and core event evidence preserved',
     retention_scan_pages_batches_backup_preservation_and_verified_retry: 'passed in English and Dutch beyond 1000 contacts; 50+3 exact batches; English wrong-count receipt and Dutch actual post-commit response abort recovered without duplicate removal; exact older-receipt lookup after reload preserved operational/audit records',
     local_simulated_outcome_reply_reminder_report: 'passed',
-    personal_keyboard_outreach: 'passed; English desktop/Dutch mobile sequential Tab and native keyboard input through campaign, prospect, template, draft, explicit save/review, fictional uncertainty, reminder, reply, report and stop-contact; no provider/pointer actions, twelve UI mutations per locale, prior records preserved, six selected accessibility scans',
+    personal_keyboard_outreach: 'passed; English desktop/Dutch mobile sequential Tab and native keyboard input through campaign, prospect, template, draft, explicit save/review, fictional uncertainty, reminder, reply, report and stop-contact; three real committed-but-mismatched creation recoveries per locale, no provider/pointer actions, twelve UI mutations per locale, prior records preserved, twelve selected accessibility scans',
     provider_delivery: 'not attempted; sent/reply records are fictional QA fixtures',
     password_change_reauthentication: 'passed',
     viewer_download_permissions: 'passed',

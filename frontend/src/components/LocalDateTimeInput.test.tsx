@@ -47,8 +47,9 @@ async function reminderForm() {
   vi.stubGlobal('fetch', vi.fn(async (url: string, options: RequestInit) => {
     const body = url.includes('/drafts') ? { items: [{ id: 7, prospect_name: 'Fictional person', campaign_name: 'Fictional campaign' }], total: 1, limit: 50, offset: 0 } : { items: [], total: 0, limit: 50, offset: 0 }
     if (options.method === 'POST') {
-      writes.push(JSON.parse(String(options.body)))
-      return Response.json({ id: 1, status: 'open' })
+      const submitted = JSON.parse(String(options.body))
+      writes.push(submitted)
+      return Response.json({ ...submitted, prospect_id: null, id: 1, status: 'open' })
     }
     return new Response(JSON.stringify(body), { headers: { 'Content-Type': 'application/json' } })
   }))
