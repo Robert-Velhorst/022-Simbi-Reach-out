@@ -38,6 +38,7 @@ from .domain import (
     APPROVAL_CHECKS,
     DomainError,
     assess_message,
+    draft_edit_version,
     parse_flags,
     render_template,
     require_transition,
@@ -167,6 +168,7 @@ class DraftBody(StrictModel):
 class DraftEditBody(StrictModel):
     subject: str = Field(default="", max_length=200)
     body: str = Field(min_length=20, max_length=5000)
+    expected_edit_version: str = Field(pattern=r"^[a-f0-9]{64}$")
 
 
 class ReviewBody(StrictModel):
@@ -998,6 +1000,34 @@ def create_template(body: TemplateBody, member: Member):
     return fetch_one("SELECT * FROM templates WHERE id=?", (record_id,))
 
 
+DRAFT_SELECT = (
+    "SELECT d.*,p.name AS prospect_name,p.organization,p.source_url,p.consent_status,"
+    "c.name AS campaign_name,t.name AS template_name FROM drafts d "
+    "JOIN prospects p ON p.id=d.prospect_id JOIN campaigns c ON c.id=d.campaign_id "
+    "LEFT JOIN templates t ON t.id=d.template_id "
+)
+
+
+def serialize_draft(item: dict[str, Any]) -> dict[str, Any]:
+    item["safety_flags"] = parse_flags(item["safety_flags"])
+    item["content_hash"] = hashlib.sha256(
+        (item["subject"] + "\n" + item["body"]).encode()
+    ).hexdigest()
+    item["edit_version"] = draft_edit_version(item)
+    return item
+
+
+@app.get("/api/drafts/{draft_id}")
+def get_draft(draft_id: int, member: Member):
+    item = fetch_one(
+        DRAFT_SELECT + "WHERE d.id=? AND d.workspace_id=?",
+        (draft_id, member["workspace_id"]),
+    )
+    if not item:
+        raise AppError(404, "not_found", "Record not found")
+    return serialize_draft(item)
+
+
 @app.get("/api/drafts")
 def list_drafts(
     member: Member,
@@ -1013,18 +1043,11 @@ def list_drafts(
     total = fetch_one(f"SELECT COUNT(*) AS count FROM drafts d WHERE {where}", tuple(parameters))
     parameters.extend([limit, offset])
     items = fetch_all(
-        f"SELECT d.*,p.name AS prospect_name,p.organization,p.source_url,p.consent_status,"
-        f"c.name AS campaign_name,t.name AS template_name FROM drafts d "
-        f"JOIN prospects p ON p.id=d.prospect_id JOIN campaigns c ON c.id=d.campaign_id "
-        f"LEFT JOIN templates t ON t.id=d.template_id WHERE {where} "
+        DRAFT_SELECT + f"WHERE {where} "
         "ORDER BY CASE d.state WHEN 'ambiguous' THEN 0 WHEN 'needs_review' THEN 1 ELSE 2 END, d.updated_at DESC,d.id DESC LIMIT ? OFFSET ?",
         tuple(parameters),
     )
-    for item in items:
-        item["safety_flags"] = parse_flags(item["safety_flags"])
-        item["content_hash"] = hashlib.sha256(
-            (item["subject"] + "\n" + item["body"]).encode()
-        ).hexdigest()
+    items = [serialize_draft(item) for item in items]
     return {"items": items, "total": total["count"], "limit": limit, "offset": offset}
 
 
@@ -1155,6 +1178,18 @@ def edit_draft(draft_id: int, body: DraftEditBody, member: Member):
         draft = owned(connection, "drafts", draft_id, member["workspace_id"])
         if draft["state"] not in {"needs_review", "approved"}:
             raise AppError(409, "draft_locked", "This draft can no longer be edited")
+        if not hmac.compare_digest(body.expected_edit_version, draft_edit_version(draft)):
+            raise AppError(
+                409,
+                "draft_save_conflict",
+                "The saved draft changed. Compare the saved version before saving your edits.",
+            )
+        if body.subject == draft["subject"] and body.body == draft["body"]:
+            current = connection.execute(
+                DRAFT_SELECT + "WHERE d.id=? AND d.workspace_id=?",
+                (draft_id, member["workspace_id"]),
+            ).fetchone()
+            return serialize_draft(dict(current))
         prospect = dict(
             connection.execute(
                 "SELECT * FROM prospects WHERE id=?", (draft["prospect_id"],)
@@ -1176,7 +1211,12 @@ def edit_draft(draft_id: int, body: DraftEditBody, member: Member):
             draft_id,
             {"quality_score": score, "flags": flags},
         )
-    return {"state": target, "quality_score": score, "safety_flags": flags}
+        current = connection.execute(
+            DRAFT_SELECT + "WHERE d.id=? AND d.workspace_id=?",
+            (draft_id, member["workspace_id"]),
+        ).fetchone()
+        saved = serialize_draft(dict(current))
+    return saved
 
 
 @app.post("/api/drafts/{draft_id}/review")

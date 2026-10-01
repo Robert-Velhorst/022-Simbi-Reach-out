@@ -19,7 +19,8 @@ The inventory below is historical, not a current all-role acceptance result. The
 | Campaigns | Activate / pause / archive | Server-authorized transitions; activation requires compliance acknowledgement. |
 | Templates | Create | Validates only four allowed placeholders; no fake AI is invoked. |
 | Review | Prepare draft | Deterministically renders selected campaign/prospect/template and enters review. |
-| Review | Select/edit/save | Loads real record; editing resets approval and quality signals. |
+| Review | Select/edit/save | Explicit version-bound save; genuine change resets approval/quality signals, current no-op preserves history. Stale/uncertain results keep current-editor text and pause save/review/handoff until comparison. Unsaved text is RAM-only and can be lost on navigation/selection/reload. See DRAFT_SAVING.md. |
+| Review | Check/compare saved version | Read-only current-state lookup. Close/Escape retain edits; explicit discard accepts saved text; retain edits rebases but requires a separate save/new review, and later changes still reject. Exact matching readback accepts current saved text without another write; not a historical receipt. See DRAFT_SAVING.md. |
 | Review | Decline / approve | State-machine transition; approval requires all safety checks and an unpaused compliant workspace. |
 | Review | Copy and open provider | Creates idempotent, limited, cooldown-checked handoff; copies only on explicit click and opens approved same-host URL. |
 | Handoff | Not sent / ambiguous / sent manually | Records exact local result; never infers provider success. |

@@ -4,6 +4,7 @@ The original results are historical in `FINAL_VERIFICATION_REPORT.md`; current e
 
 | ID | Scenario | Expected |
 |---|---|---|
+| A34 | Version-bound personal draft saving | Required editing token; stale save changes no records/audit, exact no-op preserves approval, concurrent same-version requests have one winner. Two same-owner tabs in both languages compare/cancel/rebase without writes; separate save resets review and a later change rejects again. Committed bad/interrupted response retains edits; verified matching current-state acceptance performs no duplicate write. RAM-only unsaved text is not autosave/crash recovery. See DRAFT_SAVING.md and the exact execution ledger. |
 | A01 | First owner setup | One owner/workspace/session created; second setup rejected. |
 | A02 | Missing CSRF on write | `403 csrf_failed`; security headers present. |
 | A03 | Campaign activation without compliance | Blocked; succeeds only after all four acknowledgements. |

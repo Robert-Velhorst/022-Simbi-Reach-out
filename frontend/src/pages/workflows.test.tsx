@@ -8,7 +8,7 @@ import { SetupScreen } from '../components/Auth'
 import type { Draft, Member } from '../types'
 
 const member: Member = { user_id: 1, email: 'owner@example.test', display_name: 'Owner', workspace_id: 1, workspace_name: 'Test', role: 'owner', mode: 'assisted', compliance_ack_at: '2026-09-05', paused_at: null, environment: 'test', demo_mode: false }
-const draft = (id: number, state = 'needs_review'): Draft => ({ id, campaign_id: 1, prospect_id: id, template_id: 1, prospect_name: `Person ${id}`, organization: '', source_url: 'https://simbi.com/person', consent_status: 'consented', campaign_name: 'Campaign', template_name: 'Template', subject: `Subject ${id}`, body: `Body ${id}`, state, quality_score: 100, content_hash: 'fixture-content-hash', safety_flags: [], updated_at: '2026-09-05T12:00:00Z' })
+const draft = (id: number, state = 'needs_review'): Draft => ({ id, campaign_id: 1, prospect_id: id, template_id: 1, prospect_name: `Person ${id}`, organization: '', source_url: 'https://simbi.com/person', consent_status: 'consented', campaign_name: 'Campaign', template_name: 'Template', subject: `Subject ${id}`, body: `Body ${id}`, state, quality_score: 100, content_hash: 'a'.repeat(64), edit_version: 'b'.repeat(64), safety_flags: [], updated_at: '2026-09-05T12:00:00Z' })
 const response = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
 const page = (items: unknown[], offset = 0, total = items.length) => ({ items, offset, total, limit: 50 })
 const handoff = { id: 10, draft_id: 1, subject: 'Subject 1', body: 'Body 1', status: 'prepared', provider_url: 'https://simbi.com/person', instruction: 'Send manually', can_open_provider: true }
@@ -19,7 +19,7 @@ describe('review workflow recovery', () => {
   it('requires saving dirty editor text and repeating the checks before approval', async () => {
     let saved = false
     vi.stubGlobal('fetch', vi.fn(async (url: string, options: RequestInit) => {
-      if (options.method === 'PATCH') { saved = true; return response({}) }
+      if (options.method === 'PATCH') { saved = true; return response({ ...draft(1), content_hash: 'c'.repeat(64), edit_version: 'd'.repeat(64), body: 'Changed body' }) }
       return response(page(url.includes('/drafts') ? [{ ...draft(1), content_hash: saved ? 'saved-hash' : 'original-hash', body: saved ? 'Changed body' : 'Body 1' }] : []))
     }))
     render(<ReviewQueue member={member} onMemberChange={() => {}} />)
