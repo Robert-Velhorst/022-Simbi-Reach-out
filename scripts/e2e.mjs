@@ -1,3 +1,4 @@
+import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
 import { mkdir, mkdtemp } from 'node:fs/promises'
 import { createRequire } from 'node:module'
@@ -206,6 +207,14 @@ try {
   await page.getByRole('button', { name: 'Record acknowledgement' }).click()
   await page.getByText(/Compliance acknowledgement recorded/).waitFor()
 
+  // Save fictional private URL components through the actual Settings form.
+  // Host validation still uses simbi.com; no provider request is made.
+  const privateProviderURL = 'https://simbi.com/fictional-private-setting?context=private-query'
+  await page.getByLabel('HTTPS base URL', { exact: true }).fill(privateProviderURL)
+  await page.getByRole('button', { name: 'Save assisted provider', exact: true }).click()
+  await page.getByText('Provider link saved. Assisted mode remains enforced.', { exact: true }).waitFor()
+  assert.equal(await page.getByLabel('HTTPS base URL', { exact: true }).inputValue(), privateProviderURL)
+
   await page.getByRole('link', { name: 'Campaigns' }).click()
   await page.getByRole('button', { name: 'New campaign' }).click()
   const campaign = page.getByRole('dialog', { name: 'Create campaign' })
@@ -352,10 +361,30 @@ try {
   await page.getByRole('link', { name: 'Prospects' }).click()
   await page.getByRole('button', { name: 'Stop contact', exact: true }).click()
   const stopDialog = page.getByRole('dialog', { name: 'Stop contact: Alex Example' })
-  await stopDialog.getByLabel('Reason').fill('QA record: do not contact again')
+  const privateStopReason = 'Fictional private reason: do not contact again'
+  await stopDialog.getByLabel('Reason').fill(privateStopReason)
   await stopDialog.getByRole('button', { name: 'Confirm stop contact' }).click()
   await stopDialog.waitFor({ state: 'hidden' })
   await page.waitForFunction(() => [...document.querySelectorAll('button')].some((button) => button.textContent === 'Stop contact' && button.disabled))
+
+  // Verify stored output of the rendered actions, not merely success notices.
+  const auditExportResponse = await page.request.get(`${origin}/api/export`)
+  assert.ok(auditExportResponse.ok(), 'Audit privacy export failed')
+  const auditExport = await auditExportResponse.json()
+  const detailFor = (type) => {
+    const event = auditExport.audit_events.find((item) => item.event_type === type)
+    assert.ok(event, `Missing real browser action audit ${type}`)
+    return JSON.parse(event.details)
+  }
+  assert.deepEqual(detailFor('prospect.suppressed'), { restriction: 'do_not_contact' })
+  assert.deepEqual(detailFor('provider.updated'), { mode: 'assisted' })
+  assert.deepEqual(detailFor('draft.approved'), { checks: ['manual_send_understood', 'message_personalized', 'policy_reviewed', 'source_authorized'] })
+  assert.equal(auditExport.suppressions[0].reason, privateStopReason)
+  assert.ok(!JSON.stringify(auditExport.audit_events).includes(privateStopReason))
+  assert.ok(!JSON.stringify(auditExport.audit_events).includes(privateProviderURL))
+  const settingsResponse = await page.request.get(`${origin}/api/settings`)
+  assert.ok(settingsResponse.ok(), 'Audit privacy settings read failed')
+  assert.equal((await settingsResponse.json()).providers[0].base_url, privateProviderURL)
 
   // Exercise the remaining local operator journey with a separate fictional record.
   // "Sent manually" below is simulated fixture state, not a real send claim.
@@ -582,6 +611,7 @@ try {
     interrupted_handoff_recovery: 'passed',
     exact_content_approval: 'passed',
     operator_stop_contact: 'passed',
+    new_audit_metadata_minimization: 'passed; original restriction reason and provider setting preserved',
     local_simulated_outcome_reply_reminder_report: 'passed',
     provider_delivery: 'not attempted; sent/reply records are fictional QA fixtures',
     password_change_reauthentication: 'passed',

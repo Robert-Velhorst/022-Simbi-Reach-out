@@ -1234,7 +1234,7 @@ def review_draft(draft_id: int, body: ReviewBody, member: Member):
             f"draft.{target}",
             "draft",
             draft_id,
-            {"checks": body.acknowledged_checks},
+            {"checks": sorted(APPROVAL_CHECKS & set(body.acknowledged_checks))},
         )
     return {"state": target}
 
@@ -1639,7 +1639,7 @@ def suppress_prospect(body: SuppressionBody, member: Member):
             "prospect.suppressed",
             "prospect",
             body.prospect_id,
-            {"reason": body.reason},
+            {"restriction": "do_not_contact"},
         )
     return {"status": "suppressed"}
 
@@ -1893,7 +1893,7 @@ def update_provider(body: ProviderBody, member: Member):
             "provider.updated",
             "provider",
             body.provider.lower(),
-            {"base_url": url, "mode": "assisted"},
+            {"mode": "assisted"},
         )
     return {
         "provider": body.provider.lower(),
