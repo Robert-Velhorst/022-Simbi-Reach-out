@@ -649,5 +649,6 @@
   "The saved edit version is unavailable. Reload this page before saving.": "The saved edit version is unavailable. Reload this page before saving.",
   "Enter date and time as text": "Enter date and time as text",
   "Use YYYY-MM-DDTHH:mm in your browser's local time, for example 2027-11-02T07:58.": "Use YYYY-MM-DDTHH:mm in your browser's local time, for example 2027-11-02T07:58.",
-  "Enter a valid local date and time using YYYY-MM-DDTHH:mm.": "Enter a valid local date and time using YYYY-MM-DDTHH:mm."
+  "Enter a valid local date and time using YYYY-MM-DDTHH:mm.": "Enter a valid local date and time using YYYY-MM-DDTHH:mm.",
+  "Recording acknowledgement…": "Recording acknowledgement…"
 }

@@ -3,6 +3,7 @@ import { useState, type FormEvent } from 'react'
 import { Network, ShieldCheck } from 'lucide-react'
 import { ApiError, post } from '../api'
 import { Button, Field, Input, Notice } from './ui'
+import { useSubmitFocus } from './useSubmitFocus'
 
 type AuthResult = { status: string; csrf_token: string }
 
@@ -10,9 +11,11 @@ export function SetupScreen({ onComplete, setupTokenRequired = false }: { onComp
   const { t, formatMessage } = useI18n()
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const rememberSubmitFocus = useSubmitFocus(busy)
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    rememberSubmitFocus(event.currentTarget)
     setError('')
     setBusy(true)
     const form = new FormData(event.currentTarget)
@@ -43,9 +46,11 @@ export function LoginScreen({ onComplete }: { onComplete: () => void }) {
   const { t, formatMessage } = useI18n()
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const rememberSubmitFocus = useSubmitFocus(busy)
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    rememberSubmitFocus(event.currentTarget)
     setError('')
     setBusy(true)
     const form = new FormData(event.currentTarget)

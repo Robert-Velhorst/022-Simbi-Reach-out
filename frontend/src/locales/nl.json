@@ -649,5 +649,6 @@
   "The saved edit version is unavailable. Reload this page before saving.": "De bewerkingsversie van het opgeslagen concept ontbreekt. Laad deze pagina opnieuw voordat je opslaat.",
   "Enter date and time as text": "Datum en tijd als tekst invoeren",
   "Use YYYY-MM-DDTHH:mm in your browser's local time, for example 2027-11-02T07:58.": "Gebruik YYYY-MM-DDTHH:mm in de lokale tijd van je browser, bijvoorbeeld 2027-11-02T07:58.",
-  "Enter a valid local date and time using YYYY-MM-DDTHH:mm.": "Voer een geldige lokale datum en tijd in met YYYY-MM-DDTHH:mm."
+  "Enter a valid local date and time using YYYY-MM-DDTHH:mm.": "Voer een geldige lokale datum en tijd in met YYYY-MM-DDTHH:mm.",
+  "Recording acknowledgement…": "Bevestiging vastleggen…"
 }
