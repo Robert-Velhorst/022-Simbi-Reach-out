@@ -9,6 +9,7 @@ import { privacyWorkflow } from './e2e-privacy.mjs'
 import { auditPrivacyWorkflow } from './e2e-audit-privacy.mjs'
 import { selectBrowser } from './e2e-browser.mjs'
 import { retentionPagesWorkflow } from './e2e-retention-pages.mjs'
+import { navigationWorkflow } from './e2e-navigation.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const require = createRequire(join(root, 'frontend', 'package.json'))
@@ -146,7 +147,7 @@ try {
   await page.getByText('Local team member added.').waitFor()
 
   let viewerStorageState
-  const viewerContext = await browser.newContext({ viewport: { width: 1440, height: 1000 } })
+  const viewerContext = await browser.newContext({ viewport: { width: 1440, height: 1000 }, bypassCSP: true })
   try {
     await guardContext(viewerContext)
     const viewer = await viewerContext.newPage()
@@ -191,6 +192,7 @@ try {
         throw new Error(`Viewer was offered a write action on ${route}`)
       }
     }
+    await navigationWorkflow(viewer, origin, axe, screenshots, 'viewer')
   } finally {
     await viewerContext.close()
   }
@@ -588,6 +590,7 @@ try {
   await auditPrivacyWorkflow(page, origin, root, runtime, python, 'a different long QA password', axe, screenshots)
   await retentionPagesWorkflow(page, origin, root, runtime, python, 'a different long QA password', axe, screenshots, (expected) => { cleanupAbortExpected = expected })
   assert.equal(cleanupAborts, 1, 'Expected exactly one actual post-commit cleanup response abort')
+  await navigationWorkflow(page, origin, axe, screenshots)
   await page.addScriptTag({ content: axe.source })
   const accessibility = await page.evaluate(async () => window.axe.run(document, {
     runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] },
@@ -644,6 +647,8 @@ try {
     provider_navigation: 'not attempted',
     accessibility_violations: 0,
     responsive_mobile_menu: 'passed',
+    owner_keyboard_navigation_all_eleven_routes_both_locales_and_viewports: 'passed; skip, native drawer, tab containment, Escape, destination focus, Help, short-screen scroll and resize; zero record writes; 48 automated accessibility scans',
+    viewer_keyboard_navigation_all_eleven_routes_both_locales_and_viewports: 'passed; same 48 scans without enabling restricted write controls',
     browser_errors: 0,
     fixture_runtime: runtime,
   }, null, 2)}\n`)

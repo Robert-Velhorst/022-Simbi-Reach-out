@@ -3,7 +3,7 @@ import { ArrowRight, CheckCircle2, CircleAlert, Info, ShieldCheck } from 'lucide
 import { Link } from 'react-router-dom'
 import { useResource } from '../useResource'
 import { DataState } from '../components/DataState'
-import { EmptyState, Panel, Status } from '../components/ui'
+import { EmptyState, Panel, Status, TableRegion } from '../components/ui'
 import type { AuditEvent, Campaign, Member, Reminder } from '../types'
 
 type QueueItem = { id: number; state: string; quality_score: number; safety_flags: string[]; prospect_name: string; campaign_name: string; updated_at: string }
@@ -37,9 +37,9 @@ export default function Dashboard({ member }: { member: Member }) {
     </section>
     <DataState label={t("overview")} loading={loading} error={error} hasData={Boolean(data)} retry={load}><div className="dashboard-grid">
       <Panel className="queue-panel" title={t("Work queue (exception first)")} action={<Link to="/review">{t("Open full queue")}{' '}<ArrowRight size={15} /></Link>}>
-        {data?.queue.length ? <div className="table-wrap"><table><thead><tr><th>{t("Priority")}</th><th>{t("Item")}</th><th>{t("Campaign")}</th><th>{t("Issue")}</th><th>{t("Action")}</th></tr></thead><tbody>
+        {data?.queue.length ? <TableRegion label={t("Work queue (exception first)")}><table><thead><tr><th>{t("Priority")}</th><th>{t("Item")}</th><th>{t("Campaign")}</th><th>{t("Issue")}</th><th>{t("Action")}</th></tr></thead><tbody>
           {data.queue.map((item) => <tr key={item.id}><td>{item.state === 'ambiguous' ? <CircleAlert className="danger-icon" size={18} /> : <Info className="warning-icon" size={18} />}</td><td><strong>{item.prospect_name}</strong><small>{t("Quality")}{' '}{item.quality_score}/100</small></td><td>{item.campaign_name}</td><td>{item.state === 'ambiguous' ? t("Outcome needs resolution") : (item.safety_flags[0] ? formatCode(item.safety_flags[0]) : undefined) ?? t("Human review required")}</td><td><Link className="table-action" to="/review">{t("Review")}</Link></td></tr>)}
-        </tbody></table></div> : <EmptyState title={t("Your queue is clear")} detail={t("Create a campaign, add a prospect and template, then prepare a draft.")} action={<Link className="text-link" to="/campaigns">{t("Start a campaign")}{' '}<ArrowRight size={15} /></Link>} />}
+        </tbody></table></TableRegion> : <EmptyState title={t("Your queue is clear")} detail={t("Create a campaign, add a prospect and template, then prepare a draft.")} action={<Link className="text-link" to="/campaigns">{t("Start a campaign")}{' '}<ArrowRight size={15} /></Link>} />}
       </Panel>
       <Panel className="campaign-panel" title={t("Campaign progress")} action={<Link to="/campaigns">{t("View all")}{' '}<ArrowRight size={15} /></Link>}>
         {data?.campaigns.length ? <div className="campaign-list">{data.campaigns.map((campaign) => {

@@ -8,7 +8,7 @@ The inventory below is historical, not a current all-role acceptance result. The
 |---|---|---|
 | First run | Create workspace | Creates owner/workspace/provider-link records and authenticated session. Fails after first owner exists. |
 | Sign in | Sign in / sign out | Creates or removes opaque local session; errors stay truthful. |
-| Sidebar | 10 navigation items | Each opens a real product route. |
+| Navigation | 10 primary routes plus Help | Desktop sidebar; mobile named native dialog with Help, focus containment/Escape/return focus, short-screen scrolling and desktop-resize closure. Hidden desktop links are not mobile Tab stops. Route choice focuses content; first-tab bypass skips repeated navigation. No autosave or provider action. See ACCESSIBILITY.md. |
 | Top bar | Help | Opens a real in-product operator guide with the critical path and reference documentation. |
 | Dashboard | Review drafts / queue / campaigns / reminders / audit | Navigates to the corresponding operational page. Empty states describe the real next action. |
 | Prospects | Search | Server-side bounded search with fixed sort. |
@@ -39,3 +39,5 @@ The inventory below is historical, not a current all-role acceptance result. The
 | Settings | Add member | Owner/admin only; scrypt password and constrained role. |
 
 Accessibility controls include semantic headings, labels, table headers, focus-visible states, keyboard-operable buttons/links, dialog roles, status announcements, reduced-motion handling, and responsive navigation. Browser evidence at 1440x1000 and 390x844 is recorded in `FINAL_VERIFICATION_REPORT.md`.
+
+The2026-10-01 keyboard follow-up adds named focusable dashboard/prospect/report/audit table regions and solid focus indicators. Full-harness navigation/selected automated scans now cover eleven owner/viewer routes, both languages and desktop/mobile, plus short drawers. Exact executed outcomes are in the current ledger, not the historical report above. This does not establish every action/role/state or dedicated assistive-technology acceptance; [ACCESSIBILITY.md](ACCESSIBILITY.md) states procedure and limits.
