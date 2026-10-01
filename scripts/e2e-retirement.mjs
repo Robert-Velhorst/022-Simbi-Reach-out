@@ -35,7 +35,11 @@ for (const locale of ['en', 'nl']) {
     let ready = false
     while (Date.now() < deadline && !ready) {
       if (server.exitCode !== null) throw new Error(`Isolated server exited: ${logs.join('')}`)
-      try { ready = (await fetch(`${origin}/api/health/ready`)).ok } catch { /* Startup only. */ }
+      // Do not send fixture writes to an unrelated server that already owns
+      // this port. Readiness belongs to OUR child only after its successful bind.
+      if (logs.join('').includes(`Uvicorn running on ${origin}`)) {
+        try { ready = (await fetch(`${origin}/api/health/ready`)).ok } catch { /* Startup only. */ }
+      }
       if (!ready) await new Promise((done) => setTimeout(done, 250))
     }
     assert.ok(ready, 'Isolated retirement server did not become ready')
