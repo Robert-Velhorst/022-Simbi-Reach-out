@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — personal explicit-save draft leave protection (2026-10-01)
+
+- Preserve current-row editor text/checks and ask before another selection/page/preparation/retry, app/history navigation or logout replaces unresolved draft state. Cancel returns focus without mutation; explicit discard never saves, approves, sends or deletes the stored draft.
+- Disable continuation while an unresolved draft request is pending; never replay navigation automatically after settlement. Register browser unload warnings only when needed; best effort is not crash recovery or durable autosave.
+- Use the existing React Router data router once, keeping deep links/nested routes. Repair shared native-dialog hand-off timing and out-of-order body-scroll locks without restoring focus outside another open dialog. Five additive bilingual keys; no backend/schema/dependency/permission/private-text storage change.
+- Add ten guard/two shared-modal regressions and full-harness bilingual desktop/mobile leave checks/four selected scans, nine unchanged table arrays/zero guard writes, held real save-response refusal/no automatic navigation and all retained conflict/recovery assertions. Native reload cancellation is driven only on Chromium. Exact executed evidence and remaining personal-production gates are in the acceptance ledger; actual account/data/runtime are unchanged.
+
 ## Unreleased — personal keyboard bootstrap and compliance (2026-10-01)
 
 - Refuse repeated pending compliance submissions/read-only form events, retain backend authorization, add bilingual pending feedback and preserve choices for an explicit retry.
