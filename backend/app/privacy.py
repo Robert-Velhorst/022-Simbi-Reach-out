@@ -347,15 +347,23 @@ def execute(connection, member: dict, plan_id: str) -> dict:
         raise PrivacyError(
             409, "privacy_preview_required", "Create a new cleanup preview before confirming"
         )
+    plan = json.loads(record["plan_json"])
+    if plan["kind"] == "audit_redaction":
+        raise PrivacyError(
+            409, "audit_confirmation_required", "Use the separate audit minimization confirmation"
+        )
     if record["receipt_json"]:
         return {**json.loads(record["receipt_json"]), "replayed": True}
     if record["expires_at"] <= db.now():
         raise PrivacyError(
             409, "privacy_preview_expired", "The cleanup preview expired; create a new preview"
         )
-    plan = json.loads(record["plan_json"])
     if plan["kind"] == "retirement":
-        raise PrivacyError(409, "retirement_confirmation_required", "Use the separate personal retirement confirmation")
+        raise PrivacyError(
+            409,
+            "retirement_confirmation_required",
+            "Use the separate personal retirement confirmation",
+        )
     if not plan["ids"]:
         raise PrivacyError(409, "privacy_empty", "This preview contains no contacts to remove")
     days = connection.execute(

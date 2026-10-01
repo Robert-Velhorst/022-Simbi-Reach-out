@@ -32,7 +32,7 @@ The API and worker never call the provider. The provider is a separate trust bou
 - Validation responses omit submitted field values, preventing password/personal-content echo in error details.
 - Shared runtime leases block ordinary restore while app/worker connections are active; restore validates a staged candidate and preserves a safety snapshot before atomic SQLite restoration.
 - Support bundle excludes names, emails, provider handles, tokens, credentials, and message bodies.
-- New audit entries omit suppression reasons/provider URLs and restrict review checklist metadata to recognized names. Operational restriction reasons/settings and older audit history remain; see [the exact policy and residual copies](AUDIT_PRIVACY.md). This is not anonymous logging or historical redaction.
+- New audit entries omit suppression reasons/provider URLs and restrict review checklist metadata to recognized names. Separate owner-only historical minimization has exact event/field previews, current session/password/CSRF/throttle checks, verified pre-change backup, stale-plan rejection, rollback and idempotent receipts. Core event evidence and operational restrictions/settings remain; malformed entries/other keys/types are protected or unchanged. See [the exact policy and residual copies](AUDIT_PRIVACY.md). This is not anonymous logging, general audit erasure or automatic expiry.
 - Runtime database, logs, exports, backups, uploads, and environment files are ignored by Git.
 - Production containers are non-root, capability-free, read-only, resource-limited, log-rotated, and place the trusted Caddy proxy at a fixed private address.
 

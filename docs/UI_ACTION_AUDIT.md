@@ -27,12 +27,13 @@ The inventory below is historical, not a current all-role acceptance result. The
 | Replies | Record reply | Only valid after sent/prepared/ambiguous state; moves draft to replied and cancels reminders. |
 | Reminders | Create / done | Local-only state; never schedules a send. |
 | Reports | Refresh | Recalculates local funnel and campaign outcome summaries. |
-| Audit | View | Reads append-only event metadata; no body/credential display. |
+| Audit | View | Read-only event metadata; minimized new entries, but legacy details may contain personal text. Separate historical cleanup preserves core event identity/chronology; no arbitrary edit/delete control. |
 | Settings | Compliance acknowledgement | Owner/admin only; requires all current-policy confirmations. |
 | Settings | Safety stop / resume | Owner/admin only; blocks approvals and handoffs without hiding investigation data. |
 | Settings | Provider save | Owner/admin only; HTTPS link only, assisted mode fixed, credentials rejected by design. |
 | Settings | Export | Owner/admin-only full workspace JSON; intentionally sensitive. Viewers/editors receive guidance, not a download action. |
 | Settings | Privacy cleanup | Owner only: contact/age-based history, campaign or reusable-template scope; search/paging, exact names/counts, explicit acknowledgement/local password and verified backup. Campaign affected identities remain restricted; template removal preserves existing draft text/approval. Cancel is non-destructive; changed previews fail closed; scope-specific receipts recover after reload. |
+| Settings | Minimize old audit details | Owner only: exact old event IDs/known field names, scan-page counts/continuation, acknowledgement/current local password and verified pre-change backup. No event deletion; core evidence/operational restrictions/settings remain. Cancel clears secrets; stale plans fail closed; wrong-plan responses cannot claim success; same-plan retry/reload recover typed audit receipts. |
 | Settings | Support data | Owner/admin-only redacted diagnostic JSON; other roles receive guidance. |
 | Settings | Retire personal installation | Sole owner/one workspace only; stop first, exact count/name preview, two acknowledgements, RETIRE and current password, verified paused backup. Cancel preserves data; receipt verifies completion; private UI removed, sibling tabs refresh, reload blocks sign-in/setup. External copies and Simbi unchanged. |
 | Settings | Add member | Owner/admin only; scrypt password and constrained role. |

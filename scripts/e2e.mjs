@@ -6,6 +6,7 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { bilingualWorkflow } from './e2e-locales.mjs'
 import { privacyWorkflow } from './e2e-privacy.mjs'
+import { auditPrivacyWorkflow } from './e2e-audit-privacy.mjs'
 import { selectBrowser } from './e2e-browser.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -165,10 +166,14 @@ try {
     if (!(await viewer.getByRole('button', { name: 'Change password' }).isEnabled())) {
       throw new Error('Viewer lost access to their own password controls')
     }
-    for (const path of ['/api/export', '/api/support-bundle']) {
+    if (await viewer.getByRole('button', { name: 'Preview old audit details' }).count()
+      || await viewer.getByRole('button', { name: 'Check audit minimization receipts' }).count()) {
+      throw new Error('Viewer was offered owner-only audit minimization')
+    }
+    for (const path of ['/api/export', '/api/support-bundle', '/api/privacy/audit/receipts']) {
       const denied = await viewer.request.get(`${origin}${path}`)
       if (denied.status() !== 403 || (await denied.json()).error?.code !== 'permission_denied') {
-        throw new Error(`Viewer download authorization failed for ${path}`)
+        throw new Error(`Viewer restricted-data authorization failed for ${path}`)
       }
     }
     await viewer.screenshot({ path: join(runtime, 'viewer-settings.png'), fullPage: true })
@@ -573,6 +578,7 @@ try {
   if (dutchAccessibility.violations.length) throw new Error(`Dutch accessibility violations: ${JSON.stringify(dutchAccessibility.violations.map((item) => ({ id: item.id, nodes: item.nodes.map((node) => node.target) })))}`)
   await page.getByRole('combobox', { name: 'Language / Taal' }).selectOption('en')
   await privacyWorkflow(page, origin, root, 'a different long QA password', axe, screenshots)
+  await auditPrivacyWorkflow(page, origin, root, runtime, python, 'a different long QA password', axe, screenshots)
   await page.addScriptTag({ content: axe.source })
   const accessibility = await page.evaluate(async () => window.axe.run(document, {
     runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] },
@@ -612,6 +618,7 @@ try {
     exact_content_approval: 'passed',
     operator_stop_contact: 'passed',
     new_audit_metadata_minimization: 'passed; original restriction reason and provider setting preserved',
+    historical_audit_exact_fields_backup_cancel_unverified_response_and_idempotent_retry: 'passed in English and Dutch; operational restrictions, settings and core event evidence preserved',
     local_simulated_outcome_reply_reminder_report: 'passed',
     provider_delivery: 'not attempted; sent/reply records are fictional QA fixtures',
     password_change_reauthentication: 'passed',
