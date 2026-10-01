@@ -104,7 +104,7 @@ Scope clarification on 2026-09-05: the owner confirmed this is a personal tool f
 | 093 Manual evidence | Implemented | Real browser critical path plus desktop/mobile screenshots and concept comparison. |
 | 094 No-excuses search | Implemented | Final whitespace, unsafe automation, credential, secret-pattern and placeholder scans passed. |
 | 095 Completion matrix | Implemented | This document. |
-| 096 Final verification | Partial | PR87/88/89/90 Linux/Windows CI passed at their recorded source revisions; subsequent campaign/template cleanup evidence is tracked separately in the ledger. General privacy/retention, manual-provider and broader accessibility acceptance remain open; do not substitute earlier release checks for those gates. |
+| 096 Final verification | Partial | PR87/88/89/90/91 Linux/Windows CI passed at their recorded source revisions; campaign/template cleanup publication and159/124-test/bilingual browser evidence is recorded in the ledger. Later main/documentation runs are separate checks. General privacy/retention, manual-provider and broader accessibility acceptance remain open; do not substitute earlier release checks for those gates. |
 | 097 Final response | Partial | Incremental publication/verification results are reported; the full production objective still has open original requirements. |
 | 098 Maintenance plan | Implemented | Runbook release/backup/restore plus changelog discipline. |
 | 099 Roadmap/blockers | Implemented | Exact remaining gaps listed here/final report. |
