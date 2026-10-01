@@ -10,7 +10,7 @@ export function useSubmitFocus(busy: boolean) {
     // never while another control or an outside window has taken focus.
     if (control?.isConnected && document.hasFocus() && document.activeElement === document.body) control.focus()
   }, [busy])
-  return (form: HTMLFormElement) => {
-    target.current = document.activeElement instanceof HTMLElement && form.contains(document.activeElement) ? document.activeElement : null
+  return (container: HTMLElement) => {
+    target.current = document.activeElement instanceof HTMLElement && container.contains(document.activeElement) ? document.activeElement : null
   }
 }

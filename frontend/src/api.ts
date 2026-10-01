@@ -1,3 +1,5 @@
+import { validCoreCreation } from './coreResponse'
+
 export class ApiError extends Error {
   code: string
   details: unknown
@@ -70,7 +72,10 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
       if (payload === null || typeof payload !== 'object') {
         throw new ApiError('response_unverified', writes ? unknownWrite : 'The local service returned an unreadable response. Reload the current records; no result was verified.')
       }
-      // Endpoint-specific field/version/receipt checks remain the caller's job.
+      if (!validCoreCreation(path, method, options.body, payload)) {
+        throw new ApiError('response_unverified', unknownWrite)
+      }
+      // Other endpoint-specific field/version/receipt checks remain necessary.
       return payload as T
     })()])
   } finally {

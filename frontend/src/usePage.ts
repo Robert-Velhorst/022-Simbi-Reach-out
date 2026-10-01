@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { api } from './api'
+import { api, ApiError } from './api'
+import { validPage } from './coreResponse'
 import type { Page } from './types'
 
 // One bounded page at a time; obsolete searches must never replace newer results.
@@ -15,6 +16,7 @@ export function usePage<T>(path: string) {
     try {
       const result = await api<Page<T>>(`${path}${path.includes('?') ? '&' : '?'}limit=50&offset=${nextOffset}`)
       if (current !== request.current) return
+      if (!validPage(result, nextOffset, 50)) throw new ApiError('response_unverified', 'The local service returned an unreadable response. Reload the current records; no result was verified.')
       offset.current = result.offset
       setState({ path, page: result, error: '', loading: false })
     } catch (cause) {

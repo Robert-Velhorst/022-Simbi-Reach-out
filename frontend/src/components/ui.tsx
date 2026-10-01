@@ -107,7 +107,10 @@ export function Modal({ title, children, onClose, returnFocusRef, closeDisabled 
           .filter((element) => element.tabIndex >= 0 && !element.matches(':disabled, [hidden]') && element.getClientRects().length > 0)
         const first = controls[0]
         const last = controls[controls.length - 1]
-        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
+        // Disabled controls can remain active in native engines. Tab must
+        // re-enter the remaining controls, not escape the owned dialog.
+        if (first && !controls.includes(document.activeElement as HTMLElement)) { event.preventDefault(); (event.shiftKey ? last : first).focus() }
+        else if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
         else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus() }
       }}
       onMouseDown={(event) => {

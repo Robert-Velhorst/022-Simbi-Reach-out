@@ -1,5 +1,14 @@
 # Codex worklog
 
+## 2026-10-01 — core creation confirmation and pending forms
+
+- Final focus refinement:324 frontend28files/705 keys/build/lint pass. Inspected cb9d0a5 source/PR logs show repeated Linux Firefox navigation/WebKit pending Tab failures; verify/Windows success is not merge acceptance. Eight new cases/two demonstrated unit failures repair foreground non-form restoration, retained pending form focus and native-dialog Tab re-entry without stealing other controls/windows. Native Pause reachability waits for actual post-readback enablement; no test assertion/deadline is weakened. Current complete local and new exact-head publication checks remain distinct; early local Firefox main setup timeout is a failed diagnostic, not accepted proof.
+
+- Reconfirm sole-owner/own-account scope. Refresh clean main165db40/all-four-success README CI36832358268/zero PRs, preserve README until source merges first.
+- Guard seven creation/import forms synchronously through request settlement; retain uncertain inputs, disable mutations/dismissal, add a translated pending notice and keyboard-scrollable pending form. Validate seven POST contracts and exact paged metadata without claiming complete content/row schemas or server-wide idempotency. Native bounds mirror backend models.
+- 316 frontend26files/705 keys/lint/build,289 backend/ruff/three worker contracts pass. Focused final Chromium/Firefox pass both languages, real committed empty/mismatched/malformed confirmations, no duplicate per title, native timeout/abort, wrong-page recovery and nine selected scans each. Repair demonstrated Dutch pending scroll accessibility issue; Firefox header-only fixture/entry failures remain diagnostics, not accepted results. Newest ledger owns exact subsequent full-local/source/PR/merge/README proof.
+- No real account/data/runtime/provider, backend/schema/dependency/CI or private-text storage changes. Full personal goal active; broader schemas/forms/privacy/operator/credential/license/device gates remain open.
+
 ## 2026-10-01 — full-body API response boundary
 
 - Merge-main follow-up: CI36831273610 completed all four jobs successfully at exact d8cb5d400e58711ebaefd85c085926cd2fa85669. Independently read completed logs confirm 289 backend / 269 frontend24files, both response locales and every retained workflow in all three engines, Windows package and Linux deployment/storage/runtime checks. Separate documentation revision remains distinct; the full personal production goal remains open.

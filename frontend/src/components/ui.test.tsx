@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Modal, Notice, Status, TableRegion } from './ui'
 
-afterEach(() => { cleanup(); document.body.style.overflow = '' })
+afterEach(() => { cleanup(); document.body.style.overflow = ''; vi.restoreAllMocks() })
 
 function ModalWorkflow({ allowClose = true }: { allowClose?: boolean }) {
   const [open, setOpen] = useState(false)
@@ -19,6 +19,15 @@ function ReplacingTriggerWorkflow() {
 }
 
 describe('shared UI', () => {
+  it('keeps a pending form reachable by Tab when all native dialog controls are disabled', () => {
+    render(<Modal title="Pending" closeDisabled onClose={() => {}}><form tabIndex={0}><fieldset disabled><input aria-label="Disabled pending input" /><button>Submit pending</button></fieldset></form></Modal>)
+    const form = screen.getByRole('dialog').querySelector('form')!
+    // jsdom has no layout; the real browser has a visible scrollable form.
+    vi.spyOn(form, 'getClientRects').mockReturnValue([{}] as unknown as DOMRectList)
+    document.body.focus()
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Tab', shiftKey: true })
+    expect(form).toHaveFocus()
+  })
   it.each(['', 'scroll'])('keeps scrolling locked when an older dialog closes, then restores the original %s overflow', (original) => {
     document.body.style.overflow = original
     const view = render(<><Modal key="older" title="Navigation" onClose={() => {}}>Links</Modal><Modal key="newer" title="Leave warning" onClose={() => {}}>Keep editing</Modal></>)

@@ -4,6 +4,8 @@ Statuses are evidence-based: **Implemented**, **Partial**, **Blocked**, or **Not
 
 This matrix originated with the earlier implementation and contains historical verification counts. It is not an unrestricted production-completion certificate. Use [the current production acceptance ledger](PRODUCTION_READINESS.md) for subsequent evidence and open gates; source rechecks may downgrade entries here.
 
+Current core-form follow-up adds seven pending guards/seven POST confirmation contracts and paged metadata checks, plus eight focus cases after actual Linux Firefox/WebKit failures:324 frontend28files/705 keys/build/lint plus289 backend/ruff/worker pass locally. Prior316/26 and focused browser results are historical snapshots, not final refinement proof. Source/PR/merge/later README checks require separate exact completed results in the newest ledger. Historical phase096's PR102 counts below are not current implementation totals; broader partial gates are not closed by this increment.
+
 Scope clarification on 2026-09-05: the owner confirmed this is a personal tool for his own Simbi account. Shared-service requirements are not release gates; optional existing capabilities are preserved. Not applicable below means excluded by that explicit personal-use decision, not silently omitted or claimed implemented. Personal safety, recovery, workflow and relevant original usability requirements remain in scope.
 
 | Phase | Status | Evidence / exact gap |
@@ -17,7 +19,7 @@ Scope clarification on 2026-09-05: the owner confirmed this is a personal tool f
 | 006 Configuration guards | Implemented | Typed env parsing; production HTTPS, explicit hostname, trusted-proxy, and secure-cookie fail-safe. |
 | 007 Authentication/session | Implemented | scrypt, opaque expiry, strict cookie, login throttling, first-run setup/login tests. |
 | 008 Authorization/ownership | Implemented | Roles, owned lookups, cross-workspace test. |
-| 009 API/error envelope | Partial | Structured server envelope; complete fetch/body deadline, cancellation/listener cleanup, malformed-success/non-object rejection and truthful uncertain writes with retained recovery codes. REQUEST_RECOVERY.md/current ledger give actual evidence. Valid object/array shape alone is not complete per-endpoint semantic response validation; broader schemas remain open. |
+| 009 API/error envelope | Partial | Structured envelope/full-body deadline/cancellation/uncertainty and domain recovery retained. Seven core POST contracts now check IDs/states/submitted campaign/prospect/template values and CSV stage/counts; usePage validates exact requested pagination metadata. Minimal draft/reply/reminder confirmations do not independently verify all content/selected IDs, and list rows/other endpoint schemas remain open. REQUEST_RECOVERY.md/current ledger give precise contracts and completed evidence. |
 | 010 Frontend architecture | Implemented | React app shell, routes, focused page/components. |
 | 011 Core vertical slice | Implemented | Campaign through reply/report wired. |
 | 012 Provider reality | Partial | Public homepage/sign-in inspection and a one-off actual app-to-Simbi-homepage handoff/Back/Not sent check are evidenced. The latter used a fresh fictional workspace and blocked external writes. Authenticated manual-use acceptance remains open; public navigation is not messaging integration or delivery proof. |
@@ -25,11 +27,11 @@ Scope clarification on 2026-09-05: the owner confirmed this is a personal tool f
 | 014 No fake success | Implemented | Handoff never marks sent; operator records outcome. |
 | 015 Files/uploads/media | Not applicable | Product exposes no upload/media persistence; CSV parsed in memory. |
 | 016 Background jobs | Implemented | Reminder cleanup, daily verified backups, retention pruning, and optional atomic HAI feed refresh. |
-| 017 Idempotency | Implemented | Required unique handoff key and replay test. |
+| 017 Idempotency | Partial | Handoff requires a unique key and has replay tests; privacy/audit/retirement have exact plan receipts. Seven creation/import forms now synchronously refuse repeated pending submits, but that is not server-wide idempotency across tabs/restarts/retries. Generic creation/mutation replay protection remains open. |
 | 018 Limits/cooldowns | Implemented | Daily campaign limit and per-prospect cooldown enforced server-side. |
 | 019 Audit history | Implemented | Material events persisted without bodies/credentials. |
 | 020 Dashboard/next action | Implemented | Exception-first dashboard and real empty states. |
-| 021 Forms/validation/autosave | Partial | Explicit version-bound saves/conflict recovery remain. Unresolved drafts now ask before another selection/page, preparation, app/history navigation or logout, preserve editor/checks on cancel, refuse pending continuation and never auto-replay navigation. Same-row selection preserves text; reload/close warnings are conditional/best effort. RAM-only text can still be lost on explicit discard/crash/forced closure/security revocation; no durable autosave. Private working-copy storage and wider forms remain open. See DRAFT_SAVING.md/current exact ledger. |
+| 021 Forms/validation/autosave | Partial | Explicit version-bound saves/conflict recovery and unresolved-draft leave guard retained. Seven creation/import forms add synchronous pending guards, disabled inputs/close/Escape/backdrop, translated wait notice, keyboard-scrollable form and uncertain-input retention; native field bounds mirror backend. These creation forms do not gain universal route/reload/crash protection. RAM-only text can be lost on discard/crash/forced closure/revocation; no durable autosave. Private working-copy choice/wider forms remain open. See REQUEST_RECOVERY.md/DRAFT_SAVING.md/current exact ledger. |
 | 022 Search/filter/sort/page | Implemented | Bounded server search/sort/pagination helpers; draft filters. |
 | 023 Import/export | Implemented | Atomic CSV preview/commit and authenticated JSON export. |
 | 024 Templates/defaults | Implemented | Reusable versioned templates with four explicit fields. |
