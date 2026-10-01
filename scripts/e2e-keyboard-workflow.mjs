@@ -172,12 +172,12 @@ export async function keyboardOutreachWorkflow(page, origin, axe, screenshots) {
       // Their order/defaults differ by browser/OS; the user's displayed value
       // is read back and checked against the resulting server record below.
       for (let segment = 0; segment < 6; segment++) { await page.keyboard.press('ArrowUp'); await page.keyboard.press('ArrowRight') }
-      // WebKit's native control accepts text rather than segmented arrows.
-      // Use real printable keystrokes only when arrows left the value empty;
-      // still require native validity and exact persisted-value readback.
+      // Some native controls have no usable keyboard editor. Select the app's
+      // explicit text-entry option with Space, then type its documented format.
+      // This is the same fallback available to the operator, not a DOM bypass.
       if (!(await dialog.locator('[name=due_at]').inputValue())) {
-        await page.keyboard.press('ControlOrMeta+A')
-        await page.keyboard.type('2027-11-02T07:58')
+        await activate(page, dialog.getByRole('checkbox', { name: t('Enter date and time as text'), exact: true }), 'Space')
+        await enter(page, dialog.locator('[name=due_at]'), '2027-11-02T07:58')
       }
       const due = await dialog.locator('[name=due_at]').inputValue()
       assert.match(due, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/, 'Native keyboard date must be complete')

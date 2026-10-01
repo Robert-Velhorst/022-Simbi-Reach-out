@@ -646,5 +646,8 @@
   "Discard my edits and use saved version": "Mijn wijzigingen verwerpen en opgeslagen versie gebruiken",
   "Keep my edits for a new review": "Mijn wijzigingen behouden voor een nieuwe beoordeling",
   "Keeping your edits only updates the version you compared against. Press Save separately, then repeat all review checks. A later change will block that save again.": "Als je je wijzigingen behoudt, wordt alleen de versie bijgewerkt waarmee je hebt vergeleken. Sla daarna apart op en herhaal alle beoordelingscontroles. Een latere wijziging blokkeert het opslaan opnieuw.",
-  "The saved edit version is unavailable. Reload this page before saving.": "De bewerkingsversie van het opgeslagen concept ontbreekt. Laad deze pagina opnieuw voordat je opslaat."
+  "The saved edit version is unavailable. Reload this page before saving.": "De bewerkingsversie van het opgeslagen concept ontbreekt. Laad deze pagina opnieuw voordat je opslaat.",
+  "Enter date and time as text": "Datum en tijd als tekst invoeren",
+  "Use YYYY-MM-DDTHH:mm in your browser's local time, for example 2027-11-02T07:58.": "Gebruik YYYY-MM-DDTHH:mm in de lokale tijd van je browser, bijvoorbeeld 2027-11-02T07:58.",
+  "Enter a valid local date and time using YYYY-MM-DDTHH:mm.": "Voer een geldige lokale datum en tijd in met YYYY-MM-DDTHH:mm."
 }

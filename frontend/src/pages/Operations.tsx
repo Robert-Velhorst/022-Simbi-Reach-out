@@ -8,6 +8,7 @@ import { usePage } from '../usePage'
 import { PageNavigation } from '../components/PageNavigation'
 import { DataState } from '../components/DataState'
 import { useResource } from '../useResource'
+import { LocalDateTimeInput, localDateTimeISO } from '../components/LocalDateTimeInput'
 
 type Reply = { id: number; draft_id: number; prospect_name: string; campaign_name: string; body: string; received_at: string; direction: string }
 
@@ -44,7 +45,9 @@ export function RemindersPage({ canEdit }: { canEdit: boolean }) {
   async function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (!canEdit) return; setMessage('')
     const values = Object.fromEntries(new FormData(event.currentTarget))
-    try { await post('/reminders', { draft_id: Number(values.draft_id), title: values.title, due_at: new Date(String(values.due_at)).toISOString() }); setOpen(false); await Promise.all([load(), draftPage.load(0)]) }
+    const due = localDateTimeISO(String(values.due_at))
+    if (!due) { setMessage('Enter a valid local date and time using YYYY-MM-DDTHH:mm.'); (event.currentTarget.elements.namedItem('due_at') as HTMLInputElement | null)?.focus(); return }
+    try { await post('/reminders', { draft_id: Number(values.draft_id), title: values.title, due_at: due }); setOpen(false); await Promise.all([load(), draftPage.load(0)]) }
     catch (cause) { setMessage(cause instanceof ApiError ? cause.message : 'Reminder could not be created') }
   }
   async function complete(id: number) {
@@ -57,7 +60,7 @@ export function RemindersPage({ canEdit }: { canEdit: boolean }) {
     <PageNavigation page={page} loading={loading} load={load} />
     {!canEdit ? <Notice>{t("Your viewer role has read-only access. Ask an owner, admin or editor to make changes.")}</Notice> : null}
     {message && !open ? <Notice tone="danger">{formatMessage(message)}</Notice> : null}{draftPage.error ? <Notice tone="danger">{formatMessage(draftPage.error)}</Notice> : null}<Panel><DataState label={t("reminders")} loading={loading} error={error} hasData={Boolean(items.length)} retry={load}>{items.length ? <div className="task-list">{items.map((item) => <article key={item.id}><div><strong>{item.title}</strong><span>{item.prospect_name ?? t("General")} · {item.campaign_name ?? t("No campaign")}</span><time>{formatDate(item.due_at)}</time></div>{canEdit ? <Button variant="secondary" onClick={() => complete(item.id)}><Check size={16} />{t("Done")}</Button> : null}</article>)}</div> : <EmptyState title={t("No open reminders")} detail={t("The local worker adds a review reminder after seven days without a recorded reply.")} />}</DataState></Panel>
-    {canEdit && open ? <Modal title={t("Create reminder")} onClose={() => setOpen(false)}>{message ? <Notice tone="danger">{formatMessage(message)}</Notice> : null}{draftPage.error ? <Notice tone="danger">{formatMessage(draftPage.error)}<Button variant="quiet" onClick={() => void draftPage.load()}>{t("Retry conversations")}</Button></Notice> : null}<form className="form-stack" onSubmit={create}><PageNavigation page={draftPage.page} loading={draftPage.loading} load={draftPage.load} /><Field label={t("Conversation")}><Select key={draftPage.page?.offset} name="draft_id" disabled={draftPage.loading || Boolean(draftPage.error)} required defaultValue=""><option value="" disabled>{t("Select draft")}</option>{drafts.map((draft) => <option value={draft.id} key={draft.id}>{draft.prospect_name} — {draft.campaign_name}</option>)}</Select></Field><Field label={t("Reminder")}><Input name="title" required /></Field><Field label={t("Due")}><Input name="due_at" type="datetime-local" required /></Field><div className="modal-actions"><Button type="button" variant="quiet" onClick={() => setOpen(false)}>{t("Cancel")}</Button><Button disabled={draftPage.loading || Boolean(draftPage.error)}>{t("Create reminder")}</Button></div></form></Modal> : null}
+    {canEdit && open ? <Modal title={t("Create reminder")} onClose={() => setOpen(false)}>{message ? <Notice tone="danger">{formatMessage(message)}</Notice> : null}{draftPage.error ? <Notice tone="danger">{formatMessage(draftPage.error)}<Button variant="quiet" onClick={() => void draftPage.load()}>{t("Retry conversations")}</Button></Notice> : null}<form className="form-stack" onSubmit={create}><PageNavigation page={draftPage.page} loading={draftPage.loading} load={draftPage.load} /><Field label={t("Conversation")}><Select key={draftPage.page?.offset} name="draft_id" disabled={draftPage.loading || Boolean(draftPage.error)} required defaultValue=""><option value="" disabled>{t("Select draft")}</option>{drafts.map((draft) => <option value={draft.id} key={draft.id}>{draft.prospect_name} — {draft.campaign_name}</option>)}</Select></Field><Field label={t("Reminder")}><Input name="title" required /></Field><LocalDateTimeInput name="due_at" /><div className="modal-actions"><Button type="button" variant="quiet" onClick={() => setOpen(false)}>{t("Cancel")}</Button><Button disabled={draftPage.loading || Boolean(draftPage.error)}>{t("Create reminder")}</Button></div></form></Modal> : null}
   </OperationPage>
 }
 

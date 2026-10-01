@@ -4,6 +4,7 @@
 
 - Extend the existing complete browser suite with English desktop/Dutch mobile sequential-Tab and native-keyboard campaign/prospect/template/draft/save/review, fictional uncertainty, date/time reminder, reply/report and stop-contact actions. Require exact UI write counts, unchanged earlier operational records, native validation/Escape, state readback, six selected scans and screenshots.
 - Repair stop-contact return focus: successful confirmation targets the named prospects region instead of its disabled original button; cancellation/rejection preserve their existing behavior. Add three focused regressions and actual browser confirmation-focus assertion; no backend/schema/dependency/permission change.
+- Keep the native reminder picker and add an explicit English/Dutch text-entry option for unsupported native editors. Validate exact local calendar/time before UTC conversion; reject rollover/offsets/nonexistent wall times without a write and retain entered text across mode/language changes in the open form. Add twenty converter/component/submission regressions; no automatic scheduling/send or browser storage.
 - Document the tested signed-in/compliance-acknowledged owner starting point and remaining authentication/provider/assistive-technology gaps. No live account, clipboard copy, provider navigation or delivery. Actual executions and failed diagnostics belong in the acceptance ledger, not inferred from test presence.
 
 ## Unreleased — version-bound personal draft saving (2026-10-01)
