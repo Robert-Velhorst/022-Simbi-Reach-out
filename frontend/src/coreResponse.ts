@@ -9,6 +9,24 @@ const boundedText = (value: unknown, minimum: number, maximum: number) => typeof
 function sameText(result: RecordValue, submitted: RecordValue, fields: string[]) {
   return fields.every((field) => typeof result[field] === 'string' && result[field] === text(submitted[field]))
 }
+function sameId(result: RecordValue, submitted: RecordValue, field: string, optional = false) {
+  const expected = submitted[field] ?? null
+  return optional && expected === null ? result[field] === null : integer(expected, 1) && result[field] === expected
+}
+function instant(value: unknown): string | null {
+  if (typeof value !== 'string') return null
+  const parts = /^(\d{4})-(\d{2})-(\d{2})T([01]\d|2[0-3]):([0-5]\d):([0-5]\d)(?:\.(\d{1,6}))?(Z|[+-]([01]\d|2[0-3]):[0-5]\d)$/.exec(value.trim())
+  if (!parts || Number(parts[1]) < 1) return null
+  const calendar = new Date(0)
+  calendar.setUTCFullYear(Number(parts[1]), Number(parts[2]) - 1, Number(parts[3]))
+  if (calendar.getUTCFullYear() !== Number(parts[1]) || calendar.getUTCMonth() + 1 !== Number(parts[2]) || calendar.getUTCDate() !== Number(parts[3])) return null
+  const milliseconds = Date.parse(value.trim())
+  return Number.isFinite(milliseconds) ? `${milliseconds}:${(parts[7] ?? '').padEnd(6, '0').slice(3)}` : null
+}
+function sameInstant(result: unknown, submitted: unknown) {
+  const expected = instant(submitted)
+  return expected !== null && instant(result) === expected
+}
 function source(value: unknown): string | null {
   if (typeof value !== 'string') return null
   try {
@@ -49,10 +67,16 @@ export function validCoreCreation(path: string, method: string, rawBody: BodyIni
         && value.provider === text(submitted.provider, 'simbi').toLowerCase()
     case '/drafts':
       return integer(value.id, 1) && value.state === 'needs_review' && typeof value.quality_score === 'number'
+        && ['campaign_id', 'prospect_id', 'template_id'].every((field) => sameId(value, submitted, field))
         && Number.isFinite(value.quality_score) && value.quality_score >= 0 && value.quality_score <= 100
         && Array.isArray(value.safety_flags) && value.safety_flags.every((flag) => typeof flag === 'string')
-    case '/replies': return integer(value.id, 1) && value.state === 'replied'
+    case '/replies': return integer(value.id, 1) && value.state === 'replied' && sameId(value, submitted, 'draft_id')
+      && boundedText(value.body, 1, 5000) && sameText(value, submitted, ['body']) && instant(value.received_at) !== null
+      && (submitted.received_at == null || sameInstant(value.received_at, submitted.received_at))
     case '/reminders': return integer(value.id, 1) && value.status === 'open'
+      && sameId(value, submitted, 'draft_id', true) && sameId(value, submitted, 'prospect_id', true)
+      && (integer(submitted.draft_id, 1) || integer(submitted.prospect_id, 1))
+      && boundedText(value.title, 2, 300) && sameText(value, submitted, ['title']) && sameInstant(value.due_at, submitted.due_at)
     case '/prospects/import': {
       const committed = submitted.commit ?? false
       if (typeof committed !== 'boolean' || value.committed !== committed || !integer(value.valid) || value.valid > 5000

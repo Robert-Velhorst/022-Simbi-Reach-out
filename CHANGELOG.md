@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased — conversation creation identity and date confirmation (2026-10-01)
+
+- Return actual stored selections for draft creation and actual stored target/content/time for reply/reminder creation; reject readable mismatched confirmations without closing the form or retrying writes.
+- Validate positive safe JSON-integer creation targets and calendar-valid timezone-explicit supplied timestamps before changing records/state/audit. Normalize new supplied times to UTC with microseconds; preserve old history and server-assigned reply defaults. Use matching frontend/backend versions; no migration or dependency change.
+- Add26 backend/16 frontend regression cases and six selected bilingual native-keyboard creation-recovery scans, preserving all twelve original deliberate UI mutations and prior histories. The browser forwards a real commit before altering only its response, then requires one stored row, retained values and explicit read-only recovery. Exact completed/failed outcomes belong in the readiness ledger; this is not server idempotency, rendering validation, broader privacy/device or real-account acceptance.
+
 ## Unreleased — core pending forms and semantic confirmation (2026-10-01)
 
 - Guard campaign/prospect/CSV/template/draft/reply/reminder submissions synchronously; disable inputs and dismissal while pending, retain unverified inputs, and keep native keyboard scrolling accessible. Add one EN/NL pending notice and native field bounds matching backend models.

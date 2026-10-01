@@ -23,6 +23,7 @@ export async function keyboardOutreachWorkflow(page, origin, axe, screenshots) {
   }
   page.on('pageerror', onError); page.on('console', onConsole); page.on('request', onRequest)
   let scans = 0
+  const routes = []
   try {
     await page.evaluate(() => {
       window.keyboardProof = { pointer: 0, keys: 0 }
@@ -66,6 +67,38 @@ export async function keyboardOutreachWorkflow(page, origin, axe, screenshots) {
         const response = await page.request.get(`${origin}/api/export`)
         assert.ok(response.ok())
         return response.json()
+      }
+      const uncertainCreation = async (path, submit, fields, corrupt, destination, name) => {
+        const beforeRecord = await snapshot()
+        const beforeWrites = writes.length
+        let committed
+        const pattern = `${origin}/api/${path}`
+        const handler = async (route) => {
+          if (route.request().method() !== 'POST') return route.continue()
+          const response = await route.fetch()
+          assert.equal(response.status(), 201, 'Damage a real successful commit, not a fake creation')
+          committed = await response.json()
+          await route.fulfill({ response, json: { ...committed, ...corrupt(committed) } })
+        }
+        routes.push([pattern, handler])
+        await page.route(pattern, handler)
+        await activate(page, button(submit, dialog))
+        await dialog.getByText(t('The request outcome is not confirmed. It may already have changed local records. Check the current state before retrying; do not assume it failed.'), { exact: true }).waitFor()
+        assert.ok(await dialog.isVisible(), 'Readable but mismatched confirmation must retain the form')
+        for (const [field, value] of Object.entries(fields)) assert.equal(await dialog.locator(`[name=${field}]`).inputValue(), value)
+        assert.equal(writes.length, beforeWrites + 1, 'An unverified confirmation must not repeat creation')
+        const readback = await snapshot()
+        assert.equal(readback[path].length, beforeRecord[path].length + 1)
+        assert.equal(readback[path].filter((item) => item.id === committed.id).length, 1)
+        await capture(`${path}-confirmation-unverified`)
+        await page.unroute(pattern, handler)
+        routes.splice(routes.findIndex(([saved]) => saved === pattern), 1)
+        await activate(page, button('Cancel', dialog))
+        await dialog.waitFor({ state: 'hidden' })
+        // Deliberate read-only route revisit, not an automatic write retry/reload.
+        await nav('Overview', '/')
+        await nav(destination[0], destination[1])
+        process.stdout.write(`Confirmation recovery: ${locale}/${name}, actual committed record retained, mismatched response rejected, one UI write, native Cancel and explicit read-only revisit.\n`)
       }
       const before = await snapshot()
       const startWrites = writes.length
@@ -135,8 +168,7 @@ export async function keyboardOutreachWorkflow(page, origin, axe, screenshots) {
       await choose(page, dialog.locator('[name=campaign_id]'), String(campaign.id))
       await choose(page, dialog.locator('[name=prospect_id]'), String(person.id))
       await choose(page, dialog.locator('[name=template_id]'), String(template.id))
-      await activate(page, button('Prepare draft', dialog))
-      await dialog.waitFor({ state: 'hidden' })
+      await uncertainCreation('drafts', 'Prepare draft', { campaign_id: String(campaign.id), prospect_id: String(person.id), template_id: String(template.id) }, (created) => ({ campaign_id: created.campaign_id + 10000 }), ['Review queue', '/review'], 'draft selections')
       await activate(page, page.locator('.review-item').filter({ hasText: personName }))
       const draft = (await snapshot()).drafts.find((item) => item.prospect_id === person.id)
       assert.ok(draft)
@@ -186,10 +218,10 @@ export async function keyboardOutreachWorkflow(page, origin, axe, screenshots) {
       const due = await dialog.locator('[name=due_at]').inputValue()
       assert.match(due, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/, 'Native keyboard date must be complete')
       assert.ok(await dialog.locator('[name=due_at]').evaluate((element) => element.validity.valid))
-      const expectedDue = await dialog.locator('[name=due_at]').evaluate((element) => new Date(element.value).toISOString())
+      // New writes use UTC with six fractional digits; retain exact stored-value proof.
+      const expectedDue = (await dialog.locator('[name=due_at]').evaluate((element) => new Date(element.value).toISOString())).replace('Z', '000+00:00')
       await capture(mobile ? 'reminder-mobile' : 'reminder-desktop')
-      await activate(page, button('Create reminder', dialog))
-      await dialog.waitFor({ state: 'hidden' })
+      await uncertainCreation('reminders', 'Create reminder', { draft_id: String(draft.id), title: reminderName, due_at: due }, () => ({ due_at: '2000-01-01T00:00:00.000000+00:00' }), ['Reminders', '/reminders'], 'reminder instant')
       await page.getByText(reminderName, { exact: true }).waitFor()
       const reminder = (await snapshot()).reminders.find((item) => item.title === reminderName)
       assert.ok(reminder && reminder.due_at === expectedDue && reminder.status === 'open')
@@ -201,8 +233,7 @@ export async function keyboardOutreachWorkflow(page, origin, axe, screenshots) {
       await choose(page, dialog.locator('[name=draft_id]'), String(draft.id))
       const reply = `Fictional keyboard reply ${locale}; no provider conversation took place.`
       await enter(page, dialog.locator('[name=body]'), reply)
-      await activate(page, button('Record reply', dialog))
-      await dialog.waitFor({ state: 'hidden' })
+      await uncertainCreation('replies', 'Record reply', { draft_id: String(draft.id), body: reply }, () => ({ body: 'A different fictional reply, never the entered text.' }), ['Replies', '/replies'], 'reply content')
       await page.getByText(reply, { exact: true }).waitFor()
       records = await snapshot()
       assert.equal(records.drafts.find((item) => item.id === draft.id).state, 'replied')
@@ -238,16 +269,17 @@ export async function keyboardOutreachWorkflow(page, origin, axe, screenshots) {
         `POST /api/drafts/${draft.id}/review`, `POST /api/drafts/${draft.id}/handoff`, `POST /api/handoffs/${after.handoffs.find((item) => item.draft_id === draft.id).id}/outcome`,
         'POST /api/reminders', 'POST /api/replies', 'POST /api/suppressions',
       ], 'Only the twelve deliberate fictional local mutations may occur')
-      process.stdout.write(`Keyboard outreach: ${locale}/${mobile ? '390x844' : '1440x1000'}, sequential Tab/Shift+Tab only, native form validation/Escape, campaign/prospect/template/draft/save/review/uncertainty/reminder/reply/report/stop; 12 UI writes, prior records preserved, zero provider or pointer actions.\n`)
+      process.stdout.write(`Keyboard outreach: ${locale}/${mobile ? '390x844' : '1440x1000'}, sequential Tab/Shift+Tab only, native form validation/Escape, campaign/prospect/template/draft/save/review/uncertainty/reminder/reply/report/stop; three actual committed-but-mismatched creation recoveries, 12 UI writes, prior records preserved, zero provider or pointer actions.\n`)
     }
     const proof = await page.evaluate(() => window.keyboardProof)
     assert.equal(proof.pointer, 0)
     assert.ok(proof.keys > 100)
     assert.deepEqual(errors, [])
-    assert.equal(scans, 6)
+    assert.equal(scans, 12)
     await page.setViewportSize({ width: 1440, height: 1000 })
     await choose(page, page.getByRole('combobox', { name: 'Language / Taal' }), 'en')
   } finally {
+    for (const [pattern, handler] of routes) await page.unroute(pattern, handler)
     page.off('pageerror', onError); page.off('console', onConsole); page.off('request', onRequest)
     await page.evaluate(() => window.keyboardProofCleanup?.())
   }

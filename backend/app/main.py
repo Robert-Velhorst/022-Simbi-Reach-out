@@ -16,7 +16,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from . import audit_privacy, privacy, retirement
@@ -54,6 +54,7 @@ from .security import (
     validate_provider_url,
     verify_password,
 )
+from .timestamps import canonical_timestamp
 
 SESSION_COOKIE = "simbi_session"
 CSRF_COOKIE = "simbi_csrf"
@@ -160,9 +161,9 @@ class TemplateBody(StrictModel):
 
 
 class DraftBody(StrictModel):
-    campaign_id: int
-    prospect_id: int
-    template_id: int
+    campaign_id: int = Field(strict=True, ge=1, le=9007199254740991)
+    prospect_id: int = Field(strict=True, ge=1, le=9007199254740991)
+    template_id: int = Field(strict=True, ge=1, le=9007199254740991)
 
 
 class DraftEditBody(StrictModel):
@@ -182,16 +183,26 @@ class HandoffOutcomeBody(StrictModel):
 
 
 class ReplyBody(StrictModel):
-    draft_id: int
+    draft_id: int = Field(strict=True, ge=1, le=9007199254740991)
     body: str = Field(min_length=1, max_length=5000)
     received_at: str | None = None
 
+    @field_validator("received_at")
+    @classmethod
+    def validate_received_at(cls, value: str | None) -> str | None:
+        return canonical_timestamp(value) if value is not None else None
+
 
 class ReminderBody(StrictModel):
-    draft_id: int | None = None
-    prospect_id: int | None = None
+    draft_id: int | None = Field(default=None, strict=True, ge=1, le=9007199254740991)
+    prospect_id: int | None = Field(default=None, strict=True, ge=1, le=9007199254740991)
     title: str = Field(min_length=2, max_length=300)
     due_at: str
+
+    @field_validator("due_at")
+    @classmethod
+    def validate_due_at(cls, value: str) -> str:
+        return canonical_timestamp(value)
 
 
 class ReminderStatusBody(StrictModel):
@@ -1168,7 +1179,12 @@ def create_draft(body: DraftBody, member: Member):
             record_id,
             {"quality_score": score, "flags": flags},
         )
-    return {"id": record_id, "state": "needs_review", "quality_score": score, "safety_flags": flags}
+        created = dict(connection.execute(
+            "SELECT id,campaign_id,prospect_id,template_id,state,quality_score FROM drafts WHERE id=? AND workspace_id=?",
+            (record_id, member["workspace_id"]),
+        ).fetchone())
+        created["safety_flags"] = flags
+    return created
 
 
 @app.patch("/api/drafts/{draft_id}")
@@ -1567,7 +1583,12 @@ def create_reply(body: ReplyBody, member: Member):
             record_id,
             {"draft_id": body.draft_id},
         )
-    return {"id": record_id, "state": "replied"}
+        created = dict(connection.execute(
+            "SELECT id,draft_id,body,received_at FROM replies WHERE id=? AND workspace_id=?",
+            (record_id, member["workspace_id"]),
+        ).fetchone())
+        created["state"] = "replied"
+    return created
 
 
 @app.get("/api/reminders")
@@ -1622,7 +1643,11 @@ def create_reminder(body: ReminderBody, member: Member):
             "reminder",
             record_id,
         )
-    return {"id": record_id, "status": "open"}
+        created = dict(connection.execute(
+            "SELECT id,draft_id,prospect_id,title,due_at,status FROM reminders WHERE id=? AND workspace_id=?",
+            (record_id, member["workspace_id"]),
+        ).fetchone())
+    return created
 
 
 @app.patch("/api/reminders/{reminder_id}")
