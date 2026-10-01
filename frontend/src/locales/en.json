@@ -646,5 +646,8 @@
   "Discard my edits and use saved version": "Discard my edits and use saved version",
   "Keep my edits for a new review": "Keep my edits for a new review",
   "Keeping your edits only updates the version you compared against. Press Save separately, then repeat all review checks. A later change will block that save again.": "Keeping your edits only updates the version you compared against. Press Save separately, then repeat all review checks. A later change will block that save again.",
-  "The saved edit version is unavailable. Reload this page before saving.": "The saved edit version is unavailable. Reload this page before saving."
+  "The saved edit version is unavailable. Reload this page before saving.": "The saved edit version is unavailable. Reload this page before saving.",
+  "Enter date and time as text": "Enter date and time as text",
+  "Use YYYY-MM-DDTHH:mm in your browser's local time, for example 2027-11-02T07:58.": "Use YYYY-MM-DDTHH:mm in your browser's local time, for example 2027-11-02T07:58.",
+  "Enter a valid local date and time using YYYY-MM-DDTHH:mm.": "Enter a valid local date and time using YYYY-MM-DDTHH:mm."
 }
