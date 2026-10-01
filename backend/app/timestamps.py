@@ -18,3 +18,14 @@ def canonical_timestamp(value: str) -> str:
         return instant.astimezone(UTC).isoformat(timespec="microseconds")
     except (ValueError, OverflowError) as exc:
         raise ValueError("Use a valid calendar date and time") from exc
+
+
+def timestamp_sort_key(value: object) -> str | None:
+    """Read-only UTC key with microseconds; never infer a legacy missing timezone."""
+    if not isinstance(value, str):
+        return None
+    try:
+        return canonical_timestamp(value)
+    except ValueError:
+        # Invalid legacy records remain visible, ordered last by their stable ID.
+        return None

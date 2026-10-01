@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased — conversation target integrity and legacy chronology (2026-10-01)
+
+- Reject a newly created reminder that names both a conversation and a different contact, after both workspace ownership checks and before record/audit writes. Conversation-only, contact-only and matching combined targets remain supported; old records are not rewritten.
+- Sort replies newest-first and reminders/Overview earliest-first by the actual timezone-explicit instant, retaining microsecond precision and stable ID ties. Overview due counts use the same time interpretation. Uninterpretable legacy dates remain stored/visible after valid dates and do not imply that a reminder is due.
+- Add isolated data-integrity regressions, 10,000-row reply/reminder sorting benchmarks and a retained full-harness bilingual 52-record pagination check. Exact completed results/publication and broader open gates belong in the production ledger; no provider, migration, dependency, private storage or real-data change.
+
 ## Unreleased — conversation creation identity and date confirmation (2026-10-01)
 
 - Return actual stored selections for draft creation and actual stored target/content/time for reply/reminder creation; reject readable mismatched confirmations without closing the form or retrying writes.

@@ -684,10 +684,10 @@ def overview(member: Member):
     counts = fetch_one(
         "SELECT "
         "(SELECT COUNT(*) FROM drafts WHERE workspace_id=? AND state='needs_review') AS reviews, "
-        "(SELECT COUNT(*) FROM reminders WHERE workspace_id=? AND status='open' AND due_at<=?) AS due, "
+        "(SELECT COUNT(*) FROM reminders WHERE workspace_id=? AND status='open' AND simbi_timestamp_key(due_at)<=?) AS due, "
         "(SELECT COUNT(*) FROM replies WHERE workspace_id=?) AS replies, "
         "(SELECT COUNT(*) FROM prospects WHERE workspace_id=?) AS prospects",
-        (workspace_id, workspace_id, now(), workspace_id, workspace_id),
+        (workspace_id, workspace_id, canonical_timestamp(now()), workspace_id, workspace_id),
     )
     queue = fetch_all(
         "SELECT d.id,d.state,d.quality_score,d.safety_flags,p.name AS prospect_name,c.name AS campaign_name,"
@@ -710,7 +710,7 @@ def overview(member: Member):
         "SELECT r.*,p.name AS prospect_name,c.name AS campaign_name FROM reminders r "
         "LEFT JOIN drafts d ON d.id=r.draft_id LEFT JOIN prospects p ON p.id=COALESCE(r.prospect_id,d.prospect_id) "
         "LEFT JOIN campaigns c ON c.id=d.campaign_id WHERE r.workspace_id=? AND r.status='open' "
-        "ORDER BY r.due_at LIMIT 5",
+        "ORDER BY simbi_timestamp_key(r.due_at) IS NULL,simbi_timestamp_key(r.due_at),r.id LIMIT 5",
         (workspace_id,),
     )
     events = fetch_all(
@@ -1540,7 +1540,9 @@ def list_replies(
         "items": fetch_all(
             "SELECT r.*,p.name AS prospect_name,c.name AS campaign_name FROM replies r "
             "JOIN drafts d ON d.id=r.draft_id JOIN prospects p ON p.id=d.prospect_id "
-            "JOIN campaigns c ON c.id=d.campaign_id WHERE r.workspace_id=? ORDER BY r.received_at DESC,r.id DESC LIMIT ? OFFSET ?",
+            "JOIN campaigns c ON c.id=d.campaign_id WHERE r.workspace_id=? "
+            "ORDER BY simbi_timestamp_key(r.received_at) IS NULL,"
+            "simbi_timestamp_key(r.received_at) DESC,r.id DESC LIMIT ? OFFSET ?",
             (member["workspace_id"], limit, offset),
         ),
         "total": fetch_one(
@@ -1602,7 +1604,9 @@ def list_reminders(
         "items": fetch_all(
             "SELECT r.*,p.name AS prospect_name,c.name AS campaign_name FROM reminders r "
             "LEFT JOIN drafts d ON d.id=r.draft_id LEFT JOIN prospects p ON p.id=COALESCE(r.prospect_id,d.prospect_id) "
-            "LEFT JOIN campaigns c ON c.id=d.campaign_id WHERE r.workspace_id=? AND r.status=? ORDER BY r.due_at,r.id LIMIT ? OFFSET ?",
+            "LEFT JOIN campaigns c ON c.id=d.campaign_id WHERE r.workspace_id=? AND r.status=? "
+            "ORDER BY simbi_timestamp_key(r.due_at) IS NULL,"
+            "simbi_timestamp_key(r.due_at),r.id LIMIT ? OFFSET ?",
             (member["workspace_id"], status, limit, offset),
         ),
         "total": fetch_one(
@@ -1620,10 +1624,16 @@ def create_reminder(body: ReminderBody, member: Member):
     if not body.draft_id and not body.prospect_id:
         raise AppError(422, "target_required", "Choose a draft or prospect for the reminder")
     with transaction() as connection:
+        draft = None
         if body.draft_id:
-            owned(connection, "drafts", body.draft_id, member["workspace_id"])
+            draft = owned(connection, "drafts", body.draft_id, member["workspace_id"])
         if body.prospect_id:
             owned(connection, "prospects", body.prospect_id, member["workspace_id"])
+        if draft is not None and body.prospect_id is not None and draft["prospect_id"] != body.prospect_id:
+            raise AppError(
+                422, "reminder_target_mismatch",
+                "Choose a contact that matches the selected conversation",
+            )
         record_id = connection.execute(
             "INSERT INTO reminders(workspace_id,draft_id,prospect_id,title,due_at,created_by,created_at) VALUES (?,?,?,?,?,'user',?)",
             (
