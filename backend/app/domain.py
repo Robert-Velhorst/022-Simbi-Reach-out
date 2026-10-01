@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from string import Formatter
@@ -26,6 +27,14 @@ TRANSITIONS = {
 
 class DomainError(ValueError):
     pass
+
+
+def draft_edit_version(draft: dict[str, Any]) -> str:
+    # Separate from legacy approval/handoff hashes; never rewrite stored history.
+    # Array encoding distinguishes field boundaries, including embedded newlines.
+    fields = [draft[key] for key in ("workspace_id", "id", "updated_at", "state", "subject", "body")]
+    encoded = json.dumps(fields, ensure_ascii=False, separators=(",", ":"))
+    return hashlib.sha256(encoded.encode()).hexdigest()
 
 
 def template_fields(body: str) -> set[str]:

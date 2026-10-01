@@ -50,6 +50,7 @@ export type Template = {
 
 export type Draft = {
   content_hash: string
+  edit_version: string
   id: number
   campaign_id: number
   prospect_id: number

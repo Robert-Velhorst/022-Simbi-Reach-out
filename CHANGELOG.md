@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased — version-bound personal draft saving (2026-10-01)
+
+- Require a record/workspace/state/text/timestamp-bound editing version before a serialized save; reject stale versions before mutation and preserve exact current no-op approval/history. Return the authoritative full record; add an authenticated owned current-state read. Existing approval/handoff content hashes remain unchanged; no migration/dependency change.
+- Keep current-editor text after conflicting, interrupted or unverifiable responses. Add bilingual read-only comparison, explicit discard/retain-and-separately-save/matching-readback choices, cleared review checks and keyboard focus recovery. A later change still rejects; no automatic retry, merge, approval, send or durable autosave.
+- Add backend concurrent/role/isolation/no-op/locked-state regressions, frontend recovery/response-contract tests and full-harness real sibling-tab conflict/committed-response recovery checks. Exact outcomes and remaining personal-production gates are in the dated ledger; no real account/data/runtime changes.
+
 ## Unreleased — personal keyboard navigation (2026-10-01)
 
 - Hide the desktop sidebar from mobile focus order; use a named native navigation dialog with contained Tab/Shift+Tab, Escape/return focus, Help, short-screen scrolling and desktop-breakpoint dismissal.

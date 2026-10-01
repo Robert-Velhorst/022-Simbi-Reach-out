@@ -119,7 +119,7 @@ describe('language preference and state preservation', () => {
     expect(fetch.mock.calls.every((call) => !(call[1] as RequestInit | undefined)?.method || (call[1] as RequestInit).method === 'GET')).toBe(true)
   })
   it('keeps the review checks and unsaved message tied to the same saved hash', async () => {
-    const draft: Draft = { id: 1, campaign_id: 1, prospect_id: 1, template_id: 1, prospect_name: 'Original English', organization: '', source_url: 'https://simbi.com/original', consent_status: 'consented', campaign_name: 'Campaign', template_name: 'Template', subject: 'Subject', body: 'Untouched original body', state: 'needs_review', quality_score: 100, content_hash: 'same-hash', safety_flags: [], updated_at: '2026-09-05T12:00:00Z' }
+    const draft: Draft = { id: 1, campaign_id: 1, prospect_id: 1, template_id: 1, prospect_name: 'Original English', organization: '', source_url: 'https://simbi.com/original', consent_status: 'consented', campaign_name: 'Campaign', template_name: 'Template', subject: 'Subject', body: 'Untouched original body', state: 'needs_review', quality_score: 100, content_hash: 'same-hash', edit_version: 'b'.repeat(64), safety_flags: [], updated_at: '2026-09-05T12:00:00Z' }
     vi.stubGlobal('fetch', vi.fn(async (url: string) => response({ items: url.includes('/drafts') ? [draft] : [], total: 1, offset: 0, limit: 50 })))
     render(<I18nProvider><LanguagePicker /><ReviewQueue member={member} onMemberChange={() => {}} /></I18nProvider>)
     await screen.findByLabelText('Message')

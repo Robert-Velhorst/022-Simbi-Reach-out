@@ -1,5 +1,13 @@
 # Codex worklog
 
+## 2026-10-01 — version-bound personal draft saves
+
+- Initial source d8c2bb4/PR98 Firefox bounds fail before merge; local diagnostic reproduces bottom844.0000152587891 at844px, not visible overflow. Add exact geometry output and a0.001px rounding allowance, preserving all other checks. Final local Firefox/new exact-head CI are required; initial partial WebKit/Windows passes do not substitute. README stays uncommitted until all project PRs are verified and merged.
+
+- Preserved clean base419526e and refreshed final CI36811030370; read original preserved phase021. Reproduced four unsafe/missing-version/current-state behaviors before implementation. Central editing version and shared draft serializer add required serialized preconditions, exact no-op preservation and owned readback; existing approval/handoff history unchanged.
+- Added current-editor preservation, exact response verification and bilingual native comparison with explicit no-write choices and separate re-save/review. RAM-only text is not autosave or a past-write receipt. Real concurrent backend winner/409, role/CSRF/isolation/state and frontend recovery cases extend existing safety assertions; exact completed counts/runs/publication are in the top readiness ledger.
+- Full Chromium harness retains all prior operational/privacy/audit/retention/retirement/owner-viewer navigation checks and adds real sibling-tab conflicts, late-change rejection, all-nine-table nonmutation and committed wrong-response/network-abort recovery. Old no-op test expectation corrected; browser label discovery led to explicit stable localized textarea names rather than weakening the locator or skipping the comparison. No provider/real-data/installed-runtime/schema/dependency change; full goal stays active.
+
 ## 2026-10-01 — personal keyboard navigation and table access
 
 - PR97 merged conflict-free atbc69e72 after source36810172470/PR36810175692 passed all four jobs atf2d76bb. All eight checks and matching source/merge tree2726283 verified before/after merge; local main fast-forwarded and paginated open-PR inventory zero. Completed logs read:264 backend/186 frontend, actual three-engine owner/viewer88 routes/96 scans, complete bilingual operational/privacy/retention/retirement/recovery, clean audits, packaged Windows operator and Linux container/storage acceptance. README publication follows separately with no runtime/test/CI edits; later main checks are distinct evidence.

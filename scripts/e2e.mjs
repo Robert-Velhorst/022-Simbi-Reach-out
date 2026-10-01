@@ -10,6 +10,7 @@ import { auditPrivacyWorkflow } from './e2e-audit-privacy.mjs'
 import { selectBrowser } from './e2e-browser.mjs'
 import { retentionPagesWorkflow } from './e2e-retention-pages.mjs'
 import { navigationWorkflow } from './e2e-navigation.mjs'
+import { draftSaveWorkflow } from './e2e-draft-save.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const require = createRequire(join(root, 'frontend', 'package.json'))
@@ -269,9 +270,11 @@ try {
   if (!(await page.getByRole('button', { name: 'Approve for handoff' }).isDisabled())) {
     throw new Error('Unsaved message changes did not block approval')
   }
+  const draftSaveResponse = page.waitForResponse((response) => /\/api\/drafts\/\d+$/.test(new URL(response.url()).pathname) && response.request().method() === 'PATCH')
   await page.getByRole('button', { name: 'Save and return to review' }).click()
+  if ((await draftSaveResponse).status() !== 200) throw new Error('Reviewed QA subject was not saved')
   await page.getByRole('button', { name: 'Save and return to review' }).waitFor({ state: 'visible' })
-  await page.waitForFunction(() => [...document.querySelectorAll('button')].some((button) => button.textContent === 'Save and return to review' && !button.disabled))
+  await page.waitForFunction(() => [...document.querySelectorAll('button')].some((button) => button.textContent === 'Save and return to review' && button.disabled))
   await page.waitForFunction(() => [...document.querySelectorAll('.approval-box input[type=checkbox]')].every((checkbox) => !checkbox.checked))
   for (const checkbox of await page.getByRole('checkbox').all()) await checkbox.check()
   await page.getByRole('button', { name: 'Approve for handoff' }).click()
@@ -590,6 +593,7 @@ try {
   await auditPrivacyWorkflow(page, origin, root, runtime, python, 'a different long QA password', axe, screenshots)
   await retentionPagesWorkflow(page, origin, root, runtime, python, 'a different long QA password', axe, screenshots, (expected) => { cleanupAbortExpected = expected })
   assert.equal(cleanupAborts, 1, 'Expected exactly one actual post-commit cleanup response abort')
+  await draftSaveWorkflow(page, origin, axe, screenshots)
   await navigationWorkflow(page, origin, axe, screenshots)
   await page.addScriptTag({ content: axe.source })
   const accessibility = await page.evaluate(async () => window.axe.run(document, {
@@ -628,6 +632,7 @@ try {
     dutch_accessibility_violations: 0,
     interrupted_handoff_recovery: 'passed',
     exact_content_approval: 'passed',
+    version_bound_draft_saves_and_uncertain_response_recovery: 'passed in English/Dutch with real sibling tabs, two stale-save refusals per locale, nonmutating compare/cancel/rebase and explicit saved-version recovery; Dutch post-commit response really aborted; no duplicate save or message storage',
     operator_stop_contact: 'passed',
     new_audit_metadata_minimization: 'passed; original restriction reason and provider setting preserved',
     historical_audit_exact_fields_backup_cancel_unverified_response_and_idempotent_retry: 'passed in English and Dutch; operational restrictions, settings and core event evidence preserved',

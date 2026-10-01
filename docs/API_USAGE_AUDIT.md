@@ -17,7 +17,9 @@ All non-health endpoints below require an authenticated workspace member unless 
 | `POST /api/privacy/audit/preview`, `/confirm`; `GET /api/privacy/audit/receipts` | Owner-only Settings historical audit detail controls; separate confirmation scope | Exact old event IDs/known fields, bounded scan cursor/batches, malformed/recent protection, current session/owner/password/CSRF/throttle, verified original backup, stale/cross-scope/cross-owner refusal, rollback/idempotent receipt. No event deletion or operational restriction/settings changes. Bilingual rendered confirmation and wrong-plan response/retry/reload proof; policy in AUDIT_PRIVACY.md. |
 | `POST /api/prospects/import` | Prospect CSV modal | Atomic preview/commit test. |
 | `GET/POST /api/templates` | Templates/review | Placeholder validation and critical path. |
-| `GET/POST/PATCH /api/drafts` | Review queue | Critical path, suppression and worker tests. |
+| `GET/POST /api/drafts` | Review queue | Paged draft listing includes editing/approval versions; deterministic preparation, suppression and worker tests. |
+| `GET /api/drafts/{id}` | Read-only current saved-version comparison | Authenticated owned record; viewer read, unknown/foreign404, no audit/record mutation. See DRAFT_SAVING.md. |
+| `PATCH /api/drafts/{id}` | Explicit draft save | Required expected_edit_version, serialized stale409/nonmutation, exact no-op preservation and authoritative full-record response; editable states, CSRF/role/isolation and two concurrent requests. See DRAFT_SAVING.md. |
 | `POST /api/drafts/{id}/review` | Pre-action review | Missing-check failure and success tests. |
 | `POST /api/drafts/{id}/handoff` | Manual handoff modal | Idempotency, provider host, limits, cooldown, pause, demo gates. |
 | `GET /api/handoffs` | Ambiguous-action recovery | Workspace-scoped persisted handoff lookup. |

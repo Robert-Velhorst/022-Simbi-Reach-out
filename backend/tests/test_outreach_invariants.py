@@ -26,7 +26,11 @@ def test_approval_requires_exact_reviewed_content(client, revision):
         client.patch(
             f"/api/drafts/{draft_id}",
             headers=headers,
-            json={"subject": "Changed by another editor", "body": original["body"]},
+            json={
+                "subject": "Changed by another editor",
+                "body": original["body"],
+                "expected_edit_version": client.get(f"/api/drafts/{draft_id}").json()["edit_version"],
+            },
         ).status_code
         == 200
     )
@@ -286,14 +290,16 @@ def test_finalized_handoff_cannot_replay_after_approved_text_changes(client):
     client.post(
         f"/api/handoffs/{original['id']}/outcome", headers=headers, json={"outcome": "cancelled"}
     )
-    client.patch(
+    edited = client.patch(
         f"/api/drafts/{draft}",
         headers=headers,
         json={
             "subject": "Changed subject",
             "body": "Entirely changed message requiring another review.",
+            "expected_edit_version": client.get(f"/api/drafts/{draft}").json()["edit_version"],
         },
     )
+    assert edited.status_code == 200
     assert client.post(f"/api/drafts/{draft}/handoff", headers=headers, json={}).status_code == 409
 
 

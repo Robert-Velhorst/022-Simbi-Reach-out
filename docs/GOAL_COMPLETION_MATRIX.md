@@ -29,7 +29,7 @@ Scope clarification on 2026-09-05: the owner confirmed this is a personal tool f
 | 018 Limits/cooldowns | Implemented | Daily campaign limit and per-prospect cooldown enforced server-side. |
 | 019 Audit history | Implemented | Material events persisted without bodies/credentials. |
 | 020 Dashboard/next action | Implemented | Exception-first dashboard and real empty states. |
-| 021 Forms/validation/autosave | Partial | Validation and save behavior implemented; autosave intentionally omitted to avoid unreviewed state churn. |
+| 021 Forms/validation/autosave | Partial | Explicit manual saves now require serialized editing versions, reject stale overwrites, preserve no-op approval/history and offer verified current-state comparison/recovery without implicit writes. RAM-only unsaved text can be lost on selection/navigation/reload; no durable autosave/crash recovery. See DRAFT_SAVING.md and exact dated evidence. |
 | 022 Search/filter/sort/page | Implemented | Bounded server search/sort/pagination helpers; draft filters. |
 | 023 Import/export | Implemented | Atomic CSV preview/commit and authenticated JSON export. |
 | 024 Templates/defaults | Implemented | Reusable versioned templates with four explicit fields. |
@@ -65,7 +65,7 @@ Scope clarification on 2026-09-05: the owner confirmed this is a personal tool f
 | 054 Reconciliation/repair | Implemented | Detects orphans/impossible sends; safe explicit repair. |
 | 055 Local analytics | Implemented | Schema is local/event-minimal; no external telemetry. |
 | 056 SaaS without billing | Not applicable | Owner explicitly chose a personal tool for his own account on 2026-09-05, not a shared SaaS. No tenant provisioning, workspace switching or billing is required; existing deployment and isolation controls remain preserved. |
-| 057 i18n Dutch/English | Implemented | Typed672-key English/Dutch UI catalogs, including main-content/bypass labels, retention continuation, older receipt lookup, historical audit and retirement/retired-state controls; pre-auth/header selection, persistent browser preference, localized labels/notices/statuses/counts/dates, unchanged authored data and API/CSV/template values. Unit/static guards and local Dutch Chromium workflow pass. Diagnostics/CLI/docs are not automatically translated; see LOCALIZATION.md and the dated ledger. |
+| 057 i18n Dutch/English | Implemented | Typed691-key English/Dutch UI catalogs add19 draft-save conflict/comparison/recovery labels to the existing keyboard/privacy/retirement controls. Pre-auth/header preference and localized notices/statuses/counts/dates preserve authored data/API/CSV/template values. Unit/static and actual workflow evidence are in LOCALIZATION.md and the dated ledger; diagnostics/CLI/docs are not automatically translated. |
 | 058 Feature flags | Implemented | Workspace-scoped flag schema; no risky feature is silently enabled. |
 | 059 State machines | Implemented | Explicit draft transition map and guarded endpoints. |
 | 060 Domain specification | Implemented | Schema and `CRITICAL_PATH.md`. |
@@ -81,7 +81,7 @@ Scope clarification on 2026-09-05: the owner confirmed this is a personal tool f
 | 070 Operator runbook | Implemented | Start, stop, backup, restore, incident and troubleshooting. |
 | 071 User guide/help | Implemented | README plus page-specific safe guidance and empty states. |
 | 072 Error catalog | Implemented | Runbook maps operational error codes to safe action. |
-| 073 UI action audit | Partial | Viewer-role gaps/shared-modal defects repaired; native navigation and named table scroll regions now have focused regressions and full-harness owner/viewer eleven-route bilingual desktop/mobile/short-drawer checks. Navigation rejects API writes and owner export tables are compared before/after. Exact current test/CI outcomes are in the ledger, not old totals. Every action/state/optional role and dedicated assistive-technology acceptance remain open. |
+| 073 UI action audit | Partial | Version-bound draft save/current-state comparison adds exact response/recovery/explicit-choice guards and stable localized accessible names. Focused tests and actual bilingual sibling-tab Chromium checks preserve nine exported tables at nonwrite boundaries, reject post-comparison changes and recover committed response interruption without duplicate writes. Existing eleven-route owner/viewer navigation remains covered. Exact current/source CI is in the ledger; every action/state/optional role and dedicated assistive-technology acceptance remain open. |
 | 074 Endpoint usage audit | Implemented | Endpoint/consumer/test map in `API_USAGE_AUDIT.md`. |
 | 075 Documentation truth | Implemented | Claims distinguish implemented, partial, blocked and external. |
 | 076 Technical debt | Implemented | Partial/N/A/blocked gaps retained in this matrix and final report. |
@@ -104,7 +104,7 @@ Scope clarification on 2026-09-05: the owner confirmed this is a personal tool f
 | 093 Manual evidence | Implemented | Real browser critical path plus desktop/mobile screenshots and concept comparison. |
 | 094 No-excuses search | Implemented | Final whitespace, unsafe automation, credential, secret-pattern and placeholder scans passed. |
 | 095 Completion matrix | Implemented | This document. |
-| 096 Final verification | Partial | PR97 merged conflict-free atbc69e72 after source36810172470/PR36810175692 passed all four jobs atf2d76bb; all eight checks and source/merge tree2726283 match.264 backend/186 frontend/672 keys, actual three-engine owner/viewer88 navigation checks/96 selected scans and retained complete bilingual workflow/privacy/retention/retirement/recovery, audits/Windows/container/storage proof are in the ledger. README follows merge separately; later main checks are distinct. General privacy/archive/manual-provider/operator and broader device/action/accessibility/credential gates remain open. |
+| 096 Final verification | Partial | Personal draft-save follow-up:289 backend/198 frontend/691 keys, final local full Chromium/both retirement locales, actual sibling-tab conflicts/late-change/current-state recovery/Dutch committed-response abort,4 added comparison scans and retained complete prior workflows pass. Exact-source/PR/merge/publication evidence is recorded separately in the ledger, never inferred from PR97's previous three-engine/Windows/container results. README follows conflict-free merge separately. General privacy/archive/manual-provider/operator and broader device/action/accessibility/credential gates remain open. |
 | 097 Final response | Partial | Incremental publication/verification results are reported; the full production objective still has open original requirements. |
 | 098 Maintenance plan | Implemented | Runbook release/backup/restore plus changelog discipline. |
 | 099 Roadmap/blockers | Implemented | Exact remaining gaps listed here/final report. |

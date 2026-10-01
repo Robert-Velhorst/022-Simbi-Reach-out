@@ -5,7 +5,7 @@ import AppShell from '../components/AppShell'
 import type { Draft, Member } from '../types'
 
 const member: Member = { user_id: 1, email: 'qa@example.test', display_name: 'QA', workspace_id: 1, workspace_name: 'QA workspace', role: 'viewer', mode: 'assisted', compliance_ack_at: '2026-09-05', paused_at: null, environment: 'test', demo_mode: false }
-const draft: Draft = { id: 1, campaign_id: 1, prospect_id: 1, template_id: 1, prospect_name: 'QA person', organization: 'QA', source_url: 'https://simbi.com/qa', consent_status: 'consented', campaign_name: 'QA campaign', template_name: 'QA template', subject: 'QA subject', body: 'QA message', state: 'needs_review', quality_score: 100, content_hash: 'qa-content', safety_flags: [], updated_at: '2026-09-05T12:00:00Z' }
+const draft: Draft = { id: 1, campaign_id: 1, prospect_id: 1, template_id: 1, prospect_name: 'QA person', organization: 'QA', source_url: 'https://simbi.com/qa', consent_status: 'consented', campaign_name: 'QA campaign', template_name: 'QA template', subject: 'QA subject', body: 'QA message', state: 'needs_review', quality_score: 100, content_hash: 'qa-content', edit_version: 'b'.repeat(64), safety_flags: [], updated_at: '2026-09-05T12:00:00Z' }
 const rows = {
   prospects: [{ id: 1, name: 'QA person', organization: 'QA', provider: 'simbi', source_url: 'https://simbi.com/qa', contact_handle: '', notes: '', consent_status: 'consented', created_at: '2026-09-05' }],
   campaigns: [{ id: 1, name: 'QA campaign', description: '', purpose: 'QA purpose', lawful_basis: 'QA context', status: 'active', daily_limit: 10, cooldown_minutes: 1440 }],
