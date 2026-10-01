@@ -7,6 +7,10 @@ const catalogs = Object.fromEntries(['en', 'nl'].map((locale) => [locale, JSON.p
 // All app navigation, entry and actions below use sequential Tab and keyboard
 // input. Locators/evaluation only observe the UI; request calls only read it.
 export async function keyboardOutreachWorkflow(page, origin, axe, screenshots) {
+  // Establish the already-authenticated entry boundary independently of the
+  // preceding sibling-tab test's browser-chrome focus. No records are written;
+  // every application interaction after this one preflight reload is keyboard.
+  await page.reload({ waitUntil: 'networkidle' })
   const errors = []
   const writes = []
   const onError = (error) => errors.push(error.message)
@@ -217,6 +221,7 @@ export async function keyboardOutreachWorkflow(page, origin, axe, screenshots) {
         assert.ok(Array.isArray(before[table]) && Array.isArray(after[table]))
         assert.deepEqual(after[table].filter((item) => before[table].some((old) => old.id === item.id)), before[table], `Keyboard fixture must preserve prior ${table}`)
       }
+      assert.deepEqual(after.audit_events.filter((item) => before.audit_events.some((old) => old.id === item.id)), before.audit_events, 'Intentional writes may append audit events, never alter existing audit history')
       assert.deepEqual(writes.slice(startWrites), [
         'POST /api/campaigns', `PATCH /api/campaigns/${campaign.id}/status`, 'POST /api/prospects', 'POST /api/templates', 'POST /api/drafts', `PATCH /api/drafts/${draft.id}`,
         `POST /api/drafts/${draft.id}/review`, `POST /api/drafts/${draft.id}/handoff`, `POST /api/handoffs/${after.handoffs.find((item) => item.draft_id === draft.id).id}/outcome`,
