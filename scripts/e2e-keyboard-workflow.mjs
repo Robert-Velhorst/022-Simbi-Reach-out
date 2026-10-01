@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { activate, enter, choose, tabTo } from './e2e-keyboard-controls.mjs'
 
 const catalogs = Object.fromEntries(['en', 'nl'].map((locale) => [locale, JSON.parse(readFileSync(new URL(`../frontend/src/locales/${locale}.json`, import.meta.url), 'utf8'))]))
 
@@ -247,49 +248,4 @@ export async function keyboardOutreachWorkflow(page, origin, axe, screenshots) {
     page.off('pageerror', onError); page.off('console', onConsole); page.off('request', onRequest)
     await page.evaluate(() => window.keyboardProofCleanup?.())
   }
-}
-
-async function tabTo(page, target) {
-  await target.waitFor({ state: 'visible' })
-  assert.equal(await target.count(), 1, 'Keyboard destination must be unambiguous')
-  // Paged resource selectors are replaced when their first result arrives.
-  // Resolve the locator afresh instead of waiting forever on a detached node.
-  const deadline = Date.now() + 30_000
-  while (!(await target.isEnabled())) {
-    assert.ok(Date.now() < deadline, `Keyboard destination stayed disabled: ${await target.evaluate((element) => element.outerHTML)}`)
-    await page.waitForTimeout(50)
-  }
-  // Firefox can hand focus to browser chrome at the end of the document.
-  // Reach earlier controls with ordinary backward Tab instead of relying on
-  // a browser-specific forward wrap or jumping focus programmatically.
-  const key = await target.evaluate((element) => element.compareDocumentPosition(document.activeElement) & Node.DOCUMENT_POSITION_FOLLOWING ? 'Shift+Tab' : 'Tab')
-  for (let step = 0; step < 180; step++) {
-    if (await target.evaluate((element) => element === document.activeElement)) return
-    await page.keyboard.press(key)
-  }
-  assert.fail(`Not reachable through sequential Tab: ${await target.evaluate((element) => element.outerHTML)}`)
-}
-
-async function activate(page, target, key = 'Enter') {
-  await tabTo(page, target)
-  assert.ok(await target.isEnabled(), 'Keyboard action must remain enabled')
-  await page.keyboard.press(key)
-}
-
-async function enter(page, target, value) {
-  await tabTo(page, target)
-  await page.keyboard.press('ControlOrMeta+A')
-  await page.keyboard.insertText(value)
-  assert.equal(await target.inputValue(), value)
-}
-
-async function choose(page, target, value) {
-  await tabTo(page, target)
-  const options = await target.locator('option').count()
-  await page.keyboard.press('Home')
-  for (let step = 0; step <= options; step++) {
-    if (await target.inputValue() === value) return
-    await page.keyboard.press('ArrowDown')
-  }
-  assert.fail(`Native keyboard selection could not reach option ${value}`)
 }

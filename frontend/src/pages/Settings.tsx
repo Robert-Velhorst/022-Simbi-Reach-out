@@ -1,5 +1,5 @@
 import { useI18n } from '../i18n'
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { AlertOctagon, DatabaseBackup, Download, ShieldCheck, UserPlus } from 'lucide-react'
 import { api, ApiError, post } from '../api'
 import { Button, Field, Input, Notice, Panel, Select } from '../components/ui'
@@ -21,18 +21,33 @@ export default function SettingsPage({ member, onMemberChange, onRetired = () =>
   const [data, setData] = useState<SettingsData | null>(null)
   const [message, setMessage] = useState<{ tone: 'success' | 'danger'; text: string } | null>(null)
   const [passwordBusy, setPasswordBusy] = useState(false)
+  const [complianceBusy, setComplianceBusy] = useState(false)
+  const complianceInFlight = useRef(false)
+  const complianceFocus = useRef<HTMLElement | null>(null)
   const [reauthenticate, setReauthenticate] = useState(false)
   const canAdmin = ['owner', 'admin'].includes(member.role)
   async function load() { setData(await api<SettingsData>('/settings')) }
   async function refreshMember() { onMemberChange(await api<Member>('/me')) }
   useEffect(() => { void load().catch((cause) => setMessage({ tone: 'danger', text: cause instanceof Error ? cause.message : 'Settings could not be loaded' })) }, [])
+  useEffect(() => {
+    if (complianceBusy) return
+    const target = complianceFocus.current
+    complianceFocus.current = null
+    // A disabled submitter can leave Firefox on BODY. Restore it after enabling,
+    // but never steal focus from another control or from outside the document.
+    if (target?.isConnected && document.hasFocus() && document.activeElement === document.body) target.focus()
+  }, [complianceBusy])
 
   async function compliance(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setMessage(null)
+    event.preventDefault()
+    if (!canAdmin || complianceInFlight.current) return
     const form = new FormData(event.currentTarget)
     const names = ['reviewed_simbi_terms', 'confirmed_no_scraping', 'confirmed_manual_send', 'confirmed_suppression_process']
+    complianceFocus.current = document.activeElement instanceof HTMLElement && event.currentTarget.contains(document.activeElement) ? document.activeElement : null
+    complianceInFlight.current = true; setComplianceBusy(true); setMessage(null)
     try { await post('/settings/compliance', Object.fromEntries(names.map((name) => [name, form.get(name) === 'on']))); await Promise.all([load(), refreshMember()]); setMessage({ tone: 'success', text: 'Compliance acknowledgement recorded in the audit log.' }) }
     catch (cause) { setMessage({ tone: 'danger', text: cause instanceof ApiError ? cause.message : 'Could not save compliance review' }) }
+    finally { complianceInFlight.current = false; setComplianceBusy(false) }
   }
 
   async function provider(event: FormEvent<HTMLFormElement>) {
@@ -75,7 +90,7 @@ export default function SettingsPage({ member, onMemberChange, onRetired = () =>
       {member.role === 'owner' && data ? <PrivacyControls retentionDays={data.workspace.retention_days} onSaved={load} /> : null}
       {member.role === 'owner' && data ? <AuditPrivacyControls /> : null}
       <Panel title={t("Account password")}><p className="panel-intro">{t("Change your local workspace password. This signs out all your sessions, including this one; it never changes a provider password.")}</p><form className="form-stack" onSubmit={changePassword}><Field label={t("Current password")}><Input name="current_password" type="password" required autoComplete="current-password" /></Field><Field label={t("New password")}><Input name="new_password" type="password" required minLength={12} maxLength={200} autoComplete="new-password" /></Field><Button disabled={passwordBusy}>{t("Change password")}</Button></form></Panel>
-      <Panel title={t("Compliance acknowledgement")}><p className="panel-intro">{t("Simbi's current terms prohibit unsolicited messages, harvesting, scraping, automated searches and automated agents. Re-check policy before each operational launch.")}</p>{data?.workspace.compliance_ack_at ? <Notice tone="success"><ShieldCheck size={18} />{t('Acknowledged at {date}.', { date: formatDate(data.workspace.compliance_ack_at) })}</Notice> : null}<form className="check-form" onSubmit={compliance}><label><input type="checkbox" name="reviewed_simbi_terms" required />{t("I reviewed the current Simbi terms and acceptable use rules.")}</label><label><input type="checkbox" name="confirmed_no_scraping" required />{t("I will only use manually supplied or authorized records; no scraping or harvesting.")}</label><label><input type="checkbox" name="confirmed_manual_send" required />{t("I understand every external send remains manual.")}</label><label><input type="checkbox" name="confirmed_suppression_process" required />{t("I will record opt-outs and stop outreach immediately.")}</label><Button disabled={!canAdmin}>{t("Record acknowledgement")}</Button></form></Panel>
+      <Panel title={t("Compliance acknowledgement")}><p className="panel-intro">{t("Simbi's current terms prohibit unsolicited messages, harvesting, scraping, automated searches and automated agents. Re-check policy before each operational launch.")}</p>{data?.workspace.compliance_ack_at ? <Notice tone="success"><ShieldCheck size={18} />{t('Acknowledged at {date}.', { date: formatDate(data.workspace.compliance_ack_at) })}</Notice> : null}<form className="check-form" onSubmit={compliance}><label><input type="checkbox" name="reviewed_simbi_terms" required disabled={complianceBusy || !canAdmin} />{t("I reviewed the current Simbi terms and acceptable use rules.")}</label><label><input type="checkbox" name="confirmed_no_scraping" required disabled={complianceBusy || !canAdmin} />{t("I will only use manually supplied or authorized records; no scraping or harvesting.")}</label><label><input type="checkbox" name="confirmed_manual_send" required disabled={complianceBusy || !canAdmin} />{t("I understand every external send remains manual.")}</label><label><input type="checkbox" name="confirmed_suppression_process" required disabled={complianceBusy || !canAdmin} />{t("I will record opt-outs and stop outreach immediately.")}</label><Button disabled={complianceBusy || !canAdmin}>{t(complianceBusy ? "Recording acknowledgement…" : "Record acknowledgement")}</Button></form></Panel>
       <Panel title={t("Emergency safety stop")}><p className="panel-intro">{t("The stop blocks new approvals and provider handoffs. Local edits, exports and reply recording remain available for recovery.")}</p>{data?.workspace.paused_at ? <Notice tone="danger"><AlertOctagon size={18} />{t('Paused since {date}.', { date: formatDate(data.workspace.paused_at) })}</Notice> : <Notice tone="success">{t("The workspace is operating under its normal approval gates.")}</Notice>}<Button variant={data?.workspace.paused_at ? 'secondary' : 'danger'} disabled={!canAdmin} onClick={() => pause(!data?.workspace.paused_at)}>{data?.workspace.paused_at ? t("Resume guarded workflow") : t("Enable safety stop")}</Button></Panel>
       <Panel title={t("Provider handoff")}><p className="panel-intro">{t("Only an HTTPS base link is stored. The backend restricts handoffs to the same approved hostname.")}</p><form className="form-stack" key={data?.providers[0]?.base_url ?? "loading"} onSubmit={provider}><Field label={t("Provider")}><Input name="provider" defaultValue="simbi" required disabled={!canAdmin} /></Field><Field label={t("HTTPS base URL")}><Input name="base_url" type="url" defaultValue={data?.providers[0]?.base_url ?? 'https://simbi.com/'} required disabled={!canAdmin} /></Field><Button variant="secondary" disabled={!canAdmin}>{t("Save assisted provider")}</Button></form></Panel>
       <Panel title={t("Data controls")}><p className="panel-intro">{t("Exports contain workspace records. Support bundles are separately redacted and contain only diagnostics.")}</p>{canAdmin ? <div className="button-stack"><a className="button button-secondary" href="/api/export" target="_blank" rel="noreferrer"><Download size={17} />{t("Export workspace JSON")}</a><a className="button button-secondary" href="/api/support-bundle" target="_blank" rel="noreferrer"><DatabaseBackup size={17} />{t("Download redacted support data")}</a></div> : <Notice>{t("Ask a workspace owner or admin to export workspace records or download redacted support data.")}</Notice>}<small>{t('Retention window: {days} days. Suppression records are retained so opt-outs are not forgotten.', { days: data?.workspace.retention_days ?? '—' })}</small></Panel>

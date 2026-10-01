@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — personal keyboard bootstrap and compliance (2026-10-01)
+
+- Refuse repeated pending compliance submissions/read-only form events, retain backend authorization, add bilingual pending feedback and preserve choices for an explicit retry.
+- Restore a submitting control after disabled-control BODY focus loss only if the document has focus and the operator did not choose another control. Seven regression cases cover repeat/role/retry/focus/localization.
+- Include separate token-required English-desktop/Dutch-mobile keyboard setup/login/compliance fixtures before every full engine workflow. Require native no-write validation, refused-token/password correction, one real audit despite repeated Enter, same-owner recovery, six UI POST requests per locale and six added selected scans; no pointer/provider/write-client fixtures.
+- Preserve all previous workflow/retirement assertions through unchanged shared traversal. One additive locale key; no backend/schema/dependency/real-account/data/runtime change. Production/assistive/device/provider and private draft-recovery storage remain separate.
+
 ## Unreleased — personal keyboard record-keeping verification (2026-10-01)
 
 - Extend the existing complete browser suite with English desktop/Dutch mobile sequential-Tab and native-keyboard campaign/prospect/template/draft/save/review, fictional uncertainty, date/time reminder, reply/report and stop-contact actions. Require exact UI write counts, unchanged earlier operational records, native validation/Escape, state readback, six selected scans and screenshots.

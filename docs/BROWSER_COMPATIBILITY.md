@@ -4,6 +4,8 @@ This is a personal, single-owner tool. Browser checks use fresh fictional local 
 
 ## Scope of the checks
 
+The full entry command first runs `scripts/e2e-auth.mjs` in separate owned token-required test installations: English desktop/Dutch mobile sequential-keyboard setup, native no-write validation, rejected-token/form preservation, four fictional compliance checks, delayed real confirmation/repeat refusal/one audit/focus return, logout, rejected-login preservation and corrected same-owner sign-in. Six UI POST requests per locale include two rejected attempts; three selected scans/screenshots per locale and exact operational/old-audit preservation accompany the path. No pointer/provider/write-client fixture action is used. This is test-mode bootstrap operability, not production TLS/cookie/operator or actual policy/provider acceptance. See [procedure and limits](ACCESSIBILITY.md#keyboard-first-owner-setup-sign-in-and-compliance) and exact dated results.
+
 The full suite also invokes `scripts/e2e-keyboard-workflow.mjs`: an already signed-in fictional owner reaches every control through sequential Tab in English desktop1440x1000 and Dutch mobile390x844. Keyboard entry/selection/activation covers campaign, prospect, template, draft, explicit save/review, local uncertainty, native date/time reminder, reply/cancelled reminder, report and stop contact. Exactly twelve UI mutations per locale preserve all eight prior operational tables; six added selected scans and named screenshots accompany the journey. No pointer interaction, programmatic focus/input assignment, provider navigation/copy/send or API fixture write is used. Setup/sign-in/compliance, other form/error states and dedicated assistive technology remain separate. See [the detailed scope](ACCESSIBILITY.md#keyboard-only-personal-record-keeping-journey) and exact executed outcomes in the dated ledger.
 
 The keyboard action path has one read-only preflight reload before its keyboard-only interactions and pairs English desktop with Dutch mobile, rather than exercising every action in a four-way locale/viewport matrix. It preserves existing audit rows while allowing audit appends from its intentional writes. Native date entry is tried first; if it remains empty, the operator-visible validated text option is selected using the keyboard. The separate navigation checks exercise both sizes in both languages with no record writes and compare all nine tables unchanged.
@@ -43,11 +45,12 @@ try {
 }
 ```
 
-The main suite defaults to 4173 and retirement to 4178. Choose unused unprivileged ports through `SIMBI_E2E_PORT` and `SIMBI_RETIREMENT_E2E_PORT` if needed. For example, set these variables and run the full-suite block above in that same separate temporary PowerShell window:
+The main suite defaults to4173, retirement to4178 and separate keyboard bootstrap to4179. Choose unused unprivileged ports through `SIMBI_E2E_PORT`, `SIMBI_RETIREMENT_E2E_PORT` and `SIMBI_AUTH_E2E_PORT` if needed. Each helper verifies its own child's bind before fixture writes. For example, set these variables and run the full-suite block above in that same separate temporary PowerShell window:
 
 ```powershell
 $env:SIMBI_E2E_PORT = '4185'
 $env:SIMBI_RETIREMENT_E2E_PORT = '4186'
+$env:SIMBI_AUTH_E2E_PORT = '4196'
 ```
 
 Close that window afterward so its port choices do not leak into ordinary checks. Run sequentially as above; simultaneous suites must use distinct pairs of ports. These browser harnesses create distinct fresh folders; backend pytest uses a separate shared `backend/tests/.runtime` fixture directory and should not run concurrently with another backend pytest suite. No test server should be stopped merely to free a port belonging to someone else.
