@@ -33,7 +33,7 @@ try {
 }
 ```
 
-The main suite defaults to 4173 and retirement to 4178. Choose unused unprivileged ports through `SIMBI_E2E_PORT` and `SIMBI_RETIREMENT_E2E_PORT` if needed. For example, in a separate temporary PowerShell window, before running the block above:
+The main suite defaults to 4173 and retirement to 4178. Choose unused unprivileged ports through `SIMBI_E2E_PORT` and `SIMBI_RETIREMENT_E2E_PORT` if needed. For example, set these variables and run the full-suite block above in that same separate temporary PowerShell window:
 
 ```powershell
 $env:SIMBI_E2E_PORT = '4185'
@@ -50,4 +50,4 @@ With GitHub CLI access, find commit-specific runs from the checkout using `gh ru
 
 The ledger records engine versions, actual runs, checks and any failed attempts. The initial Windows Firefox run exposed a harness startup wait issue: `networkidle` was observed before document load and setup subsequently timed out. Waiting for `load` on initial navigation, while retaining explicit heading/state assertions, allowed the full workflow to run. No application timeout was increased and no setup or safety assertion was removed. This is a test-harness repair, not a proven Firefox application defect.
 
-Playwright WebKit is not installed Safari, and a resized desktop viewport is not a physical phone. These results do not establish current branded Edge/Chrome/Safari, iOS/Android virtual keyboards, dedicated assistive technology, every browser setting/extension, a fresh Windows installation, authenticated Simbi use or delivery. The personal production objective and phase050 therefore remain partial; other open gates stay in the [completion matrix](GOAL_COMPLETION_MATRIX.md).
+Playwright WebKit is not installed Safari, and a resized desktop viewport is not a physical phone. Official [Playwright browser documentation](https://playwright.dev/docs/browsers#webkit) distinguishes its patched engines from branded browsers. These results do not establish current branded Edge/Chrome/Safari, iOS/Android virtual keyboards, dedicated assistive technology, every browser setting/extension, a fresh Windows installation, authenticated Simbi use or delivery. The personal production objective and phase050 therefore remain partial; other open gates stay in the [completion matrix](GOAL_COMPLETION_MATRIX.md).
