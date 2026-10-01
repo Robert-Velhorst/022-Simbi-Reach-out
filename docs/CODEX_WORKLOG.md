@@ -1,5 +1,11 @@
 # Codex worklog
 
+## 2026-10-01 — personal keyboard record-keeping verification
+
+- Refreshed clean main4685ee9/final CI36814676808 and exhaustive zero-open-PR inventory; read preserved original phases049/115. Extend the existing full harness with sequential Tab/native keyboard owner actions, English desktop/Dutch mobile, exact twelve UI mutations per locale, preservation of earlier records and six selected scans. No backend/schema/dependency/provider/real-data/runtime change.
+- Initial native-control diagnostic confirms date segment order/defaults vary by browser/OS; test reads the actual valid input and exact stored ISO conversion rather than assigning a DOM value. Failed local runs exposed two harness assumptions, not new product defects: reply cancellation was incorrectly expected as done, then pending controls were activated too early. Corrections retain all exact safety/state checks; final completed acceptance/publication is recorded separately in the top ledger. Full goal remains active.
+- Later selector lifetime and Firefox forward-wrap diagnostics led to fresh-locator enablement waits and actual Tab/Shift+Tab, without browser preference changes. A real confirmed-stop focus defect was then reproduced by a failing unit test and fixed with the existing Modal live-return ref; success focuses the prospects region, cancellation/failure keep their original behavior. Three focused tests pass; final rebuilt full-suite/CI evidence is separate from the earlier Chromium pass.
+
 ## 2026-10-01 — version-bound personal draft saves
 
 - Merge-main36814156212 passed all four jobs at905e5a2; completed results inspected, including exact289/198 counts, actual all-three-engine new/prior bilingual/retirement paths, clean audits and Windows/container/storage checks. Final README/guide/ledger reader recheck found no material contradiction;95 relative/38 heading links across13docs and whitespace pass. This separate README/publication push changes no runtime/tests/CI; its own later run is distinct proof.

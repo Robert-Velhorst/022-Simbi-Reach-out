@@ -4,6 +4,7 @@ The original results are historical in `FINAL_VERIFICATION_REPORT.md`; current e
 
 | ID | Scenario | Expected |
 |---|---|---|
+| A35 | Keyboard-only personal record-keeping | Already signed-in fictional owner: English desktop/Dutch mobile sequential Tab/native keyboard campaign/prospect/template/draft/save/review, one uncertain handoff, native reminder date, reply cancelling the reminder, exact report and stop-contact restriction. No programmatic focus, pointer, provider/copy/send or API fixture write; exactly12 UI mutations per locale and prior operational records unchanged. Empty campaign validation/Escape, six selected scans, screenshots and actual dated execution required. Not keyboard authentication/compliance or real provider acceptance. See ACCESSIBILITY.md. |
 | A34 | Version-bound personal draft saving | Required editing token; stale save changes no records/audit, exact no-op preserves approval, concurrent same-version requests have one winner. Two same-owner tabs in both languages compare/cancel/rebase without writes; separate save resets review and a later change rejects again. Committed bad/interrupted response retains edits; verified matching current-state acceptance performs no duplicate write. RAM-only unsaved text is not autosave/crash recovery. See DRAFT_SAVING.md and the exact execution ledger. |
 | A01 | First owner setup | One owner/workspace/session created; second setup rejected. |
 | A02 | Missing CSRF on write | `403 csrf_failed`; security headers present. |
