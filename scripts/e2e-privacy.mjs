@@ -3,7 +3,7 @@ import { resolve } from 'node:path'
 
 const catalogs = Object.fromEntries(['en', 'nl'].map((locale) => [locale, JSON.parse(readFileSync(new URL(`../frontend/src/locales/${locale}.json`, import.meta.url), 'utf8'))]))
 
-export async function privacyWorkflow(page, origin, root, password, axe) {
+export async function privacyWorkflow(page, origin, root, password, axe, screenshots = resolve(root, '..')) {
   for (const locale of ['en', 'nl']) {
     const t = (key) => catalogs[locale][key] ?? (() => { throw new Error(`Missing privacy QA translation: ${key}`) })()
     const button = (key) => page.getByRole('button', { name: t(key), exact: true })
@@ -41,7 +41,7 @@ export async function privacyWorkflow(page, origin, root, password, axe) {
     if (await dialog.evaluate((element) => { const rect = element.getBoundingClientRect(); return rect.left < -1 || rect.right > innerWidth + 1 || Math.abs(rect.left - (innerWidth - rect.width) / 2) > 2 })) throw new Error('Desktop cleanup dialog is clipped or off center')
     await dialog.getByLabel(t('Local account password')).fill(password)
     await dialog.getByRole('checkbox').check()
-    await page.screenshot({ path: resolve(root, '..', `simbi-privacy-${locale}-desktop.png`) })
+    await page.screenshot({ path: resolve(screenshots, `simbi-privacy-${locale}-desktop.png`) })
     await page.keyboard.press('Escape')
     await dialog.waitFor({ state: 'hidden' })
     if (!(await button('Review removal').evaluate((element) => document.activeElement === element))) throw new Error('Cleanup cancel did not restore focus')
@@ -54,7 +54,7 @@ export async function privacyWorkflow(page, origin, root, password, axe) {
     if (await dialog.getByLabel(t('Local account password')).inputValue() !== '' || await dialog.getByRole('checkbox').isChecked()) throw new Error('Cancelled removal retained secrets or acknowledgement')
     await page.setViewportSize({ width: 390, height: 450 })
     if (await dialog.evaluate((element) => { const rect = element.getBoundingClientRect(); return rect.left < -1 || rect.right > innerWidth + 1 || rect.top < -1 || rect.bottom > innerHeight + 1 })) throw new Error('Mobile cleanup dialog exceeds viewport bounds')
-    await page.screenshot({ path: resolve(root, '..', `simbi-privacy-${locale}-mobile.png`) })
+    await page.screenshot({ path: resolve(screenshots, `simbi-privacy-${locale}-mobile.png`) })
     await page.addScriptTag({ content: axe.source })
     const findings = await page.evaluate(async () => window.axe.run(document, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] } }))
     if (findings.violations.length) throw new Error(`Cleanup ${locale} accessibility: ${JSON.stringify(findings.violations.map(({ id, nodes }) => ({ id, targets: nodes.map(({ target }) => target) })))}`)
@@ -109,7 +109,7 @@ export async function privacyWorkflow(page, origin, root, password, axe) {
       await scopeDialog.waitFor()
       await page.setViewportSize({ width: kind === 'template' ? 1440 : 390, height: kind === 'template' ? 1000 : 450 })
       if (await scopeDialog.evaluate((element) => { const rect = element.getBoundingClientRect(); return rect.left < -1 || rect.right > innerWidth + 1 || rect.top < -1 || rect.bottom > innerHeight + 1 || element.scrollWidth > element.clientWidth + 1 })) throw new Error(`Clipped ${kind} cleanup dialog`)
-      await page.screenshot({ path: resolve(root, '..', `simbi-${kind}-cleanup-${locale}.png`) })
+      await page.screenshot({ path: resolve(screenshots, `simbi-${kind}-cleanup-${locale}.png`) })
       await page.addScriptTag({ content: axe.source })
       const scopedAxe = await page.evaluate(async () => window.axe.run(document, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] } }))
       if (scopedAxe.violations.length) throw new Error(`${kind} privacy accessibility violations: ${JSON.stringify(scopedAxe.violations.map(({ id }) => id))}`)
