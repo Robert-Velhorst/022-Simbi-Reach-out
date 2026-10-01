@@ -635,7 +635,7 @@ The exact browser-acceptance source CI on 2026-10-01 passed **180 backend tests*
 
 Backend coverage includes the assisted workflow, authorization/workspace isolation, CSRF/login throttling, exact-content approval, durable restrictions, stale/uncertain handoffs, account races, bounded pagination, maintenance, HAI and backup/restore. Privacy checks verify exact deletion/link-only scopes, current-owner confirmation, pre-change snapshot contents, backup/post-backup rollback, changed/expired/replaced plans, preserved restrictions, shared-installation refusal, blocked bootstrap after retirement and worker/export serialization. These tests use fictional data, never Robert's real records or provider account.
 
-Browser coverage includes setup/sign-in, resources, review, interrupted/cancelled handoff recovery, opt-outs, a fictional sent/reply/reminder/report journey, password change, read-only viewer controls, accurate loading/retry/stale results on nine operational routes, language persistence/cross-tab input preservation, cleanup and retirement. Desktop 1440x1000, mobile 390x844 and short-mobile 390x450 dialog/navigation paths are checked where applicable. Controlled HTTP503, signed-out HTTP401 and response-interruption probes are intentional; they are not unexplained browser failures. The harness checks its own server has bound before fixture requests and blocks unexpected external HTTP requests in owner/viewer/retirement contexts. Sent/reply fixtures do not prove delivery. Engine checks are not full security, screen-reader, branded-browser or physical-device certification; Playwright WebKit is not installed Safari. See the [browser guide](docs/BROWSER_COMPATIBILITY.md) for exact coverage, commands, evidence and limits.
+Browser coverage includes setup/sign-in, resources, review, interrupted/cancelled handoff recovery, opt-outs, a fictional sent/reply/reminder/report journey, password change, read-only viewer controls, truthful loading on nine operational routes, campaign read/retry and stale report-refresh recovery, language persistence/cross-tab input preservation, cleanup and retirement. Desktop 1440x1000, mobile 390x844 and short-mobile 390x450 dialog/navigation paths are checked where applicable. Controlled HTTP503, signed-out HTTP401 and response-interruption probes are intentional; they are not unexplained browser failures. The harness checks its own server has bound before fixture requests and blocks unexpected external HTTP requests in owner/viewer/retirement contexts. Sent/reply fixtures do not prove delivery. Engine checks are not full security, screen-reader, branded-browser or physical-device certification; Playwright WebKit is not installed Safari. See the [browser guide](docs/BROWSER_COMPATIBILITY.md) for exact coverage, commands, evidence and limits.
 
 Linux CI also audits dependencies, runs the capacity benchmark, checks for unsafe automation/secret patterns, builds Docker, verifies isolated production storage/maintenance and validates Compose/runtime readiness. Chromium runs in the full verification job; Firefox and WebKit have independent complete-workflow jobs, not reduced demo checks. Windows CI checks launcher/worker lifecycles, builds the standalone app, runs isolated executable readiness/backup/shutdown smoke and uploads the package. A newly built artifact proves those tested package paths—not a signed release, fresh-machine installation, personal-data migration, public TLS/ngrok reachability or receiving-side HAI ingestion. No paid AI/provider integration is exercised.
 
@@ -651,7 +651,7 @@ After dependency installation:
 .\scripts\verify.ps1
 ```
 
-Run this script in PowerShell 7.2 or newer. It also expects Docker and installs Chromium. Each external check runs through `Invoke-SimbiNative`, which stops the script and reports the command's nonzero exit code on failure; missing commands also stop execution. A successful run proves only the checks included in this script, not every release gate listed below. CI runs its checks as separate failing steps. For explicit checks:
+Run this script in PowerShell 7.2 or newer. It also expects Docker and installs Chromium. Its browser harness honours an existing `SIMBI_E2E_BROWSER`; if you deliberately select Firefox/WebKit, install that matching runtime first or follow the all-engine guide below. With the variable unset, Chromium is the default. Each external check runs through `Invoke-SimbiNative`, which stops the script and reports the command's nonzero exit code on failure; missing commands also stop execution. A successful run proves only the checks included in this script, not every release gate listed below. CI runs its checks as separate failing steps. The explicit example below selects Chromium for its browser call and restores your prior setting:
 
 ```powershell
 .\.venv\Scripts\python.exe -m ruff check backend
@@ -663,7 +663,15 @@ pnpm.cmd --dir frontend test
 pnpm.cmd --dir frontend build
 pnpm.cmd --dir frontend audit --audit-level high
 pnpm.cmd --dir frontend exec playwright install chromium
-pnpm.cmd --dir frontend test:e2e:run
+if ($LASTEXITCODE -ne 0) { throw 'Chromium runtime installation failed.' }
+$PreviousTestBrowser = $env:SIMBI_E2E_BROWSER
+try {
+    $env:SIMBI_E2E_BROWSER = 'chromium'
+    pnpm.cmd --dir frontend test:e2e:run
+    if ($LASTEXITCODE -ne 0) { throw 'Chromium acceptance failed.' }
+} finally {
+    $env:SIMBI_E2E_BROWSER = $PreviousTestBrowser
+}
 docker compose config --quiet
 docker compose -f compose.production.yaml --env-file .env.production.example config --quiet
 ```

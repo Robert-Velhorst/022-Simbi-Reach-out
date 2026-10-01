@@ -8,6 +8,8 @@ Fresh completed source logs confirm180 backend/134 frontend tests, both clean de
 
 Final publication checks pass73 relative file/heading links across11 documents and whitespace validation. Runtime/test/CI trees have no changes after the tested source; only README/evidence/reader-clarification documentation changes in this separate publication.
 
+Final README reader testing also narrowed the nine-route claim to loading (campaign read/retry and stale report refresh are distinct checks), and the explicit Chromium example now selects/restores that engine instead of inheriting a different one. `verify.ps1`'s inherited-engine/runtime-install boundary is stated separately. These are documentation corrections, not new application/test behavior or a claim that every route has all error/retry states tested.
+
 This is a subsequent source increment, not proof attributed to PR92. The previous retirement README/main run36797962030 completed successfully at1e6c389 on both Linux and Windows. The broader objective remains active; personal-use clarification does not erase the original acceptance requirements.
 
 - Added exact Chromium/Firefox/WebKit selection to the existing full workflow and isolated retirement scripts, four selector regressions, engine-labelled evidence and independent Firefox/WebKit Linux CI jobs. No application dependency version, frontend/backend runtime code, database schema, real data or provider action changed. All engines keep the same safety, recovery, authorization, privacy, language and rendered-state assertions. See [reproduction and limits](BROWSER_COMPATIBILITY.md).
