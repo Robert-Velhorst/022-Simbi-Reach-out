@@ -15,6 +15,16 @@
 11. **Track reply:** record only the needed reply/summary; open reminders for that draft are cancelled.
 12. **Review reminders and reports:** the local worker creates one decision reminder after seven days without a reply.
 
+## Conversation records and older dates
+
+Replies are listed newest-first; open reminders and the Overview preview are listed earliest-first. Ordering compares real timezone-explicit instants, including microseconds, rather than the spelling of stored timestamps. Equal instants use descending reply IDs or ascending reminder IDs. Overview counts a reminder as due only when its interpreted instant is at or before the existing whole-second server clock.
+
+Legacy ISO dates with a four-digit year, `T`, seconds, optional one-to-six fractional digits and explicit `Z` or `±HH:MM` timezone are interpreted only for reads. Raw stored dates are returned unchanged: no history rewrite or migration occurs. Invalid calendar dates, missing timezones, unsupported precision and UTC overflow have no inferred instant. They remain visible after valid dates, using descending reply IDs or ascending reminder IDs, and are excluded from the due count. This does not repair bad historical values or certify every legacy format.
+
+The interface creates reminders for the selected conversation. API callers may also target a contact alone or supply both targets; combined targets must identify that conversation's contact. Both targets must first belong to the authenticated workspace. A mismatching pair returns `422 reminder_target_mismatch` without creating a reminder or audit event; an unavailable target remains `404`. Existing inconsistent rows are not silently altered. Valid creation responses still return the stored targets/title/time/status.
+
+The database connection supplies a read-only UTC sorting function rather than relying on SQLite's built-in date precision. [SQLite's date-function documentation](https://www.sqlite.org/lang_datefunc.html) describes millisecond significance for its fractional date inputs; the application preserves six-digit microseconds. This is not a new provider integration, automatic follow-up schedule, generic write idempotency or personal-account acceptance.
+
 ## Draft state machine
 
 ```text

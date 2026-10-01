@@ -12,6 +12,7 @@ import { retentionPagesWorkflow } from './e2e-retention-pages.mjs'
 import { navigationWorkflow } from './e2e-navigation.mjs'
 import { draftSaveWorkflow } from './e2e-draft-save.mjs'
 import { keyboardOutreachWorkflow } from './e2e-keyboard-workflow.mjs'
+import { conversationRecordsWorkflow } from './e2e-conversation-records.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const require = createRequire(join(root, 'frontend', 'package.json'))
@@ -601,6 +602,7 @@ try {
   assert.equal(cleanupAborts, 1, 'Expected exactly one actual post-commit cleanup response abort')
   await draftSaveWorkflow(page, origin, axe, screenshots)
   await keyboardOutreachWorkflow(page, origin, axe, screenshots)
+  await conversationRecordsWorkflow(page, origin, root, runtime, python, axe, screenshots)
   await navigationWorkflow(page, origin, axe, screenshots)
   await page.addScriptTag({ content: axe.source })
   const accessibility = await page.evaluate(async () => window.axe.run(document, {
@@ -648,6 +650,7 @@ try {
     local_simulated_outcome_reply_reminder_report: 'passed',
     personal_keyboard_outreach: 'passed; English desktop/Dutch mobile sequential Tab and native keyboard input through campaign, prospect, template, draft, explicit save/review, fictional uncertainty, reminder, reply, report and stop-contact; three real committed-but-mismatched creation recoveries per locale, no provider/pointer actions, twelve UI mutations per locale, prior records preserved, twelve selected accessibility scans',
     provider_delivery: 'not attempted; sent/reply records are fictional QA fixtures',
+    legacy_conversation_chronology: 'passed; 52 fictional replies and reminders per locale, offset/day-boundary/microsecond ordering, keyboard next/previous pages, English desktop/Dutch mobile, unchanged old rows and nine exported tables, zero HTTP writes and four selected accessibility scans',
     password_change_reauthentication: 'passed',
     viewer_download_permissions: 'passed',
     viewer_read_only_routes_and_handoff_history: 'passed',

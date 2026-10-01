@@ -12,6 +12,7 @@ from typing import Any
 
 from .config import ROOT, settings
 from .domain import APPROVAL_CHECKS
+from .timestamps import timestamp_sort_key
 
 MIGRATION_TABLE = (
     "CREATE TABLE IF NOT EXISTS schema_migrations (name TEXT PRIMARY KEY, applied_at TEXT NOT NULL)"
@@ -131,6 +132,7 @@ def connect() -> sqlite3.Connection:
         )
         connection._runtime_lease = lease
         connection.row_factory = sqlite3.Row
+        connection.create_function("simbi_timestamp_key", 1, timestamp_sort_key, deterministic=True)
         connection.execute("PRAGMA foreign_keys = ON")
         connection.execute("PRAGMA journal_mode = WAL")
         connection.execute("PRAGMA busy_timeout = 5000")
