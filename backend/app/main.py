@@ -7,7 +7,7 @@ import io
 import json
 import re
 import sqlite3
-from contextlib import asynccontextmanager, closing
+from contextlib import asynccontextmanager, closing, contextmanager
 from datetime import UTC, datetime, timedelta
 from typing import Annotated, Any, Literal
 
@@ -19,7 +19,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from . import audit_privacy, privacy, reminder_replay, retirement
+from . import audit_privacy, creation_replay, privacy, reminder_replay, retirement
 from .config import ROOT, settings
 from .db import (
     MaintenanceBusy,
@@ -458,6 +458,44 @@ def require_role(member: dict[str, Any], *roles: str) -> None:
         raise AppError(403, "permission_denied", "Your role cannot perform this action")
 
 
+@contextmanager
+def creation_transaction(member, raw_session, headers, operation, payload):
+    # Authentication and a current write role, not possession of a retry key,
+    # authorize both creation and nonmutating recovery under one writer lock.
+    try:
+        key = creation_replay.validate_key(headers)
+        with transaction() as connection:
+            authenticated = connection.execute(
+                "SELECT m.role FROM sessions s JOIN memberships m ON m.user_id=s.user_id "
+                "WHERE s.token_hash=? AND s.expires_at>? AND m.user_id=? AND m.workspace_id=?",
+                (token_hash(raw_session or ""), now(), member["user_id"], member["workspace_id"]),
+            ).fetchone()
+            if authenticated is None:
+                raise AppError(401, "session_expired", "Your session expired; sign in again")
+            require_role({"role": authenticated["role"]}, "owner", "admin", "editor")
+            replay = (
+                creation_replay.lookup(connection, member, key, operation, payload)
+                if key is not None
+                else None
+            )
+            yield connection, key, replay
+    except creation_replay.ReplayError as exc:
+        raise AppError(exc.status, exc.code, exc.message) from exc
+
+
+def creation_result(connection, member, key, operation, payload, record_id):
+    table, _ = creation_replay.TARGETS[operation]
+    row = dict(
+        connection.execute(
+            f"SELECT * FROM {table} WHERE id=? AND workspace_id=?",
+            (record_id, member["workspace_id"]),
+        ).fetchone()
+    )
+    if key is None:
+        return creation_replay.confirmation(operation, row)
+    return creation_replay.remember(connection, member, key, operation, payload, row)
+
+
 def owned(connection: sqlite3.Connection, table: str, record_id: int, workspace_id: int):
     allowed = {"campaigns", "prospects", "templates", "drafts", "handoffs", "reminders"}
     if table not in allowed:
@@ -746,10 +784,22 @@ def list_campaigns(
 
 
 @app.post("/api/campaigns", status_code=201)
-def create_campaign(body: CampaignBody, member: Member):
+def create_campaign(
+    body: CampaignBody,
+    member: Member,
+    idempotency_keys: Annotated[list[str] | None, Header(alias="Idempotency-Key")] = None,
+    raw_session: Annotated[str | None, Cookie(alias=SESSION_COOKIE)] = None,
+):
     require_role(member, "owner", "admin", "editor")
     timestamp = now()
-    with transaction() as connection:
+    payload = body.model_dump()
+    with creation_transaction(member, raw_session, idempotency_keys, "campaigns", payload) as (
+        connection,
+        key,
+        replay,
+    ):
+        if replay is not None:
+            return replay
         record_id = connection.execute(
             "INSERT INTO campaigns(workspace_id,name,description,purpose,lawful_basis,daily_limit,"
             "cooldown_minutes,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?)",
@@ -773,7 +823,8 @@ def create_campaign(body: CampaignBody, member: Member):
             "campaign",
             record_id,
         )
-    return fetch_one("SELECT * FROM campaigns WHERE id=?", (record_id,))
+        created = creation_result(connection, member, key, "campaigns", payload, record_id)
+    return created
 
 
 @app.patch("/api/campaigns/{campaign_id}/status")
@@ -818,14 +869,26 @@ def validate_prospect(body: ProspectBody) -> tuple[str, str]:
 
 
 @app.post("/api/prospects", status_code=201)
-def create_prospect(body: ProspectBody, member: Member):
+def create_prospect(
+    body: ProspectBody,
+    member: Member,
+    idempotency_keys: Annotated[list[str] | None, Header(alias="Idempotency-Key")] = None,
+    raw_session: Annotated[str | None, Cookie(alias=SESSION_COOKIE)] = None,
+):
     require_role(member, "owner", "admin", "editor")
     try:
         provider, source_url = validate_prospect(body)
     except ValueError as exc:
         raise AppError(422, "validation_failed", str(exc)) from exc
     timestamp = now()
-    with transaction() as connection:
+    payload = {**body.model_dump(), "provider": provider, "source_url": source_url}
+    with creation_transaction(member, raw_session, idempotency_keys, "prospects", payload) as (
+        connection,
+        key,
+        replay,
+    ):
+        if replay is not None:
+            return replay
         record_id = connection.execute(
             "INSERT INTO prospects(workspace_id,name,organization,provider,source_url,contact_handle,notes,"
             "consent_status,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)",
@@ -857,7 +920,8 @@ def create_prospect(body: ProspectBody, member: Member):
             record_id,
             {"provider": provider},
         )
-    return fetch_one("SELECT * FROM prospects WHERE id=?", (record_id,))
+        created = creation_result(connection, member, key, "prospects", payload, record_id)
+    return created
 
 
 def parse_import(text: str) -> tuple[list[dict[str, str]], list[dict[str, Any]]]:
@@ -893,7 +957,12 @@ def parse_import(text: str) -> tuple[list[dict[str, str]], list[dict[str, Any]]]
 
 
 @app.post("/api/prospects/import")
-def import_prospects(body: ImportBody, member: Member):
+def import_prospects(
+    body: ImportBody,
+    member: Member,
+    idempotency_keys: Annotated[list[str] | None, Header(alias="Idempotency-Key")] = None,
+    raw_session: Annotated[str | None, Cookie(alias=SESSION_COOKIE)] = None,
+):
     require_role(member, "owner", "admin", "editor")
     valid, errors = parse_import(body.csv_text)
     inserted = 0
@@ -901,7 +970,12 @@ def import_prospects(body: ImportBody, member: Member):
     if body.commit and errors:
         raise AppError(422, "import_has_errors", "Fix CSV errors before committing", errors[:50])
     if body.commit:
-        with transaction() as connection:
+        payload = {"rows": valid}
+        with creation_transaction(
+            member, raw_session, idempotency_keys, "prospects/import", payload
+        ) as (connection, key, replay):
+            if replay is not None:
+                return replay
             timestamp = now()
             for row in valid:
                 cursor = connection.execute(
@@ -939,7 +1013,7 @@ def import_prospects(body: ImportBody, member: Member):
                         row["source_url"],
                         row["consent_status"],
                     )
-            audit(
+            audit_id = audit(
                 connection,
                 member["workspace_id"],
                 member["user_id"],
@@ -948,6 +1022,10 @@ def import_prospects(body: ImportBody, member: Member):
                 "bulk",
                 {"inserted": inserted, "duplicates": duplicates},
             )
+            created = creation_result(
+                connection, member, key, "prospects/import", payload, audit_id
+            )
+        return created
     return {
         "valid": len(valid),
         "errors": errors[:50],
@@ -979,14 +1057,26 @@ def list_templates(
 
 
 @app.post("/api/templates", status_code=201)
-def create_template(body: TemplateBody, member: Member):
+def create_template(
+    body: TemplateBody,
+    member: Member,
+    idempotency_keys: Annotated[list[str] | None, Header(alias="Idempotency-Key")] = None,
+    raw_session: Annotated[str | None, Cookie(alias=SESSION_COOKIE)] = None,
+):
     require_role(member, "owner", "admin", "editor")
     try:
         fields = template_fields(body.body)
     except DomainError as exc:
         raise AppError(422, "invalid_template", str(exc)) from exc
     timestamp = now()
-    with transaction() as connection:
+    payload = {**body.model_dump(), "provider": body.provider.lower()}
+    with creation_transaction(member, raw_session, idempotency_keys, "templates", payload) as (
+        connection,
+        key,
+        replay,
+    ):
+        if replay is not None:
+            return replay
         record_id = connection.execute(
             "INSERT INTO templates(workspace_id,name,provider,subject,body,created_at,updated_at) VALUES (?,?,?,?,?,?,?)",
             (
@@ -1008,7 +1098,8 @@ def create_template(body: TemplateBody, member: Member):
             record_id,
             {"fields": sorted(fields)},
         )
-    return fetch_one("SELECT * FROM templates WHERE id=?", (record_id,))
+        created = creation_result(connection, member, key, "templates", payload, record_id)
+    return created
 
 
 DRAFT_SELECT = (
@@ -1133,9 +1224,21 @@ def require_contactable(connection, prospect):
 
 
 @app.post("/api/drafts", status_code=201)
-def create_draft(body: DraftBody, member: Member):
+def create_draft(
+    body: DraftBody,
+    member: Member,
+    idempotency_keys: Annotated[list[str] | None, Header(alias="Idempotency-Key")] = None,
+    raw_session: Annotated[str | None, Cookie(alias=SESSION_COOKIE)] = None,
+):
     require_role(member, "owner", "admin", "editor")
-    with transaction() as connection:
+    payload = body.model_dump()
+    with creation_transaction(member, raw_session, idempotency_keys, "drafts", payload) as (
+        connection,
+        key,
+        replay,
+    ):
+        if replay is not None:
+            return replay
         campaign = owned(connection, "campaigns", body.campaign_id, member["workspace_id"])
         prospect = owned(connection, "prospects", body.prospect_id, member["workspace_id"])
         template = owned(connection, "templates", body.template_id, member["workspace_id"])
@@ -1179,11 +1282,7 @@ def create_draft(body: DraftBody, member: Member):
             record_id,
             {"quality_score": score, "flags": flags},
         )
-        created = dict(connection.execute(
-            "SELECT id,campaign_id,prospect_id,template_id,state,quality_score FROM drafts WHERE id=? AND workspace_id=?",
-            (record_id, member["workspace_id"]),
-        ).fetchone())
-        created["safety_flags"] = flags
+        created = creation_result(connection, member, key, "drafts", payload, record_id)
     return created
 
 
@@ -1554,9 +1653,21 @@ def list_replies(
 
 
 @app.post("/api/replies", status_code=201)
-def create_reply(body: ReplyBody, member: Member):
+def create_reply(
+    body: ReplyBody,
+    member: Member,
+    idempotency_keys: Annotated[list[str] | None, Header(alias="Idempotency-Key")] = None,
+    raw_session: Annotated[str | None, Cookie(alias=SESSION_COOKIE)] = None,
+):
     require_role(member, "owner", "admin", "editor")
-    with transaction() as connection:
+    payload = body.model_dump()
+    with creation_transaction(member, raw_session, idempotency_keys, "replies", payload) as (
+        connection,
+        key,
+        replay,
+    ):
+        if replay is not None:
+            return replay
         draft = owned(connection, "drafts", body.draft_id, member["workspace_id"])
         if draft["state"] not in {"sent", "handoff_created", "ambiguous"}:
             raise AppError(
@@ -1585,11 +1696,7 @@ def create_reply(body: ReplyBody, member: Member):
             record_id,
             {"draft_id": body.draft_id},
         )
-        created = dict(connection.execute(
-            "SELECT id,draft_id,body,received_at FROM replies WHERE id=? AND workspace_id=?",
-            (record_id, member["workspace_id"]),
-        ).fetchone())
-        created["state"] = "replied"
+        created = creation_result(connection, member, key, "replies", payload, record_id)
     return created
 
 

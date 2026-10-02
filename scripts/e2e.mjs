@@ -14,6 +14,7 @@ import { draftSaveWorkflow } from './e2e-draft-save.mjs'
 import { keyboardOutreachWorkflow } from './e2e-keyboard-workflow.mjs'
 import { conversationRecordsWorkflow } from './e2e-conversation-records.mjs'
 import { reminderReplayWorkflow } from './e2e-reminder-replay.mjs'
+import { creationReplayWorkflow } from './e2e-creation-replay.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const require = createRequire(join(root, 'frontend', 'package.json'))
@@ -106,19 +107,26 @@ try {
   let reminderFailureExpected = ''
   let reminderAborts = 0
   let reminderConflicts = 0
+  let creationFailurePath = ''
+  let creationFailureExpected = ''
+  let creationAborts = 0
+  let creationConflicts = 0
   page.on('requestfailed', (request) => {
+    if (creationFailureExpected === 'abort' && request.url() === creationFailurePath && request.method() === 'POST') creationAborts++
     if (cleanupAbortExpected && request.url() === `${origin}/api/privacy/confirm`) cleanupAborts++
     if (reminderFailureExpected === 'abort' && request.url() === `${origin}/api/reminders` && request.method() === 'POST') reminderAborts++
   })
   // Count HTTP outcomes, not Chromium-specific console diagnostics. Firefox and
   // WebKit need not log failed fetches, and one response can produce many logs.
   page.on('response', (response) => {
+    if (creationFailureExpected === 'conflict' && response.url() === creationFailurePath && response.request().method() === 'POST' && response.status() === 409) creationConflicts++
     if (reminderFailureExpected === 'conflict' && response.url() === `${origin}/api/reminders` && response.request().method() === 'POST' && response.status() === 409) reminderConflicts++
     if (expectedDataFailurePath && response.url().startsWith(`${origin}/api${expectedDataFailurePath}`) && response.status() === 503) dataFailureProbes++
     if (sessionFailureExpected && response.url() === `${origin}/api/me` && response.status() === 503) sessionFailureProbes++
     if (signedOutProbeExpected && response.url() === `${origin}/api/me` && response.status() === 401) signedOutProbes++
   })
   page.on('console', (message) => {
+    if (message.location().url === creationFailurePath && ((creationFailureExpected === 'abort' && message.text().includes('ERR_FAILED')) || (creationFailureExpected === 'conflict' && message.text().includes('409')))) return
     if (message.location().url === `${origin}/api/reminders` && ((reminderFailureExpected === 'abort' && message.text().includes('ERR_FAILED')) || (reminderFailureExpected === 'conflict' && message.text().includes('409')))) return
     if (cleanupAbortExpected && message.location().url === `${origin}/api/privacy/confirm` && message.text().includes('ERR_FAILED')) return
     if (expectedDataFailurePath && message.location().url.startsWith(`${origin}/api${expectedDataFailurePath}`)
@@ -612,6 +620,9 @@ try {
   await reminderReplayWorkflow(page, origin, axe, screenshots, (expected) => { reminderFailureExpected = expected })
   assert.equal(reminderAborts, 2, 'Exactly one real reminder response abort per locale')
   assert.equal(reminderConflicts, 2, 'Exactly one actual changed-payload refusal per locale')
+  await creationReplayWorkflow(page, origin, axe, screenshots, (path, expected) => { creationFailurePath = path; creationFailureExpected = expected })
+  assert.equal(creationAborts, 12, 'Exactly one real response abort per core creation/locale')
+  assert.equal(creationConflicts, 12, 'Exactly one real changed-payload refusal per core creation/locale')
   await conversationRecordsWorkflow(page, origin, root, runtime, python, axe, screenshots)
   await navigationWorkflow(page, origin, axe, screenshots)
   await page.addScriptTag({ content: axe.source })
@@ -661,6 +672,7 @@ try {
     personal_keyboard_outreach: 'passed; English desktop/Dutch mobile sequential Tab and native keyboard input through campaign, prospect, template, draft, explicit save/review, fictional uncertainty, reminder, reply, report and stop-contact; three real committed-but-mismatched creation recoveries per locale, no provider/pointer actions, twelve UI mutations per locale, prior records preserved, twelve selected accessibility scans',
     provider_delivery: 'not attempted; sent/reply records are fictional QA fixtures',
     reminder_creation_replay: 'passed; real committed-response abort plus changed-payload refusal and explicit same-key recovery in English desktop/Dutch mobile; one reminder/audit per locale, no replay mutation, all prior nine-table records preserved, four selected scans; no provider or durable browser-copy claim',
+    core_creation_replay: 'passed; six creation paths in English desktop/Dutch mobile, twelve real commit/response aborts plus twelve changed-values refusals, original same-key recovery without replay mutation, 24 selected accessibility scans; separate local manual handoff uncertainty enables reply fixture, no provider activity or durable browser-copy claim',
     legacy_conversation_chronology: 'passed; 52 valid plus three unsupported fictional dates per table/locale, offset/day-boundary/microsecond ordering, keyboard next/previous/final pages, English desktop/Dutch mobile unrecognized-date labels with exact raw API values, unchanged old rows and nine exported tables, zero HTTP writes and eight selected accessibility scans',
     password_change_reauthentication: 'passed',
     viewer_download_permissions: 'passed',

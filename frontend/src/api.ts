@@ -75,7 +75,11 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
       if (!validCoreCreation(path, method, options.body, payload)) {
         throw new ApiError('response_unverified', unknownWrite)
       }
-      if (path.split('?')[0] === '/reminders' && method.toUpperCase() === 'POST' && headers.has('Idempotency-Key')) {
+      const creationPath = path.split('?')[0]
+      // CSV preview is read-only and does not consume a creation reference.
+      const keyedCreation = ['/campaigns', '/prospects', '/templates', '/drafts', '/replies', '/reminders'].includes(creationPath)
+        || (creationPath === '/prospects/import' && typeof options.body === 'string' && JSON.parse(options.body).commit === true)
+      if (keyedCreation && method.toUpperCase() === 'POST' && headers.has('Idempotency-Key')) {
         const receipt = payload as Record<string, unknown>
         if (receipt.creation_key !== headers.get('Idempotency-Key') || typeof receipt.replayed !== 'boolean') {
           throw new ApiError('response_unverified', unknownWrite)

@@ -1,4 +1,10 @@
 {
+  "{action} retry reference: {reference}. Retry the original values to check the same attempt. Changed values cannot reuse a committed reference. Cancel clears the fields, not this reference. After navigation, reload, sign-out or closure, check saved records before creating again.": "{action} retry reference: {reference}. Retry the original values to check the same attempt. Changed values cannot reuse a committed reference. Cancel clears the fields, not this reference. After navigation, reload, sign-out or closure, check saved records before creating again.",
+  "Creation retry references": "Creation retry references",
+  "This retry reference belongs to different submitted values or a different creation. Check the saved records or retry the original values; nothing new was created.": "This retry reference belongs to different submitted values or a different creation. Check the saved records or retry the original values; nothing new was created.",
+  "The original record or import history was removed or changed. Check the saved records; this retry did not recreate anything.": "The original record or import history was removed or changed. Check the saved records; this retry did not recreate anything.",
+  "The creation retry-reference limit was reached. Existing references still work; nothing new was created.": "The creation retry-reference limit was reached. Existing references still work; nothing new was created.",
+  "Provide one opaque Idempotency-Key using 16 to 120 ASCII letters, digits, underscores or hyphens": "Provide one opaque Idempotency-Key using 16 to 120 ASCII letters, digits, underscores or hyphens",
   ". These are prompts for judgment, not automatic rejection.": ". These are prompts for judgment, not automatic rejection.",
   ". Unknown placeholders are rejected.": ". Unknown placeholders are rejected.",
   "A newer draft state supersedes this handoff": "A newer draft state supersedes this handoff",

@@ -1,4 +1,10 @@
 {
+  "{action} retry reference: {reference}. Retry the original values to check the same attempt. Changed values cannot reuse a committed reference. Cancel clears the fields, not this reference. After navigation, reload, sign-out or closure, check saved records before creating again.": "Herhaalreferentie voor {action}: {reference}. Gebruik de oorspronkelijke waarden om dezelfde poging te controleren. Gewijzigde waarden kunnen een vastgelegde referentie niet opnieuw gebruiken. Annuleren wist de velden, niet deze referentie. Controleer na navigeren, herladen, afmelden of sluiten de opgeslagen gegevens voordat je opnieuw iets aanmaakt.",
+  "Creation retry references": "Herhaalreferenties voor aanmaken",
+  "This retry reference belongs to different submitted values or a different creation. Check the saved records or retry the original values; nothing new was created.": "Deze herhaalreferentie hoort bij andere ingediende waarden of een andere aanmaakactie. Controleer de opgeslagen gegevens of gebruik de oorspronkelijke waarden; er is niets nieuws aangemaakt.",
+  "The original record or import history was removed or changed. Check the saved records; this retry did not recreate anything.": "Het oorspronkelijke gegeven of de importgeschiedenis is verwijderd of gewijzigd. Controleer de opgeslagen gegevens; deze herhaling heeft niets opnieuw aangemaakt.",
+  "The creation retry-reference limit was reached. Existing references still work; nothing new was created.": "De limiet voor aanmaak-herhaalreferenties is bereikt. Bestaande referenties blijven werken; er is niets nieuws aangemaakt.",
+  "Provide one opaque Idempotency-Key using 16 to 120 ASCII letters, digits, underscores or hyphens": "Geef één niet-inhoudelijke Idempotency-Key van 16 tot 120 ASCII-letters, cijfers, underscores of koppeltekens",
   ". These are prompts for judgment, not automatic rejection.": ". Dit zijn aandachtspunten voor je beoordeling, geen automatische afwijzing.",
   ". Unknown placeholders are rejected.": ". Onbekende invulvelden worden geweigerd.",
   "A newer draft state supersedes this handoff": "Een nieuwere conceptstatus vervangt deze overdracht",

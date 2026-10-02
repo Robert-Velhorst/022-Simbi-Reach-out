@@ -283,6 +283,10 @@ def test_legacy_four_migration_restore_adds_receipts_without_losing_rows(
     with closing(db.connect()) as current, closing(sqlite3.connect(legacy)) as old:
         current.backup(old)
         with old:
+            old.execute("DROP TABLE core_creation_receipts")
+            old.execute(
+                "DELETE FROM schema_migrations WHERE name='006_core_creation_receipts.sql'"
+            )
             old.execute("DROP TABLE reminder_creation_receipts")
             old.execute(
                 "DELETE FROM schema_migrations WHERE name='005_reminder_creation_receipts.sql'"
@@ -301,7 +305,7 @@ def test_legacy_four_migration_restore_adds_receipts_without_losing_rows(
         assert (
             restored.execute("SELECT COUNT(*) FROM reminder_creation_receipts").fetchone()[0] == 0
         )
-        assert restored.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 5
+        assert restored.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 6
 
 
 def test_complete_backup_restore_preserves_actual_replay_receipt(client, tmp_path, monkeypatch):

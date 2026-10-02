@@ -17,6 +17,24 @@ const handoff = { id: 10, draft_id: 1, subject: 'Subject 1', body: 'Body 1', sta
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); sessionStorage.clear() })
 
 describe('review workflow recovery', () => {
+  it('keeps the default displayed conversation selected after approval reorders the queue', async () => {
+    let approved = false
+    vi.stubGlobal('fetch', vi.fn(async (url: string, options: RequestInit) => {
+      if (url.endsWith('/review')) {
+        expect(JSON.parse(String(options.body)).expected_content_hash).toBe('a'.repeat(64))
+        approved = true
+        return response({ state: 'approved' })
+      }
+      return response(page(url.includes('/drafts') ? approved ? [draft(2), draft(1, 'approved')] : [draft(1), draft(2)] : []))
+    }))
+    render(<ReviewQueue member={member} onMemberChange={() => {}} />)
+    expect(await screen.findByLabelText('Message')).toHaveValue('Body 1')
+    screen.getAllByRole('checkbox').forEach((checkbox) => fireEvent.click(checkbox))
+    fireEvent.click(screen.getByRole('button', { name: 'Approve for handoff' }))
+    await waitFor(() => expect(approved).toBe(true))
+    await screen.findByRole('button', { name: 'Copy and open provider' })
+    expect(screen.getByLabelText('Message')).toHaveValue('Body 1')
+  })
   it('requires saving dirty editor text and repeating the checks before approval', async () => {
     let saved = false
     vi.stubGlobal('fetch', vi.fn(async (url: string, options: RequestInit) => {
