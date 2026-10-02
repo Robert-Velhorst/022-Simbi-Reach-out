@@ -139,7 +139,7 @@ small { color: var(--muted); }
 .notice-warning { border-color: #f0c885; background: var(--amber-soft); color: #7a4100; }
 .notice-danger { border-color: #e6a2a5; background: var(--red-soft); color: #842129; }
 
-.safety-strip { min-height: 80px; display: grid; grid-template-columns: 1.15fr repeat(5, minmax(130px, 1fr)) auto; align-items: stretch; margin: 22px 0 20px; border: 1px solid var(--border); border-radius: 7px; }
+.safety-strip { min-height: 80px; display: grid; grid-template-columns: 1.15fr repeat(4, minmax(130px, 1fr)) auto; align-items: stretch; margin: 22px 0 20px; border: 1px solid var(--border); border-radius: 7px; }
 .safety-heading, .safety-item { min-width: 0; display: flex; align-items: center; gap: 10px; padding: 12px 15px; border-right: 1px solid var(--border); }
 .safety-heading svg { color: #2e4569; }
 .safety-heading span { font-size: .87rem; font-weight: 700; }
@@ -287,7 +287,6 @@ td small { display: block; margin-top: 3px; font-size: .68rem; }
 
 @media (max-width: 1250px) {
   .safety-strip { grid-template-columns: 1.2fr repeat(3, 1fr); }
-  .safety-item:nth-of-type(5), .safety-item:nth-of-type(6) { display: none; }
   .safety-strip > a { justify-content: center; }
   .dashboard-grid { grid-template-columns: minmax(0, 1.4fr) minmax(320px, 1fr); }
   .metric-rail { grid-template-columns: repeat(4, 1fr); }
@@ -323,9 +322,10 @@ td small { display: block; margin-top: 3px; font-size: .68rem; }
   .page-hero { align-items: stretch; flex-direction: column; gap: 16px; }
   .page-actions { flex-wrap: wrap; }
   .dashboard-hero .button { align-self: flex-start; }
-  .safety-strip { display: flex; overflow-x: auto; min-height: 70px; }
-  .safety-heading, .safety-item { min-width: 145px; }
-  .safety-strip > a { min-width: 135px; }
+  .safety-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); min-height: 70px; }
+  .safety-heading, .safety-item { min-width: 0; }
+  .safety-heading, .safety-strip > a { grid-column: 1 / -1; }
+  .safety-strip > a { min-height: 44px; }
   .dashboard-grid { display: block; }
   .dashboard-grid > .panel { margin-bottom: 15px; }
   .form-grid { grid-template-columns: 1fr; }

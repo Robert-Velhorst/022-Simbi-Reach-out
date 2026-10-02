@@ -49,6 +49,10 @@ export async function operationalReadsWorkflow(page, origin, axe, screenshots) {
           assert.ok((await page.locator('main').textContent()).trim())
           assert.equal(await page.locator('vite-error-overlay').count(), 0)
           assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
+          if (state.startsWith('recovered') && (item.resource === 'overview' || item.boot)) {
+            const safety = page.getByRole('region', { name: t('Safety and compliance status') })
+            for (const key of ['Local only', 'Provider guidance', 'Policy review', 'Emergency safety stop']) assert.ok(await safety.getByText(t(key), { exact: true }).isVisible(), `${locale}/${state}/${key} must remain visible`)
+          }
           await page.addScriptTag({ content: axe.source })
           const violations = await page.evaluate(async () => (await window.axe.run(document, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] } })).violations.map(({ id }) => id))
           assert.deepEqual(violations, [], `${locale}/${item.resource}/${state}`)
@@ -81,11 +85,17 @@ export async function operationalReadsWorkflow(page, origin, axe, screenshots) {
           }
           if (item.resource === 'settings') assert.ok((await page.locator('.settings-grid').textContent()).includes(original.environment))
           await capture('recovered')
+          if (item.resource === 'overview') {
+            await page.setViewportSize({ width: 1100, height: 1000 })
+            await capture('recovered-medium')
+            await page.setViewportSize(locale === 'en' ? { width: 1440, height: 1000 } : { width: 390, height: 844 })
+            assert.equal(reads, 2, 'Responsive safety checks must not trigger another read')
+          }
           process.stdout.write(`Operational read ${locale}/${item.resource}: damaged actual200 rejected, native explicit retry recovers actual local result, no automatic retry or writes.\n`)
         } finally { await page.unroute(match, handler) }
       }
     }
-    assert.equal(scans, 20)
+    assert.equal(scans, 22)
     assert.deepEqual(writes, [])
     const after = await snapshot()
     for (const table of tables) assert.deepEqual(after[table], before[table], `Operational read changed ${table}`)
