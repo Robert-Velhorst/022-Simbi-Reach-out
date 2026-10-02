@@ -8,7 +8,7 @@ describe('API client', () => {
   afterEach(() => vi.unstubAllGlobals())
 
   it('adds the CSRF header to writes', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ status: 'ok' }), {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ paused: true, paused_at: '2026-10-02T12:00:00Z' }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     }))

@@ -64,7 +64,7 @@ it('does not claim a settings mutation succeeded when its follow-up read is unve
   let reads = 0
   let writes = 0
   vi.stubGlobal('fetch', vi.fn(async (url: string, options?: RequestInit) => {
-    if (url === '/api/settings/provider') { expect(options?.method).toBe('POST'); writes++; return Response.json({ saved: true }) }
+    if (url === '/api/settings/provider') { expect(options?.method).toBe('POST'); writes++; return Response.json({ provider: 'simbi', base_url: 'https://simbi.com/', mode: 'assisted', verified: false }) }
     expect(url).toBe('/api/settings')
     reads++
     return Response.json(reads === 2 ? { ...operationalReads['/settings'], workspace: null } : operationalReads['/settings'])
