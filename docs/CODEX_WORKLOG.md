@@ -1,5 +1,11 @@
 # Codex worklog
 
+## 2026-10-02 — Windows Firefox revalidation, no speculative repair
+
+- Refresh clean main0070328, its completed four-job CI36980667558 and zero paginated open PRs. Build a short external fictional mobile draft/abort probe before proposing a cause. Initial activation409, an unrelated entry-locale timeout and a first-page pagination fixture error remain failed diagnostics; ten simple and100 corrected 2,000-contact attempts observe the warning. No matching high-reproduction failure or justified application fix is found; remove debug stage logs and retain only the clearly marked external diagnostic.
+- At unchanged0070328, the original Firefox153 main4407 and selector/bootstrap4409/retirement4408/response4410 commands complete, including all twelve core cases, retained journeys and real body deadlines. Zero unexpected browser errors/selected violations, intentional probes preserved and owned ports released. Inspect current desktop/mobile screenshots. Passing reruns do not repair or explain the earlier focus/bootstrap/draft timeouts; no application/test/assertion/timeout changes.
+- Refresh public Simbi terms/privacy/homepage without account access. Default standalone-location metadata/listener checks find no installation there, not proof that none exists elsewhere; ask the owner for an alternate location without reading or changing personal content. Full original personal-production scope remains active. Record exact fixtures and limitations in the new readiness section; publish this documentation-only evidence separately with its own reader/link/CI checks, not inherited predecessor proof.
+
 ## 2026-10-02 — scoped core creation confirmation recovery
 
 - Continue the personal/manual-assisted goal on `codex/core-creation-retries` from clean published99edecb, whose exact final documentation run36873893425 passed all four jobs. Live remote main still matches; paginated open PR inventory is empty at preparation. README remains unchanged until all source PRs merge first.

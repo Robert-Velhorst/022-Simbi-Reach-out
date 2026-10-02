@@ -2,6 +2,8 @@
 
 Reviewed: 2026-08-08. Policy and law can change; re-check before each operational launch. This document describes product controls, not legal advice.
 
+Public Simbi homepage, terms section3.4(b) and privacy policy were specifically re-read on2026-10-02; the public automated-query/script, unsolicited-message and non-consensual harvesting restrictions remain published. This refresh does not attest to current review of the other jurisdictional sources below, provider approval, account access or actual operator compliance. Exact scope is recorded in [the readiness ledger](PRODUCTION_READINESS.md#windows-firefox-revalidation-2026-10-02).
+
 ## Simbi
 
 Simbi's [Terms and Conditions](https://simbi.com/terms-and-conditions) prohibit unsolicited or duplicative messages, harvesting user data, scraping/mining, automated searches/queries, and automated agents/scripts. Its [Privacy Policy](https://simbi.com/privacy-policy) describes member data and the rights attached to personal data. Its [Rules](https://simbi.com/rules) govern member content and conduct.
