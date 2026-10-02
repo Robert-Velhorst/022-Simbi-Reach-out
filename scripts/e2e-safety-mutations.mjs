@@ -49,6 +49,8 @@ export async function safetyMutationsWorkflow(page, origin, axe, screenshots) {
       ]
       for (const task of tasks) {
         await task.prepare()
+        const providerInput = page.getByRole('textbox', { name: t('HTTPS base URL'), exact: true })
+        const originalProviderInput = task.path === 'provider' ? await providerInput.elementHandle() : null
         const match = `${origin}/api/settings/${task.path}`
         let calls = 0
         const handler = async route => {
@@ -67,6 +69,10 @@ export async function safetyMutationsWorkflow(page, origin, axe, screenshots) {
           assert.equal(await button('Save assisted provider').isEnabled(), false)
           assert.equal(await button('Enable safety stop').isEnabled(), false)
           assert.equal(calls, 1, 'No automatic write retry')
+          if (originalProviderInput) {
+            assert.equal(await originalProviderInput.evaluate(element => element.isConnected), true)
+            assert.equal(await providerInput.inputValue(), 'https://simbi.com/services#fictional-safety-test')
+          }
           await capture(`${task.path}-unverified`)
         } finally { await page.unroute(match, handler) }
         const writesBeforeRead = writes
@@ -79,6 +85,10 @@ export async function safetyMutationsWorkflow(page, origin, axe, screenshots) {
         if (task.path === 'pause') { assert.ok(settings.workspace.paused_at); await button('Resume guarded workflow').waitFor() }
         await page.waitForLoadState('networkidle')
         assert.equal(writes, writesBeforeRead, 'Explicit recovery read cannot repeat a write')
+        if (originalProviderInput) {
+          assert.equal(await originalProviderInput.evaluate(element => element.isConnected), true)
+          assert.equal(await providerInput.inputValue(), 'https://simbi.com/services#fictional-safety-test')
+        }
         await capture(`${task.path}-read-recovered`)
         if (task.path === 'pause') {
           await activate(page, button('Resume guarded workflow'))
@@ -88,6 +98,10 @@ export async function safetyMutationsWorkflow(page, origin, axe, screenshots) {
           await page.getByText(t(task.success), { exact: true }).waitFor()
         }
         await capture(`${task.path}-confirmed`)
+        if (originalProviderInput) {
+          assert.equal(await originalProviderInput.evaluate(element => element.isConnected), true)
+          assert.equal(await providerInput.inputValue(), 'https://simbi.com/services')
+        }
       }
       process.stdout.write(`Safety mutations ${locale}: three actual committed/damaged confirmations rejected; explicit read-only recovery; three verified confirmations.\n`)
     }

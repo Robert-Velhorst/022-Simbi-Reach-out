@@ -18,6 +18,7 @@ import { creationReplayWorkflow } from './e2e-creation-replay.mjs'
 import { pageRecordsWorkflow } from './e2e-page-records.mjs'
 import { operationalReadsWorkflow } from './e2e-operational-reads.mjs'
 import { safetyMutationsWorkflow } from './e2e-safety-mutations.mjs'
+import { providerInputRecoveryWorkflow } from './e2e-provider-input.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const require = createRequire(join(root, 'frontend', 'package.json'))
@@ -629,6 +630,7 @@ try {
   await pageRecordsWorkflow(page, origin, axe, screenshots)
   await operationalReadsWorkflow(page, origin, axe, screenshots)
   await safetyMutationsWorkflow(page, origin, axe, screenshots)
+  await providerInputRecoveryWorkflow(page, origin, axe, screenshots)
   await conversationRecordsWorkflow(page, origin, root, runtime, python, axe, screenshots)
   await navigationWorkflow(page, origin, axe, screenshots)
   await page.addScriptTag({ content: axe.source })
@@ -683,6 +685,7 @@ try {
     core_page_record_validation: 'passed; all seven core resources in English desktop/Dutch mobile, damaged actual successful reads rejected before rendering, native keyboard explicit retry recovers actual records, 28 selected scans, zero automatic read retries or HTTP writes, nine exported tables unchanged; no generic schema or owner/provider acceptance claim',
     operational_read_validation: 'passed; actual dashboard/report/settings/bootstrap/session GETs damaged then recovered through native explicit Retry/Try again in English desktop/Dutch mobile, all four safety statuses visible including 1100px checks, 22 selected scans, zero automatic retries or HTTP writes, nine exported tables unchanged; no backup/privacy certification or provider/owner acceptance claim',
     safety_mutation_confirmation_validation: 'passed; six actual committed compliance/provider/pause confirmations damaged then refused, explicit read-only recovery, six correct confirmations, 18 selected scans; 12 deliberate fictional writes/audit events, eight record arrays and prior audit events unchanged; no provider/account acceptance',
+    provider_input_recovery: 'passed; English desktop/Dutch mobile original provider fields retained through changed snapshot, committed-but-contradictory follow-up and failed/successful read-only recovery; explicit verified save normalizes without remount, 12 selected scans, four deliberate local writes/audit events, eight record arrays and prior audit events unchanged; RAM-only, no provider access or delivery proof',
     password_change_reauthentication: 'passed',
     viewer_download_permissions: 'passed',
     viewer_read_only_routes_and_handoff_history: 'passed',

@@ -680,5 +680,7 @@
   "Enabled": "Ingeschakeld",
   "Not enabled": "Niet ingeschakeld",
   "Last verified local status, not backup, privacy or provider-policy certification.": "Laatst bevestigde lokale status, geen bevestiging van back-ups, privacy of naleving van platformregels.",
-  "Safety settings may have changed. Refresh Settings before another safety change.": "De veiligheidsinstellingen kunnen zijn gewijzigd. Vernieuw de instellingen voordat je de veiligheid opnieuw wijzigt."
+  "Safety settings may have changed. Refresh Settings before another safety change.": "De veiligheidsinstellingen kunnen zijn gewijzigd. Vernieuw de instellingen voordat je de veiligheid opnieuw wijzigt.",
+  "Last loaded provider: {provider} — {url}.": "Laatst geladen platform: {provider} — {url}.",
+  "Your provider edits are kept on this page. Refresh only reads saved settings; it does not save these edits.": "Je platformwijzigingen blijven op deze pagina bewaard. Vernieuwen leest alleen opgeslagen instellingen; het slaat deze wijzigingen niet op."
 }

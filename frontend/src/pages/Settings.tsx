@@ -33,6 +33,10 @@ export default function SettingsPage({ member, onMemberChange, onRetired = () =>
   const [complianceBusy, setComplianceBusy] = useState(false)
   const safetyAction = usePendingMutation()
   const [safetyUncertain, setSafetyUncertain] = useState(false)
+  const [selectedProvider, setSelectedProvider] = useState('simbi')
+  const [providerDraft, setProviderDraft] = useState<{ provider: string; base_url: string } | null>(null)
+  const loadedProvider = data?.providers.find(item => item.provider === selectedProvider) ?? data?.providers[0]
+  const providerValues = providerDraft ?? { provider: loadedProvider?.provider ?? 'simbi', base_url: loadedProvider?.base_url ?? 'https://simbi.com/' }
   const [reauthenticate, setReauthenticate] = useState(false)
   const canAdmin = ['owner', 'admin'].includes(member.role) && Boolean(data) && !loading && !error
   const canChangeSafety = canAdmin && !safetyAction.busy && !safetyUncertain
@@ -75,6 +79,7 @@ export default function SettingsPage({ member, onMemberChange, onRetired = () =>
       const receipt = await post<{ provider: string; base_url: string }>('/settings/provider', Object.fromEntries(new FormData(event.currentTarget)))
       const settings = await load()
       if (!settings.providers.some(item => item.provider === receipt.provider && item.base_url === receipt.base_url && item.mode === 'assisted' && item.verified_at === null)) throw unverifiedSettings()
+      setSelectedProvider(receipt.provider); setProviderDraft(null)
       setMessage({ tone: 'success', text: 'Provider link saved. Assisted mode remains enforced.' })
     }
     catch (cause) { setSafetyUncertain(true); setMessage({ tone: 'danger', text: cause instanceof ApiError ? cause.message : 'Provider could not be saved' }) }
@@ -140,9 +145,11 @@ export default function SettingsPage({ member, onMemberChange, onRetired = () =>
       </Panel>
       <Panel title={t("Provider handoff")}>
         <p className="panel-intro">{t("Only an HTTPS base link is stored. The backend restricts handoffs to the same approved hostname.")}</p>
-        <form className="form-stack" key={data?.providers[0]?.base_url ?? "loading"} onSubmit={provider}>
-          <Field label={t("Provider")}><Input name="provider" defaultValue="simbi" required disabled={!canChangeSafety} /></Field>
-          <Field label={t("HTTPS base URL")}><Input name="base_url" type="url" defaultValue={data?.providers[0]?.base_url ?? 'https://simbi.com/'} required disabled={!canChangeSafety} /></Field>
+        <p className="panel-intro provider-snapshot">{t('Last loaded provider: {provider} — {url}.', { provider: loadedProvider?.provider ?? '—', url: loadedProvider?.base_url ?? '—' })}</p>
+        {providerDraft ? <Notice>{t('Your provider edits are kept on this page. Refresh only reads saved settings; it does not save these edits.')}</Notice> : null}
+        <form className="form-stack" onSubmit={provider}>
+          <Field label={t("Provider")}><Input name="provider" value={providerValues.provider} onChange={event => setProviderDraft({ ...providerValues, provider: event.target.value })} required disabled={!canChangeSafety} /></Field>
+          <Field label={t("HTTPS base URL")}><Input name="base_url" type="url" value={providerValues.base_url} onChange={event => setProviderDraft({ ...providerValues, base_url: event.target.value })} required disabled={!canChangeSafety} /></Field>
           <Button variant="secondary" disabled={!canChangeSafety}>{t("Save assisted provider")}</Button>
         </form>
       </Panel>
