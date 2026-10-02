@@ -272,6 +272,7 @@ td small { display: block; margin-top: 3px; font-size: .68rem; }
 .settings-grid > .panel > :not(.panel-header) { margin-left: 18px; margin-right: 18px; }
 .settings-grid > .panel > .notice { margin-top: 16px; }
 .panel-intro { margin-top: 17px; color: var(--muted); line-height: 1.55; font-size: .83rem; }
+.provider-snapshot { overflow-wrap: anywhere; }
 .check-form { display: flex; flex-direction: column; gap: 2px; }
 .check-form .button { align-self: flex-start; margin-top: 12px; }
 .button-stack { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 18px; margin-bottom: 13px; }
