@@ -33,6 +33,17 @@ function rows(value: unknown, validate: (row: Row) => boolean): boolean {
   })
 }
 
+function providerRows(value: unknown): boolean {
+  if (!Array.isArray(value)) return false
+  const names = new Set<string>()
+  return value.every(provider => {
+    if (!record(provider) || typeof provider.provider !== 'string' || names.has(provider.provider)
+      || !strings(provider, ['base_url', 'mode']) || provider.mode !== 'assisted' || !textOrNull(provider.verified_at)) return false
+    names.add(provider.provider)
+    return true
+  })
+}
+
 const validators: Record<string, (value: Row) => boolean> = {
   '/auth/status': value => bools(value, ['setup_required', 'demo_mode']) && strings(value, ['environment'])
     // SQLite EXISTS is currently serialized as 0/1; preserve that real contract.
@@ -45,8 +56,7 @@ const validators: Record<string, (value: Row) => boolean> = {
   '/settings': value => record(value.workspace) && strings(value.workspace, ['name'])
     && textOrNull(value.workspace.compliance_ack_at) && textOrNull(value.workspace.paused_at)
     && integer(value.workspace.retention_days, 30) && value.workspace.retention_days <= 3650
-    && Array.isArray(value.providers) && value.providers.every(provider => record(provider)
-      && strings(provider, ['provider', 'base_url', 'mode']) && provider.mode === 'assisted' && textOrNull(provider.verified_at))
+    && providerRows(value.providers)
     && rows(value.members, member => strings(member, ['display_name', 'email']) && role(member.role))
     && strings(value, ['environment']) && typeof value.demo_mode === 'boolean',
   '/overview': value => record(value.counts) && ['reviews', 'due', 'replies', 'prospects'].every(field => integer(value.counts && (value.counts as Row)[field]))

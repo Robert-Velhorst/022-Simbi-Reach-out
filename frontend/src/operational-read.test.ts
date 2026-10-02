@@ -18,6 +18,8 @@ const damaged: Array<[string, unknown, string]> = [
   ['/me', { ...operationalReads['/me'], display_name: {} }, 'unrenderable owner name'],
   ['/settings', { ...operationalReads['/settings'], workspace: null }, 'missing safety workspace'],
   ['/settings', { ...operationalReads['/settings'], members: {} }, 'unrenderable member list'],
+  ['/settings', { ...operationalReads['/settings'], providers: [...operationalReads['/settings'].providers, ...operationalReads['/settings'].providers] }, 'duplicate provider name with identical fields'],
+  ['/settings', { ...operationalReads['/settings'], providers: [...operationalReads['/settings'].providers, { ...operationalReads['/settings'].providers[0], base_url: 'https://simbi.com/contradictory' }] }, 'duplicate provider name with contradictory fields'],
   ['/settings', { ...operationalReads['/settings'], workspace: { ...operationalReads['/settings'].workspace, paused_at: false } }, 'false rather than nullable pause'],
   ['/settings', { ...operationalReads['/settings'], members: [{ ...operationalReads['/settings'].members[0], display_name: null }] }, 'unrenderable member label'],
   ['/overview', { ...populatedOverview, counts: { ...populatedOverview.counts, reviews: -1 } }, 'negative dashboard count'],
@@ -54,6 +56,14 @@ const requiredFields = requiredReads.flatMap(({ path, value, fields }) => fields
 const unsafeLinks = ['http://simbi.com/', 'javascript:alert(1)', 'data:text/html,fictional', 'https://owner:secret@simbi.com/', 'https://simbi.com:444/', 'https://simbi.com/\\other', 'https://simbi.com/\nother', 'https://simbi.com/\u007fother']
 
 describe('operational read contracts through the actual shared client', () => {
+  it('preserves distinct provider names, historical verification and additive fields without normalization', async () => {
+    const value = { ...operationalReads['/settings'], providers: [
+      { ...operationalReads['/settings'].providers[0], historical: 'kept' },
+      { provider: 'Personal', base_url: 'historical link', mode: 'assisted', verified_at: 'historical verification' },
+      { provider: 'personal', base_url: 'https://simbi.com/personal', mode: 'assisted', verified_at: null },
+    ] }
+    await expect(read('/settings', value).promise).resolves.toEqual(value)
+  })
   it.each(requiredFields)('$path refuses $kind required field $field', async ({ path, value }) => {
     const { promise, fetcher } = read(path, value)
     await expect(promise).rejects.toMatchObject({ code: 'response_unverified', details: undefined })

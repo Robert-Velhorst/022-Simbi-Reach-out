@@ -255,3 +255,27 @@ it('uses the verified saved provider rather than the first returned row when cle
   expect(screen.getByRole('textbox', { name: 'Provider' })).toHaveValue('personal')
   expect(screen.queryByText('Your provider edits are kept on this page. Refresh only reads saved settings; it does not save these edits.')).not.toBeInTheDocument()
 })
+
+it.each([true, false])('refuses ambiguous duplicate-provider readback regardless of row order (contradiction first: %s)', async contradictionFirst => {
+  let saved = false
+  let writes = 0
+  const correct = { ...operationalReads['/settings'].providers[0], base_url: 'https://simbi.com/original-link' }
+  const contradictory = { ...correct, base_url: 'https://simbi.com/contradictory-link' }
+  vi.stubGlobal('fetch', vi.fn(async (url: string, options?: RequestInit) => {
+    if (url === '/api/settings/provider' && options?.method === 'POST') { saved = true; writes++; return Response.json({ provider: 'simbi', base_url: correct.base_url, mode: 'assisted', verified: false }) }
+    return Response.json({ ...operationalReads['/settings'], providers: saved ? (contradictionFirst ? [contradictory, correct] : [correct, contradictory]) : operationalReads['/settings'].providers })
+  }))
+  render(<SettingsPage member={fictionalMember as Member} onMemberChange={() => {}} />)
+  const input = await screen.findByRole('textbox', { name: 'HTTPS base URL' })
+  fireEvent.change(input, { target: { value: 'https://simbi.com/original-link#kept' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Save assisted provider' }))
+  expect(await screen.findByText(/Settings could not be verified/)).toBeVisible()
+  expect(input).toHaveValue('https://simbi.com/original-link#kept')
+  expect(screen.queryByText('Provider link saved. Assisted mode remains enforced.')).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Save assisted provider' })).toBeDisabled()
+  fireEvent.click(screen.getByRole('button', { name: 'Refresh' }))
+  await screen.findByRole('button', { name: 'Retry' })
+  expect(input).toHaveValue('https://simbi.com/original-link#kept')
+  for (const name of ['Save assisted provider', 'Record acknowledgement', 'Enable safety stop']) expect(screen.getByRole('button', { name })).toBeDisabled()
+  expect(writes).toBe(1)
+})

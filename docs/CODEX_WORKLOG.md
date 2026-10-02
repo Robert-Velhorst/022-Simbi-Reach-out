@@ -1,5 +1,11 @@
 # Codex worklog
 
+## 2026-10-02 — refuse ambiguous provider readback before source acceptance
+
+- First candidate9b51f6/treeab415e6 passes all eight source37010171681/PR11237010215154 attempt1 jobs with completed logs inspected. Do not merge it: final review reproduces two real-caller false-success cases for duplicate provider names in either order, plus two actual shared-client duplicate-list failures. Preserve these earlier green results as preceding evidence only.
+- Match the backend's exact-name provider primary key at the consumed Settings GET boundary: reject duplicate identities before state application, including recovery reads; preserve distinct historical names/fields without normalization.47 safety/227 operational cases pass274 targeted; full936 frontend39files/lint/TypeScript/build pass. No backend/schema/dependency/owner data/provider operation or README change.
+- Expand the actual helper from12/four to16 selected scans/six fictional writes while retaining every earlier scenario, exact typed bodies/old record arrays/audits and native keyboard behavior. ChromiumcsOSSy catches a premature enabled assertion because the already-visible saved caption does not mark recovery completion; inspect the actual loading contract and wait for the enabled recovery control without relaxing its assertion. Final ChromiumxDx5yo/FirefoxOfJwZr each finish0/16/six/zero app errors; inspect desktop duplicate-refusal/mobile recovered screenshots. Retained ChromiumtB9ozr passes18/12; remaining terminal/publication results belong in the exact ledger. Original goal remains partial and README follows source merging separately.
+
 ## 2026-10-02 — provider input recovery preparation
 
 - Previous goal turn completed README publication and its exact939f151/four-job verification; that was progress, not overall production completion. Revalidate clean local/live939f151 and empty paginated PR inventory; read original Phase021 and relevant diagnosis/React/rendered-testing/documentation/GitHub skills. Browser plugin/skill unavailable, reuse installed Playwright and fresh fictional fixtures with external requests blocked.

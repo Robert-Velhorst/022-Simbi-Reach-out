@@ -66,6 +66,11 @@ export async function providerInputRecoveryWorkflow(page, origin, axe, screensho
         assert.equal(actual.status(), 200)
         const value = await actual.json()
         if (damage === 'malformed') value.workspace = null
+        else if (damage === 'duplicate') {
+          const correct = value.providers.find(item => item.provider === 'simbi')
+          const contradictory = { ...correct, base_url: conflicting }
+          value.providers = locale === 'en' ? [contradictory, ...value.providers] : [...value.providers, contradictory]
+        }
         else value.providers.find(item => item.provider === 'simbi').base_url = conflicting
         await route.fulfill({ response: actual, json: value })
       }
@@ -122,14 +127,41 @@ export async function providerInputRecoveryWorkflow(page, origin, axe, screensho
       assert.equal(await page.getByText(t(workingNotice), { exact: true }).count(), 0)
       assert.equal(writes, startWrites + 2)
       await capture('confirmed')
-      expectedBodies.push({ provider: 'Simbi', base_url: typed }, { provider: 'Simbi', base_url: typed })
-      process.stdout.write(`Provider input ${locale}: original fields retained through contradictory and failed/successful reads; explicit verified save normalizes without remount; two deliberate local writes.\n`)
+      // A receipt must not be confirmed by an ambiguous Settings list, in either
+      // row order. The same damaged list must not unlock a recovery read either.
+      await enter(page, providerInput, 'Simbi')
+      await enter(page, input, typed)
+      damage = 'duplicate'
+      await page.route(`${origin}/api/settings`, handler)
+      try {
+        await activate(page, button('Save assisted provider'))
+        await button('Retry').waitFor()
+        await assertUncertain()
+        assert.equal(writes, startWrites + 3)
+        await activate(page, button('Refresh'))
+        await button('Retry').waitFor()
+        await assertUncertain()
+        assert.equal(writes, startWrites + 3, 'Duplicate recovery data cannot repeat or confirm a write')
+        await capture('duplicate-readback')
+      } finally { await page.unroute(`${origin}/api/settings`, handler) }
+      await activate(page, button('Retry'))
+      // The normalized caption is already present from the preceding save;
+      // observing it alone does not prove this recovery read has finished.
+      await page.waitForFunction(control => !control.disabled, await button('Save assisted provider').elementHandle())
+      await page.getByText(t('Last loaded provider: {provider} — {url}.', { provider: 'simbi', url: normalized }), { exact: true }).waitFor()
+      await assertWorking()
+      assert.equal(await button('Save assisted provider').isEnabled(), true)
+      assert.equal(await page.getByText(t(savedNotice), { exact: true }).count(), 0)
+      assert.equal(writes, startWrites + 3)
+      await capture('duplicate-recovered')
+      expectedBodies.push(...Array.from({ length: 3 }, () => ({ provider: 'Simbi', base_url: typed })))
+      process.stdout.write(`Provider input ${locale}: original fields retained through contradictory, duplicate and failed/successful reads; explicit verified save normalizes without remount; three deliberate local writes.\n`)
     }
-    assert.equal(scans, 12); assert.equal(writes, 4)
+    assert.equal(scans, 16); assert.equal(writes, 6)
     assert.deepEqual(bodies, expectedBodies)
     const after = await snapshot()
     for (const table of ['campaigns', 'prospects', 'templates', 'drafts', 'handoffs', 'replies', 'reminders', 'suppressions']) assert.deepEqual(after[table], before[table], `Provider recovery changed ${table}`)
-    assert.equal(after.audit_events.length, before.audit_events.length + 4)
+    assert.equal(after.audit_events.length, before.audit_events.length + 6)
     for (const previous of before.audit_events) assert.deepEqual(after.audit_events.find(item => item.id === previous.id), previous)
   } finally { page.off('request', observe) }
 }
