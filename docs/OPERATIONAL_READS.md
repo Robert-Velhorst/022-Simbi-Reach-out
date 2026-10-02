@@ -6,7 +6,7 @@ This is Robert's personal, single-owner account companion, not a shared-service 
 
 An apparently successful response can still contain unusable fields. The application rejects the entire affected result instead of rendering some rows, inventing counts or silently correcting it. The English/Dutch notice says that the local operational response was not verified.
 
-- On Overview, Reports or Settings, use **Retry** / **Opnieuw** in that notice. This repeats only the local read, not an earlier change. Do not reload the browser or repeat a mutation merely to recover this result.
+- On Overview, Reports or Settings, use **Retry** / **Opnieuw proberen** in that notice. This repeats only the local read, not an earlier change. Do not reload the browser or repeat a mutation merely to recover this result.
 - At startup, a malformed bootstrap/session result shows **Service unavailable** with **Try again** / **Opnieuw proberen**. This is not evidence that you were signed out or that your installation needs fresh setup. A real server-confirmed authentication refusal still offers sign-in.
 - When a manual handoff's fresh read fails verification, its copy/open operation cannot proceed through that read. Inspect the error and use **Resolve latest handoff** or the appropriate [handoff recovery procedure](REQUEST_RECOVERY.md#for-the-personal-operator). Reading history is not authority to open a provider or send.
 - If a settings change was accepted but its follow-up settings read cannot be verified, the message explicitly says the earlier change may already be saved. Retry the settings read before deciding whether to change anything again. The client does not submit that change automatically.
