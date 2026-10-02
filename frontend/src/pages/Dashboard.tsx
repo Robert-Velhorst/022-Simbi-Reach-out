@@ -26,16 +26,15 @@ export default function Dashboard({ member }: { member: Member }) {
       <div><h1>{t("Good morning,")}{' '}{firstName}</h1><p>{data ? t('You have {reviews} drafts to review and {due} reminders due.', { reviews: data.counts.reviews, due: data.counts.due }) : loading ? t("Loading the work that needs your attention…") : t("Your work overview could not be loaded.")}</p></div>
       <Link className="button button-primary" to="/review">{data ? t('Review {count} drafts', { count: data.counts.reviews }) : t("Open review queue")} <ArrowRight size={17} /></Link>
     </header>
-    <section className="safety-strip" aria-label={t("Safety and compliance status")}>
+    <DataState label={t("overview")} loading={loading} error={error} hasData={Boolean(data)} retry={load}><section className="safety-strip" aria-label={t("Safety and compliance status")}>
       <div className="safety-heading"><ShieldCheck /><span>{t("Safety & compliance")}</span></div>
-      <SafetyItem label={t("Local only")} detail={t("No cloud sync")} ready />
-      <SafetyItem label={t("Data integrity")} detail={t("SQLite + backups")} ready />
-      <SafetyItem label={t("PII protection")} detail={t("On-device only")} ready />
-      <SafetyItem label={t("Provider guidance")} detail={t("Assisted-send only")} ready />
-      <SafetyItem label={t("Policy review")} detail={member.compliance_ack_at ? t("Acknowledged") : t("Required")} ready={Boolean(member.compliance_ack_at)} />
+      <SafetyItem label={t("Local only")} detail={t("No cloud sync")} ready={Boolean(data?.safety.local_only) && !loading && !error} />
+      <SafetyItem label={t("Provider guidance")} detail={t("Assisted-send only")} ready={Boolean(data?.safety.assisted_send_only) && !loading && !error} />
+      <SafetyItem label={t("Policy review")} detail={data?.safety.compliance_acknowledged ? t("Acknowledged") : t("Required")} ready={Boolean(data?.safety.compliance_acknowledged) && !loading && !error} />
+      <SafetyItem label={t("Emergency safety stop")} detail={data?.safety.paused ? t("Enabled") : t("Not enabled")} ready={Boolean(data?.safety.paused) && !loading && !error} />
       <Link to="/settings">{t("Review controls")}{' '}<ArrowRight size={15} /></Link>
     </section>
-    <DataState label={t("overview")} loading={loading} error={error} hasData={Boolean(data)} retry={load}><div className="dashboard-grid">
+    <p className="panel-intro">{t('Last verified local status, not backup, privacy or provider-policy certification.')}</p><div className="dashboard-grid">
       <Panel className="queue-panel" title={t("Work queue (exception first)")} action={<Link to="/review">{t("Open full queue")}{' '}<ArrowRight size={15} /></Link>}>
         {data?.queue.length ? <TableRegion label={t("Work queue (exception first)")}><table><thead><tr><th>{t("Priority")}</th><th>{t("Item")}</th><th>{t("Campaign")}</th><th>{t("Issue")}</th><th>{t("Action")}</th></tr></thead><tbody>
           {data.queue.map((item) => <tr key={item.id}><td>{item.state === 'ambiguous' ? <CircleAlert className="danger-icon" size={18} /> : <Info className="warning-icon" size={18} />}</td><td><strong>{item.prospect_name}</strong><small>{t("Quality")}{' '}{item.quality_score}/100</small></td><td>{item.campaign_name}</td><td>{item.state === 'ambiguous' ? t("Outcome needs resolution") : (item.safety_flags[0] ? formatCode(item.safety_flags[0]) : undefined) ?? t("Human review required")}</td><td><Link className="table-action" to="/review">{t("Review")}</Link></td></tr>)}

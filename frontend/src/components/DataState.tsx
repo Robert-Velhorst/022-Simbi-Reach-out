@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { Button, Notice } from './ui'
 
 export function DataState({ label, loading, error, hasData, retry, children }: {
-  label: string; loading: boolean; error: string; hasData: boolean; retry?: () => Promise<void>; children: ReactNode
+  label: string; loading: boolean; error: string; hasData: boolean; retry?: () => Promise<unknown>; children: ReactNode
 }) {
   const { t, formatMessage } = useI18n()
   return <>

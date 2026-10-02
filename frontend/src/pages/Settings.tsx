@@ -1,5 +1,5 @@
 import { useI18n } from '../i18n'
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent } from 'react'
 import { AlertOctagon, DatabaseBackup, Download, ShieldCheck, UserPlus } from 'lucide-react'
 import { api, ApiError, post } from '../api'
 import { Button, Field, Input, Notice, Panel, Select } from '../components/ui'
@@ -8,6 +8,8 @@ import PrivacyControls from '../components/PrivacyControls'
 import AuditPrivacyControls from '../components/AuditPrivacyControls'
 import { useSubmitFocus } from '../components/useSubmitFocus'
 import RetirementControls, { type RetirementReceipt } from '../components/RetirementControls'
+import { useResource } from '../useResource'
+import { DataState } from '../components/DataState'
 
 type SettingsData = {
   workspace: { name: string; compliance_ack_at: string | null; paused_at: string | null; retention_days: number }
@@ -19,17 +21,19 @@ type SettingsData = {
 
 export default function SettingsPage({ member, onMemberChange, onRetired = () => window.location.reload() }: { member: Member; onMemberChange: (member: Member) => void; onRetired?: (receipt: RetirementReceipt) => void }) {
   const { t, formatMessage, formatCode, formatDate } = useI18n()
-  const [data, setData] = useState<SettingsData | null>(null)
+  const resource = useResource<SettingsData>('/settings')
+  const { data, loading, error } = resource
   const [message, setMessage] = useState<{ tone: 'success' | 'danger'; text: string } | null>(null)
   const [passwordBusy, setPasswordBusy] = useState(false)
   const [complianceBusy, setComplianceBusy] = useState(false)
   const complianceInFlight = useRef(false)
   const rememberComplianceFocus = useSubmitFocus(complianceBusy)
   const [reauthenticate, setReauthenticate] = useState(false)
-  const canAdmin = ['owner', 'admin'].includes(member.role)
-  async function load() { setData(await api<SettingsData>('/settings')) }
+  const canAdmin = ['owner', 'admin'].includes(member.role) && Boolean(data) && !loading && !error
+  async function load() {
+    if (!await resource.load()) throw new ApiError('response_unverified', 'Settings could not be verified. Retry the settings read before repeating a change; the earlier change may already be saved.')
+  }
   async function refreshMember() { onMemberChange(await api<Member>('/me')) }
-  useEffect(() => { void load().catch((cause) => setMessage({ tone: 'danger', text: cause instanceof Error ? cause.message : 'Settings could not be loaded' })) }, [])
 
   async function compliance(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -44,19 +48,20 @@ export default function SettingsPage({ member, onMemberChange, onRetired = () =>
   }
 
   async function provider(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setMessage(null)
+    event.preventDefault(); if (!canAdmin) return; setMessage(null)
     try { await post('/settings/provider', Object.fromEntries(new FormData(event.currentTarget))); await load(); setMessage({ tone: 'success', text: 'Provider link saved. Assisted mode remains enforced.' }) }
     catch (cause) { setMessage({ tone: 'danger', text: cause instanceof ApiError ? cause.message : 'Provider could not be saved' }) }
   }
 
   async function pause(paused: boolean) {
+    if (!canAdmin) return
     setMessage(null)
     try { await post('/settings/pause', { paused }); await Promise.all([load(), refreshMember()]); setMessage({ tone: 'success', text: paused ? 'Safety stop enabled. New approvals and handoffs are blocked.' : 'Workspace resumed. Existing review gates still apply.' }) }
     catch (cause) { setMessage({ tone: 'danger', text: cause instanceof ApiError ? cause.message : 'Safety state could not be changed' }) }
   }
 
   async function addMember(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setMessage(null)
+    event.preventDefault(); if (!canAdmin) return; setMessage(null)
     const form = event.currentTarget
     try { await post('/settings/team', Object.fromEntries(new FormData(form))); form.reset(); await load(); setMessage({ tone: 'success', text: 'Local team member added.' }) }
     catch (cause) { setMessage({ tone: 'danger', text: cause instanceof ApiError ? cause.message : 'Member could not be added' }) }
@@ -77,9 +82,9 @@ export default function SettingsPage({ member, onMemberChange, onRetired = () =>
   if (reauthenticate) return <div className="page"><Panel title={t("Password changed")}><Notice tone="success">{t("All your sessions have been signed out. Sign in with your new password to continue.")}</Notice><a className="button button-primary" href="/">{t("Sign in again")}</a></Panel></div>
 
   return <div className="page settings-page">
-    <header className="page-hero"><div><h1>{t("Settings & safety")}</h1><p>{t("Operator controls are explicit, auditable and local. No provider password or session cookie belongs here.")}</p></div></header>
+    <header className="page-hero"><div><h1>{t("Settings & safety")}</h1><p>{t("Operator controls are explicit, auditable and local. No provider password or session cookie belongs here.")}</p></div><Button variant="secondary" disabled={loading} onClick={() => void resource.load()}>{t('Refresh')}</Button></header>
     {message ? <Notice tone={message.tone}>{formatMessage(message.text)}</Notice> : null}
-    <div className="settings-grid">
+    <DataState label={t('settings')} loading={loading} error={error} hasData={Boolean(data)} retry={resource.load}><div className="settings-grid">
       {member.role === 'owner' && data ? <PrivacyControls retentionDays={data.workspace.retention_days} onSaved={load} /> : null}
       {member.role === 'owner' && data ? <AuditPrivacyControls /> : null}
       <Panel title={t("Account password")}><p className="panel-intro">{t("Change your local workspace password. This signs out all your sessions, including this one; it never changes a provider password.")}</p><form className="form-stack" onSubmit={changePassword}><Field label={t("Current password")}><Input name="current_password" type="password" required autoComplete="current-password" /></Field><Field label={t("New password")}><Input name="new_password" type="password" required minLength={12} maxLength={200} autoComplete="new-password" /></Field><Button disabled={passwordBusy}>{t("Change password")}</Button></form></Panel>
@@ -90,6 +95,6 @@ export default function SettingsPage({ member, onMemberChange, onRetired = () =>
       <Panel title={t("Local team")}><div className="member-list">{data?.members.map((item) => <div key={item.id}><span className="avatar">{item.display_name[0]}</span><div><strong>{item.display_name}</strong><small>{item.email}</small></div><span>{formatCode(item.role)}</span></div>)}</div>{canAdmin ? <form className="form-grid compact" onSubmit={addMember}><Field label={t("Name")}><Input name="display_name" required /></Field><Field label={t("Email")}><Input name="email" type="email" required /></Field><Field label={t("Temporary password")}><Input name="password" type="password" minLength={12} required /></Field><Field label={t("Role")}><Select name="role" defaultValue="viewer"><option value="viewer">{t("Viewer")}</option><option value="editor">{t("Editor")}</option><option value="admin">{t("Admin")}</option></Select></Field><Button><UserPlus size={17} />{t("Add member")}</Button></form> : null}</Panel>
       <Panel title={t("Runtime")}><dl className="definition-list"><div><dt>{t("Environment")}</dt><dd>{data?.environment ? formatCode(data.environment) : '—'}</dd></div><div><dt>{t("Mode")}</dt><dd>{data?.demo_mode ? t("Demo — handoffs blocked") : t("Local assisted")}</dd></div><div><dt>{t("Authentication")}</dt><dd>{t("Local session + CSRF")}</dd></div><div><dt>{t("Storage")}</dt><dd>{t("SQLite on this machine")}</dd></div></dl></Panel>
       {member.role === 'owner' && data ? <RetirementControls paused={Boolean(data.workspace.paused_at)} onRetired={onRetired} /> : null}
-    </div>
+    </div></DataState>
   </div>
 }

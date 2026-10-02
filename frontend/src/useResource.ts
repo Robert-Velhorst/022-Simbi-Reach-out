@@ -11,7 +11,10 @@ export function useResource<T>(path: string) {
     setState((previous) => ({ path, data: previous.path === path ? previous.data : null, error: '', loading: true }))
     try {
       const data = await api<T>(path)
-      if (current === request.current) setState({ path, data, error: '', loading: false })
+      if (current === request.current) {
+        setState({ path, data, error: '', loading: false })
+        return data
+      }
     } catch (cause) {
       if (current === request.current) setState((previous) => ({ ...previous, error: cause instanceof Error ? cause.message : 'Data could not be loaded', loading: false }))
     }

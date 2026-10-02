@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased — operational read contracts and truthful safety (2026-10-02)
+
+- Validate consumed successful bootstrap/session/settings/overview/report/handoff GETs before UI state or active copy/open permission. Preserve legitimate SQLite retirement0/1, nullable SQL aggregates, additive history and blocked historical URL strings. Active URLs receive a structural HTTPS gate; backend host/permission/latest-content checks remain authoritative.
+- Make Settings wait for its first verified read and preserve mounted forms/receipts with stale warnings during refresh. Disable administrative settings controls on pending/failed reads; do not claim mutation success after its follow-up read fails. No automatic write/read retries or private working-copy cache.
+- Replace unsupported dashboard backup/privacy certification and stale member-derived policy with the verified overview's safety state and an explicit limited-status notice. Preserve all four statuses at desktop/intermediate/mobile widths: remove an old rule hiding the stop and wrap mobile instead of horizontal safety-strip scrolling. Add224 actual-client cases,11 bilingual/recovery checks andfour reproduced-screen tests, retaining all647 previous tests. Add five actual-read/native-recovery browser paths in both locales,22 selected scans including1100px checks and nine unchanged-table/no-write assertions. Exact completed versus failed/pending results are in the readiness ledger; no owner/provider or full production acceptance claim.
+
 ## Unreleased — core paged record contracts (2026-10-02)
 
 - Reject malformed consumed record fields and duplicate/unsafe page IDs on the seven core GET lists before they become UI state. Preserve legitimate nullable historical links, extra server fields and old date/status strings; do not repair or filter records.

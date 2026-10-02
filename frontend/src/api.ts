@@ -1,5 +1,6 @@
 import { validCoreCreation } from './coreResponse'
 import { validPageRecords } from './pageRecords'
+import { validOperationalRead } from './operationalReads'
 
 export class ApiError extends Error {
   code: string
@@ -75,6 +76,9 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
       }
       if (method.toUpperCase() === 'GET' && !validPageRecords(path, payload)) {
         throw new ApiError('response_unverified', 'The local service returned an unverified record list. Retry this read without reloading or resubmitting a change; no result was verified.')
+      }
+      if (method.toUpperCase() === 'GET' && !validOperationalRead(path, payload)) {
+        throw new ApiError('response_unverified', 'The local service returned an unverified operational response. Retry only this read; do not reload or repeat a change. No result was verified.')
       }
       if (!validCoreCreation(path, method, options.body, payload)) {
         throw new ApiError('response_unverified', unknownWrite)

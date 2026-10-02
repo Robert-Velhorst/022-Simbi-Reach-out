@@ -1,6 +1,7 @@
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 import { useResource } from './useResource'
+import { operationalReads } from './test/operational-reads'
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals() })
 
@@ -25,14 +26,14 @@ it('lets the newest refresh win and ignores a response after unmount', async () 
   const pending: Array<(value: Response) => void> = []
   vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>((resolve) => { pending.push(resolve) })))
   const { result, unmount } = renderHook(() => useResource<{ name: string }>('/overview'))
-  let refresh!: Promise<void>
+  let refresh!: Promise<unknown>
   act(() => { refresh = result.current.load() })
-  await act(async () => { pending[1](Response.json({ name: 'new' })); await refresh })
-  await waitFor(() => expect(result.current.data).toEqual({ name: 'new' }))
-  await act(async () => { pending[0](Response.json({ name: 'old' })) })
-  expect(result.current.data).toEqual({ name: 'new' })
+  await act(async () => { pending[1](Response.json({ ...operationalReads['/overview'], name: 'new' })); await refresh })
+  await waitFor(() => expect(result.current.data).toEqual({ ...operationalReads['/overview'], name: 'new' }))
+  await act(async () => { pending[0](Response.json({ ...operationalReads['/overview'], name: 'old' })) })
+  expect(result.current.data).toEqual({ ...operationalReads['/overview'], name: 'new' })
   act(() => { void result.current.load() })
   unmount()
-  await act(async () => { pending[2](Response.json({ name: 'unmounted' })) })
-  expect(result.current.data).toEqual({ name: 'new' })
+  await act(async () => { pending[2](Response.json({ ...operationalReads['/overview'], name: 'unmounted' })) })
+  expect(result.current.data).toEqual({ ...operationalReads['/overview'], name: 'new' })
 })

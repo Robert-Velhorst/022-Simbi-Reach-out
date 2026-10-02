@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api, ApiError, post } from './api'
+import { operationalReads } from './test/operational-reads'
 
 afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); vi.unstubAllGlobals() })
 
@@ -92,8 +93,9 @@ describe('complete API response boundary', () => {
     const cancellation = new AbortController()
     const remove = vi.spyOn(cancellation.signal, 'removeEventListener')
     let signal: AbortSignal | undefined
-    vi.stubGlobal('fetch', vi.fn(async (_url, options: RequestInit) => { signal = options.signal as AbortSignal; return new Response('{"status":"ok"}') }))
-    await expect(api('/overview', { signal: cancellation.signal })).resolves.toEqual({ status: 'ok' })
+    const payload = { ...operationalReads['/overview'], status: 'ok' }
+    vi.stubGlobal('fetch', vi.fn(async (_url, options: RequestInit) => { signal = options.signal as AbortSignal; return Response.json(payload) }))
+    await expect(api('/overview', { signal: cancellation.signal })).resolves.toEqual(payload)
     cancellation.abort()
     expect(signal?.aborted).toBe(false)
     expect(remove).toHaveBeenCalledWith('abort', expect.any(Function))

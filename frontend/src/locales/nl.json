@@ -673,5 +673,11 @@
   "This reminder retry reference belongs to different submitted values. Retry the original values or check the saved reminders; no new reminder was created.": "Deze herhaalreferentie voor een herinnering hoort bij andere ingediende waarden. Probeer de oorspronkelijke waarden opnieuw of controleer de opgeslagen herinneringen; er is geen nieuwe herinnering aangemaakt.",
   "The original reminder was removed or changed. Check the current reminders; this retry did not recreate or reopen it.": "De oorspronkelijke herinnering is verwijderd of gewijzigd. Controleer de huidige herinneringen; deze herhaling heeft de herinnering niet opnieuw aangemaakt of geopend.",
   "The reminder retry-reference limit was reached. Existing references still work; no new reminder was created.": "De limiet voor herhaalreferenties van herinneringen is bereikt. Bestaande referenties blijven werken; er is geen nieuwe herinnering aangemaakt.",
-  "The local service returned an unverified record list. Retry this read without reloading or resubmitting a change; no result was verified.": "De lokale service gaf een niet-bevestigde lijst met gegevens. Probeer alleen deze gegevens opnieuw te laden, zonder de pagina te herladen of een wijziging opnieuw in te dienen; er is geen resultaat bevestigd."
+  "The local service returned an unverified record list. Retry this read without reloading or resubmitting a change; no result was verified.": "De lokale service gaf een niet-bevestigde lijst met gegevens. Probeer alleen deze gegevens opnieuw te laden, zonder de pagina te herladen of een wijziging opnieuw in te dienen; er is geen resultaat bevestigd.",
+  "The local service returned an unverified operational response. Retry only this read; do not reload or repeat a change. No result was verified.": "De lokale service gaf een niet-bevestigd operationeel antwoord. Probeer alleen deze gegevens opnieuw te laden; herlaad de pagina niet en herhaal geen wijziging. Er is geen resultaat bevestigd.",
+  "Settings could not be verified. Retry the settings read before repeating a change; the earlier change may already be saved.": "De instellingen konden niet worden bevestigd. Laad alleen de instellingen opnieuw voordat je een wijziging herhaalt; de eerdere wijziging kan al zijn opgeslagen.",
+  "settings": "instellingen",
+  "Enabled": "Ingeschakeld",
+  "Not enabled": "Niet ingeschakeld",
+  "Last verified local status, not backup, privacy or provider-policy certification.": "Laatst bevestigde lokale status, geen bevestiging van back-ups, privacy of naleving van platformregels."
 }

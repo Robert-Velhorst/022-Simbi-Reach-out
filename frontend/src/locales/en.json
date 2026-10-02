@@ -673,5 +673,11 @@
   "This reminder retry reference belongs to different submitted values. Retry the original values or check the saved reminders; no new reminder was created.": "This reminder retry reference belongs to different submitted values. Retry the original values or check the saved reminders; no new reminder was created.",
   "The original reminder was removed or changed. Check the current reminders; this retry did not recreate or reopen it.": "The original reminder was removed or changed. Check the current reminders; this retry did not recreate or reopen it.",
   "The reminder retry-reference limit was reached. Existing references still work; no new reminder was created.": "The reminder retry-reference limit was reached. Existing references still work; no new reminder was created.",
-  "The local service returned an unverified record list. Retry this read without reloading or resubmitting a change; no result was verified.": "The local service returned an unverified record list. Retry this read without reloading or resubmitting a change; no result was verified."
+  "The local service returned an unverified record list. Retry this read without reloading or resubmitting a change; no result was verified.": "The local service returned an unverified record list. Retry this read without reloading or resubmitting a change; no result was verified.",
+  "The local service returned an unverified operational response. Retry only this read; do not reload or repeat a change. No result was verified.": "The local service returned an unverified operational response. Retry only this read; do not reload or repeat a change. No result was verified.",
+  "Settings could not be verified. Retry the settings read before repeating a change; the earlier change may already be saved.": "Settings could not be verified. Retry the settings read before repeating a change; the earlier change may already be saved.",
+  "settings": "settings",
+  "Enabled": "Enabled",
+  "Not enabled": "Not enabled",
+  "Last verified local status, not backup, privacy or provider-policy certification.": "Last verified local status, not backup, privacy or provider-policy certification."
 }
