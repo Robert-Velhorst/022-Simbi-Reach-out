@@ -1,5 +1,11 @@
 # Codex worklog
 
+## 2026-10-02 — distinguish Windows WebKit native link-tab policy from product acceptance
+
+- Revalidate clean/live main `cf79648`; its independent documentation CI37016494400 completes four successful attempt1 jobs and all four completed logs are inspected.484 backend/936 frontend39files/full Linux three-engine retained/new workflows/Windows package/storage pass. Subsequent Markdown publication needs its own exact check.
+- Twice reproduce unchanged English Windows WebKit26.5 setup-to-Settings failure on owned4580; shorten the actual caller and observe native Sign out/BODY navigation without reading credentials or forcing focus. Alt+Tab does not resolve it. Synthetic two-link comparison isolates ordinary-anchor skipping to this installed WebKit configuration; explicit zero tab stops reach both links in WebKit/Chromium/Firefox. A conditional fictional-page-only zero-tab-stop diagnostic reaches actual Settings with eleven Tab keys and Enter. This is a diagnosed browser behavior, not a shipped fix or full Windows WebKit pass. Original failures,180-key bound and all app/helper/dependency/browser preferences stay unchanged; no owner/provider data is accessed.
+- Record proof/no-code-change decision and remaining Phase049/050/096 gates in the [diagnosis ledger](PRODUCTION_READINESS.md#windows-webkit-native-link-tab-diagnosis-2026-10-02) and browser guide. Original full personal production remains partial; unrelated retained replay/Firefox causes remain unexplained.
+
 ## 2026-10-02 — provider source merge before separate README
 
 - Independent exactf843042 merge-main37015214456 passes four attempt1 jobs with all four completed logs inspected:484/936/39files/full three-engine retained/new16-scan provider workflows/package/storage independently pass. Fresh README reader reads all1020 then-current lines through footer plus full guides/current openings; all six audience/recovery/dev/evidence/owner/link questions pass without material defect. Primary226 local targets across17 docs and whitespace pass. Only Markdown changes follow the source merge; later exact documentation checks remain independent.
