@@ -6,6 +6,8 @@ Public Simbi homepage, terms section3.4(b) and privacy policy were specifically 
 
 ## Simbi
 
+On2026-10-02, the public homepage, full terms restriction in section3.4(b), privacy-policy material and Rules page were directly refreshed again. The published automated-query/script, unsolicited/duplicative-message and non-consensual harvesting restrictions remain visible; Rules is member-content/conduct guidance, not account-flow evidence. Personal use of one's own account does not itself establish authorization for prohibited provider automation. No login, account inspection, contact harvesting or sending occurred in this refresh, and no other jurisdictional source below was freshly verified. This is a bounded public-source observation, not legal certification or provider approval.
+
 Simbi's [Terms and Conditions](https://simbi.com/terms-and-conditions) prohibit unsolicited or duplicative messages, harvesting user data, scraping/mining, automated searches/queries, and automated agents/scripts. Its [Privacy Policy](https://simbi.com/privacy-policy) describes member data and the rights attached to personal data. Its [Rules](https://simbi.com/rules) govern member content and conduct.
 
 Therefore this product:

@@ -42,6 +42,7 @@ The inventory below is historical, not a current all-role acceptance result. The
 | Settings | Support data | Owner/admin-only redacted diagnostic JSON; other roles receive guidance. |
 | Settings | Retire personal installation | Sole owner/one workspace only; stop first, exact count/name preview, two acknowledgements, RETIRE and current password, verified paused backup. Cancel preserves data; receipt verifies completion; private UI removed, sibling tabs refresh, reload blocks sign-in/setup. External copies and Simbi unchanged. |
 | Settings | Add member | Owner/admin only; scrypt password and constrained role. |
+| Settings | Change local password / Sign in again | Current/new local credentials only. Synchronous pending and completion/uncertainty guards; exact true/true confirmation clears fields and requires new sign-in. Actual403/current-password or422/validation refusal remains correctable beside retained fields; other unverified outcomes retain disabled original fields and direct deliberate sign-in, new password first. Refresh cannot unlock uncertainty; leaving loses RAM-only fields/guard. No Simbi credentials or cross-tab/idempotent/global-action guarantee. See [the precise contract](PASSWORD_RECOVERY.md). |
 
 Accessibility controls include semantic headings, labels, table headers, focus-visible states, keyboard-operable buttons/links, dialog roles, status announcements, reduced-motion handling, and responsive navigation. Browser evidence at 1440x1000 and 390x844 is recorded in `FINAL_VERIFICATION_REPORT.md`.
 

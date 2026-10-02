@@ -1,5 +1,7 @@
 # Codex worklog
 
+Published final password source: PR113 merges conflict-free at286446b1a63a4360b436de9b8f97457bf94b5d49 on2026-10-02T15:12:57Z, exactc241165/treec20fd64. Source37024107616 and PR37024115799 each complete all four attempt1 jobs; all eight completed logs are inspected.484 backend/945 frontend40files/728 keys/finalkAmy build/audits/worker/full retained Linux three-engine/new14-scan password paths/Windows package/Linux storage pass. Fresh exact-head/base/eight-success/CLEAN/MERGEABLE/sole-PR gate precedes normal head-pinned merge; zero open PRs afterward, matching clean fast-forwarded main and READMEeed839a unchanged through merge. The later README update is Markdown-only; independent merge-main37025389068 and documentation checks remain separate. [The current ledger](PRODUCTION_READINESS.md#personal-local-password-confirmation-preparation-2026-10-02) preserves the initial caller and viewport failures, every preceding candidate and full original partial scope. No owner data, provider access or real sending is claimed. Following preparation paragraphs are dated history.
+
 ## 2026-10-02 — personal local-password confirmation and deliberate recovery preparation
 
 - Reproduce four false-success receipts and synchronous duplicate POSTs through the actual Settings/shared client. Preserve one-variable red/green progression; uncertain repeat and500/pre-write-code cases also fail before repair. Check exact backend403/422 pre-write paths and unchanged transaction/session/audit behavior.

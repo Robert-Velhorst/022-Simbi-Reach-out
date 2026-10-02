@@ -1,6 +1,8 @@
 # API usage audit
 
-All non-health endpoints below require an authenticated workspace member unless marked public. All writes except authentication require the CSRF header. Mutation roles are enforced server-side; UI visibility is not an authorization boundary.
+The local-password caller now accepts `POST /api/auth/password` only after the complete body contains exactly-true changed/reauthenticate fields. Actual HTTP status is retained separately from payload codes; only inspected403/current_password_invalid and422/validation_failed permit correction without the uncertainty latch. The unchanged backend transaction updates the hash, revokes that user's sessions and audits once. Nine actual caller cases and the separate native bilingual helper cover pending, correctable, contradictory/lost real commits and deliberate same-owner sign-in; no provider operation, idempotency receipt or durable browser password copy is added. See [PASSWORD_RECOVERY](PASSWORD_RECOVERY.md) and [exact publication evidence](PRODUCTION_READINESS.md#personal-local-password-confirmation-preparation-2026-10-02).
+
+All non-health endpoints below require an authenticated workspace member unless marked public. Writes require the CSRF header except setup/login; logout and password changes are not exempt. Mutation roles are enforced server-side; UI visibility is not an authorization boundary.
 
 Successful GETs for bootstrap/session/settings/overview/reports/handoffs additionally use a pure consumed operational guard, including requested handoff target and structurally safe active URL. Preserve real SQLite0/1, nullable SQL aggregates and blocked historical strings; no POST-instruction/pagination requirement is invented for handoff GET. This does not verify authenticity, every schema/semantic or generic mutation proof. [Exact contracts/recovery](OPERATIONAL_READS.md) and [actual execution/publication evidence](PRODUCTION_READINESS.md#operational-read-contracts-and-truthful-safety-state-2026-10-02) remain separate.
 
@@ -10,6 +12,7 @@ The shared client rejects unreadable/primitive successful JSON, bounds the full 
 |---|---|---|
 | `GET /api/health/live`, `/ready` | Docker/operations | CLI/Docker health; database readiness branch. |
 | `GET /api/auth/status` | App bootstrap (public) | First-run UI. |
+| `POST /api/auth/password` | Signed-in Settings → Account password; session and CSRF required | Exact true/true receipt, actual403/422 pre-write pairs, synchronous pending/uncertain repeat protection and deliberate sign-in. Nine actual caller cases plus bilingual native real-commit/lost-response/session-revocation checks; [contract and limits](PASSWORD_RECOVERY.md). |
 | `POST /api/privacy/retirement/preview`, `/confirm`; `GET /api/privacy/retirement/receipt/{plan_id}` | Owner Settings retirement; completion receipt is capability-only public read | Sole-owner/safety-stop/current session/password/CSRF/acknowledgement gates; exact snapshots, backup/rollback, no bootstrap after retirement, revoked sessions, maintenance/export serialization, response-loss recovery. See PRIVACY_CLEANUP.md. |
 | `POST /api/auth/setup`, `/login` | Auth UI (public, one-time/credential guarded) | All backend suites. |
 | `POST /api/auth/logout`, `GET /api/me` | App shell | CSRF/security tests. |
