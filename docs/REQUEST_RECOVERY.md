@@ -6,6 +6,8 @@ The application waits for a complete JSON response, not just a connection or res
 
 If a core record list is damaged, use **Retry beside its read warning** to load those records again in place. Do not browser-reload, leave the page or resubmit an open form for that purpose: you could lose unsaved values or an unresolved write reference. Last loaded records, if available, stay visible with an out-of-date warning. This read Retry requests no change and does not establish what happened to an earlier write. An uncertain save uses its separate same-reference recovery below, not the record-list Retry button.
 
+The Review queue's existing leave guard can ask before a read Retry discards unresolved editor text. Cancel that choice if you need to keep the working copy; read recovery is not a promise to preserve every form. An in-page Retry never supplies proof about the earlier save.
+
 For a write, **an interrupted response does not prove that the change failed**. The server may have saved it before the connection broke. The English warning says: “The request outcome is not confirmed.” The Dutch warning says: “De uitkomst van het verzoek is niet bevestigd.” Both tell you that local records may already have changed and to check their current state before trying again. The client never automatically retries a write.
 
 Campaign, prospect, CSV import, template, draft preparation, reply and reminder forms refuse repeated submission while pending. Their inputs, Cancel and Close are disabled; Escape and backdrop dismissal cannot discard the pending form. A translated notice explains the wait. The form itself remains keyboard reachable for scrolling even when every input is disabled. After an unverified response, the open form retains its entered values and enables controls for a deliberate next decision.
@@ -32,6 +34,18 @@ A cancelled request is separate from a timeout. Cancellation before dispatch sta
 ### Core paged record reads
 
 Before a successful GET list enters UI state, `pageRecords.ts` checks `/campaigns`, `/prospects`, `/templates`, `/drafts`, `/replies`, `/reminders` and `/audit`, including query-string variants and raw API selection consumers. Each item must be a non-array object with a unique positive safe-integer ID within that page. Consumed text, reference, score, flags and count fields must have their expected types; a malformed item rejects the **whole page**, rather than being dropped or repaired. Empty pages are permitted. `usePage` separately retains its exact requested offset/limit, safe count and item-count checks.
+
+The following is the exact consumed-field matrix, not a complete server schema. All rows additionally require the common page-unique positive safe-integer `id`. “String” permits empty/historical text; it is not URL/date/hash/status validation. Positive/nonnegative integers must be JavaScript-safe JSON numbers, not strings or booleans. Additional fields pass through unchanged.
+
+| Resource | Required strings | Other checked fields |
+|---|---|---|
+| Campaigns | name, description, purpose, lawful_basis, status | daily_limit/cooldown_minutes: positive integers; total/reviewed: if present, nonnegative integers. |
+| Prospects | name, organization, provider, source_url, contact_handle, notes, consent_status, created_at | Common id only. |
+| Templates | name, provider, subject, body | version: positive integer. |
+| Drafts | prospect_name, organization, source_url, consent_status, campaign_name, subject, body, state, content_hash, edit_version, updated_at | campaign_id/prospect_id: positive integers; template_id: positive integer or explicit null; template_name: string or explicit null; quality_score: finite number from 0 to 100; safety_flags: array of strings. |
+| Replies | prospect_name, campaign_name, body, received_at, direction | draft_id: positive integer. |
+| Reminders | title, due_at, status | prospect_name/campaign_name: string or explicit null. Target IDs not supplied in this list contract are not invented. |
+| Audit | event_type, entity_type, entity_id, created_at | display_name: string or explicit null. |
 
 A rejected read raises `response_unverified` without retaining the response body in error details. The translated warning directs an **in-page Retry**, not browser reload or resubmission of a write. No automatic request, navigation, write or rollback occurs. The existing page hook keeps its last verified page when available, labels it potentially out of date, and replaces it only after an explicitly retried valid read. On a first failed load, no damaged rows or invented empty result are rendered. This does not prove that a previous write failed or succeeded; use its own confirmation recovery.
 
