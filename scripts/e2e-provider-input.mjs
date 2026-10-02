@@ -138,6 +138,11 @@ export async function providerInputRecoveryWorkflow(page, origin, axe, screensho
         await button('Retry').waitFor()
         await assertUncertain()
         assert.equal(writes, startWrites + 3)
+        // With later admin controls unavailable, forward traversal from the
+        // disabled last submitter can leave WebKit's document for browser chrome.
+        // Move backwards natively from that known position; do not inject focus.
+        await page.keyboard.press('Shift+Tab')
+        assert.equal(await page.evaluate(() => document.hasFocus()), true)
         await activate(page, button('Refresh'))
         await button('Retry').waitFor()
         await assertUncertain()
