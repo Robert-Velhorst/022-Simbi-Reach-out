@@ -12,15 +12,20 @@ const settings = { workspace: { name: 'Fictional workspace', compliance_ack_at: 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.restoreAllMocks() })
 
 function service() {
+  let acknowledged: string | null = null
   let complete: (response: Response) => void = () => {}
   let pending = new Promise<Response>((done) => { complete = done })
   const writes: unknown[] = []
   const fetcher = vi.fn((url: string, options: RequestInit) => {
     if (url === '/api/settings/compliance' && options.method === 'POST') { writes.push(JSON.parse(String(options.body))); return pending }
-    return Promise.resolve(response(url === '/api/me' ? { ...member, compliance_ack_at: '2026-10-01T12:00:00Z' } : settings))
+    return Promise.resolve(response(url === '/api/me' ? { ...member, compliance_ack_at: acknowledged } : { ...settings, workspace: { ...settings.workspace, compliance_ack_at: acknowledged } }))
   })
   vi.stubGlobal('fetch', fetcher)
-  return { writes, complete: (value: Response) => complete(value), next: () => { pending = new Promise<Response>((done) => { complete = done }) } }
+  return { writes, complete: async (value: Response) => {
+    const result = await value.clone().json()
+    if (value.ok && typeof result.compliance_ack_at === 'string') acknowledged = result.compliance_ack_at
+    complete(value)
+  }, next: () => { pending = new Promise<Response>((done) => { complete = done }) } }
 }
 
 async function form() {
@@ -85,8 +90,11 @@ describe('compliance confirmation submission', () => {
     fixture.complete(response({ error: { code: 'fixture_rejected', message: 'Fictional confirmation rejected' } }, 503))
     await screen.findByText(/may already have changed local records.*before retrying/)
     expect(controls.boxes.every((box) => box.checked)).toBe(true)
-    expect(controls.button).toBeEnabled()
+    expect(controls.button).toBeDisabled()
     expect(screen.queryByText('Compliance acknowledgement recorded in the audit log.')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh' }))
+    await waitFor(() => expect(controls.button).toBeEnabled())
+    expect(fixture.writes).toEqual([payload])
     fixture.next()
     fireEvent.submit(controls.form)
     fixture.complete(response({ compliance_ack_at: '2026-10-01T12:00:00Z' }))

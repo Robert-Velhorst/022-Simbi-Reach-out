@@ -679,5 +679,6 @@
   "settings": "instellingen",
   "Enabled": "Ingeschakeld",
   "Not enabled": "Niet ingeschakeld",
-  "Last verified local status, not backup, privacy or provider-policy certification.": "Laatst bevestigde lokale status, geen bevestiging van back-ups, privacy of naleving van platformregels."
+  "Last verified local status, not backup, privacy or provider-policy certification.": "Laatst bevestigde lokale status, geen bevestiging van back-ups, privacy of naleving van platformregels.",
+  "Safety settings may have changed. Refresh Settings before another safety change.": "De veiligheidsinstellingen kunnen zijn gewijzigd. Vernieuw de instellingen voordat je de veiligheid opnieuw wijzigt."
 }

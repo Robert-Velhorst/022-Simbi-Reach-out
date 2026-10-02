@@ -679,5 +679,6 @@
   "settings": "settings",
   "Enabled": "Enabled",
   "Not enabled": "Not enabled",
-  "Last verified local status, not backup, privacy or provider-policy certification.": "Last verified local status, not backup, privacy or provider-policy certification."
+  "Last verified local status, not backup, privacy or provider-policy certification.": "Last verified local status, not backup, privacy or provider-policy certification.",
+  "Safety settings may have changed. Refresh Settings before another safety change.": "Safety settings may have changed. Refresh Settings before another safety change."
 }

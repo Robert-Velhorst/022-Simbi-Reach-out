@@ -1,0 +1,41 @@
+# Verifying changes to personal safety settings
+
+This document describes Robert's local, single-owner workspace. It does not describe a Simbi integration or establish provider permission, delivery, real policy review, backup or privacy certification.
+
+## For the operator
+
+The compliance acknowledgement, assisted provider link and emergency safety stop cannot claim success solely because the service returned HTTP 200. Their confirmations must match the requested change. The subsequent Settings read must agree with that confirmation; acknowledgement and stop changes also require the current local account read to agree.
+
+While one of these three changes is pending, all three controls are disabled and a second submission is refused synchronously. The stop panel shows a waiting notice, not an old normal-state claim. Inputs and checked acknowledgement choices stay mounted. Existing local password, team, privacy and retirement controls retain their separate contracts; this is not a lock for every Settings action or every tab.
+
+If the confirmation is damaged, the translated notice says that the request outcome is not confirmed and may already have changed local records. If follow-up state cannot be verified or contradicts the confirmation, the notice says that the earlier change may already be saved. Do not assume rollback or repeat the change to find out what happened. Use **Refresh** to read Settings again, inspect the actual stop/acknowledgement/provider value, and decide whether any further change is needed. A failed read has its own **Retry** control. Neither read repeats the preceding write.
+
+An uncertain change replaces the stop panel's old safety claim with a local warning and keeps all three controls disabled. Only a successful explicit Settings Refresh/Retry read clears that uncertainty; a failed or superseded read does not. The acknowledgement's old green status is also hidden while pending/uncertain. This avoids an offscreen error leaving a misleading green panel next to the clicked control. Uncertainty is RAM-only and navigation/reload loses it; a fresh Settings read then establishes current state, not the lost write confirmation.
+
+A recovery read does not reconstruct the lost confirmation or retroactively turn it into a verified success. Another explicit acknowledgement or stop/provider update is a new audited change, not a receipt replay. These routes do not acquire idempotency keys or cross-tab duplicate protection in this increment.
+
+## Developer contract
+
+The pure `frontend/src/safetyMutations.ts` guard runs through the real shared API client only for successful POSTs to the three inspected routes. It preserves extra response fields and does not change the backend, database, deadlines, retries, dependencies or persistent browser storage.
+
+| POST route | Confirmation and follow-up requirements |
+|---|---|
+| `/settings/pause` | Boolean `paused` equals the submitted boolean. Enabling requires a supported timezone-explicit `paused_at`; resuming requires null. Settings and current account pause instants must match the confirmation, including microseconds. |
+| `/settings/compliance` | All four submitted statements are true; `compliance_ack_at` is a supported timezone-explicit instant. Settings and current account acknowledgement instants must match it. This validates local recording, not the truth of the operator's statements. |
+| `/settings/provider` | Provider name equals the backend's lowercase submitted name; the base link matches backend-style HTTPS normalization; mode remains `assisted`, and `verified` is false. Settings must contain the matching provider/link/assisted row with null verification time. A saved link is explicitly not provider verification. |
+
+Provider normalization preserves the submitted path/query encoding and Unicode host/text rather than using browser `URL.href`, which can change them. It removes fragments, lowercases the authority and omits the standard port, matching the inspected backend behavior for these supported links. HTTP links, credentials, nonstandard ports, backslashes and control characters do not pass. Server ownership, permission and configured host checks remain authoritative.
+
+The current account follow-up must keep the same user and workspace IDs. Independent Settings/account reads remain parallel. Timestamp comparison uses the existing strict parser, not browser date guesses or a presumed current clock. Concurrent changes can make the follow-up disagree; the app reports uncertainty instead of certifying the earlier result.
+
+`SettingsPage` shares the existing synchronous pending-mutation guard across these three controls, with native focus recovery. It does not automatically retry, enqueue a later click, remove audit events or persist another private working copy. The privacy-save callback keeps its existing void-returning contract.
+
+## Evidence and remaining work
+
+At published baseline `6ea5559dc90ce0a7ba294685810151d2cebcd90f`, the actual client accepted fourteen damaged or contradictory confirmations. The actual Settings caller also failed its no-false-success regression after an empty stop confirmation. Re-running that minimized caller reproduced the failure. After the client guard, all nineteen initial tests passed. Two additional regressions separately reproduced a contradictory follow-up success and two requests from rapid stop clicks; both pass after the Settings changes.
+
+The expanded 37-case file includes real client calls, supported provider normalization, unsafe-link refusal, route/body boundaries and the actual Settings caller. Four additional positive normalization cases first failed, then pass after preserving nonempty query/parameter delimiters and actual standard-port spellings. The first full917 run and later923 run pass before the visual-state correction. Screenshot review then finds the old green stop claim after an uncertain commit; its actual caller regression fails before the panel warning/read-unlock repair. Final full923 tests in39 files pass with all previous tests retained. Existing compliance refusal coverage now requires a nonmutating read before its explicit write retry, preserving its checked choices and write-count assertions. Both catalogs have725 keys after the single new warning. An initial TypeScript callback-return mismatch is corrected before the production build passes. The acceptance ledger records exact browser/publication evidence independently.
+
+The full browser entry now includes `scripts/e2e-safety-mutations.mjs`: English desktop and Dutch mobile, three actual local commits per locale with deliberately damaged confirmations, explicit read-only recovery, then three verified confirmations per locale. It requires 18 selected accessibility scans, twelve deliberate fictional writes/audit events, eight unchanged exported record arrays and unchanged previous audit events. Strengthened assertions require the local uncertainty warning, no old normal-state claim, and all three controls disabled before recovery. A completed standalone current-build Chromium run proves these checks in a fresh fictional installation; the ledger distinguishes final Firefox proof, earlier helper failures, full development runs and later exact source CI. It does not navigate to providers, copy messages, sign in to Simbi or use an owner database. All existing browser entries remain.
+
+The original personal-production goal remains partial: wider review/status/other mutation contracts, forms and durable working-copy recovery, privacy/archive/external-copy handling, actual owner installation/backup/manual provider acceptance, device/assistive checks, credential response and license selection remain open. See the [full goal matrix](GOAL_COMPLETION_MATRIX.md) and [acceptance ledger](PRODUCTION_READINESS.md).
