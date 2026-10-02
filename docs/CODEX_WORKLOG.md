@@ -1,5 +1,9 @@
 # Codex worklog
 
+## 2026-10-02 — safety-source merge before README publication
+
+PR111 merges conflict-free at6b961f6/tree7be8748 after exactb0e7ab2 source37003986112/PR37003990352 each completes four successful attempt1 jobs and all eight logs are read.484 backend/923 frontend39files/725 keys/lint/build/audits/worker, complete three-engine retained/new safety workflows, Windows package and Linux container/storage proof pass. Fresh head/base/eight checks/CLEAN/MERGEABLE/sole-PR checks gate the head-pinned merge; zero paginated open PRs afterward and matching fast-forwarded main tree. README remains unchanged through every source merge. Current local backend484/Ruff additionally pass. Independent merged-main37005002658 subsequently completes four successful attempt1 jobs at exact6b961f6 and all four logs are read; its counts/full workflows/package/storage proof independently pass. Separate documentation still requires its own exact-commit CI, not inherited proof. Update operator/developer README and companion guides without code/dependency/schema/owner/provider changes; broader personal-production gates remain partial.
+
 ## 2026-10-02 — personal safety mutation confirmation preparation
 
 - Verify clean live6ea5559, zero paginated PRs and exact preceding CI37000229436/four attempt1 successful jobs/logs. Read original Phase009/014/021 requirements, diagnosis/React/rendered-testing/documentation skills and current partial matrix. Existing authenticated GitHub CLI and local test/browser tools are relevant; Browser plugin/skill absent, use existing Playwright, no new dependencies or provider access.
