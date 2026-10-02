@@ -158,6 +158,11 @@ for (const locale of ['en', 'nl']) {
     await capture('refusal-pending')
     releaseRefusal(); releaseRefusal = null
     await page.getByText(t('The current password is incorrect'), { exact: true }).waitFor()
+    const passwordPanel = page.locator('section').filter({ has: page.getByRole('heading', { name: t('Account password'), exact: true }) })
+    const refusalNotice = passwordPanel.getByText(t('The current password is incorrect'), { exact: true })
+    assert.ok(await refusalNotice.isVisible())
+    const refusalBox = await refusalNotice.boundingBox()
+    assert.ok(refusalBox && refusalBox.y >= 0 && refusalBox.y + refusalBox.height <= page.viewportSize().height, 'Correctable refusal must be in the native submitting viewport')
     assert.ok(await button('Change password').isEnabled())
     assert.equal(await current().inputValue(), 'wrong fictional current password'); assert.equal(await next().inputValue(), secrets[1])
     assert.equal((await read('/export')).audit_events.filter((item) => item.event_type === 'account.password_changed').length, 0)

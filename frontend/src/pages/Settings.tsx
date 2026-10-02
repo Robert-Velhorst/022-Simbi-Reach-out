@@ -32,6 +32,7 @@ export default function SettingsPage({ member, onMemberChange, onRetired = () =>
   const [message, setMessage] = useState<{ tone: 'success' | 'danger'; text: string } | null>(null)
   const passwordAction = usePendingMutation()
   const [passwordUncertain, setPasswordUncertain] = useState(false)
+  const [passwordError, setPasswordError] = useState<string | null>(null)
   const passwordRetryBlocked = useRef(false)
   const [complianceBusy, setComplianceBusy] = useState(false)
   const safetyAction = usePendingMutation()
@@ -114,6 +115,7 @@ export default function SettingsPage({ member, onMemberChange, onRetired = () =>
     if (passwordRetryBlocked.current || !passwordAction.begin(event.currentTarget)) return
     const form = event.currentTarget
     setMessage(null)
+    setPasswordError(null)
     try {
       await post('/auth/password', Object.fromEntries(new FormData(form)))
       passwordRetryBlocked.current = true
@@ -123,8 +125,12 @@ export default function SettingsPage({ member, onMemberChange, onRetired = () =>
         (cause.code === 'current_password_invalid' && cause.status === 403)
         || (cause.code === 'validation_failed' && cause.status === 422)
       )
-      if (!refusedBeforeWrite) { passwordRetryBlocked.current = true; setPasswordUncertain(true) }
-      setMessage({ tone: 'danger', text: cause instanceof Error ? cause.message : 'Password could not be changed' })
+      const text = cause instanceof Error ? cause.message : 'Password could not be changed'
+      if (refusedBeforeWrite) setPasswordError(text)
+      else {
+        passwordRetryBlocked.current = true; setPasswordUncertain(true)
+        setMessage({ tone: 'danger', text })
+      }
     }
     finally { passwordAction.end() }
   }
@@ -139,6 +145,7 @@ export default function SettingsPage({ member, onMemberChange, onRetired = () =>
       {member.role === 'owner' && data ? <AuditPrivacyControls /> : null}
       <Panel title={t("Account password")}>
         <p className="panel-intro">{t("Change your local workspace password. This signs out all your sessions, including this one; it never changes a provider password.")}</p>
+        {passwordError ? <Notice tone="danger">{formatMessage(passwordError)}</Notice> : null}
         {passwordUncertain ? <Notice tone="warning">{t('Your local password change is not confirmed. It may have signed out your sessions. Do not repeat it here. Use Sign in again to check the new password first, then the previous password if needed. Leaving this page clears these password fields.')}</Notice> : null}
         <PendingForm className="form-stack" busy={passwordAction.busy} onSubmit={changePassword}>
           <Field label={t("Current password")}><Input name="current_password" type="password" required maxLength={200} disabled={passwordUncertain} autoComplete="current-password" /></Field>

@@ -96,6 +96,7 @@ describe('actual personal password-change caller', () => {
     const fields = await showPasswordForm()
     fireEvent.submit(fields.form)
     await screen.findByText('The current password is incorrect')
+    expect(fields.current.closest('section')).toHaveTextContent('The current password is incorrect')
     expect(screen.getByRole('button', { name: 'Change password' })).toBeEnabled()
     expect(fields.current).toHaveValue(oldPassword)
     fireEvent.change(fields.current, { target: { value: 'fictional corrected old password' } })

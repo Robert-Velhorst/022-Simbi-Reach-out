@@ -15,6 +15,8 @@ Open **Settings → Account password**. Enter your current local password and a 
 
 For an uncertain outcome, the original password fields stay mounted with their values while this Settings page remains mounted, but they and the change button stay disabled. The dedicated warning and **Sign in again** link remain beside the password form. This does not claim that the password definitely changed or that sessions definitely survived. A500 response merely carrying a pre-write error code is still uncertain; its code alone cannot prove rollback.
 
+Correctable current-password/request-validation errors appear inside **Account password**, beside the fields, rather than only at the top of the long Settings page. Starting another deliberate attempt clears that earlier error. The uncertainty warning retains its separate no-repeat/sign-in instructions.
+
 **Leaving this page clears these fields and the page-local guard.** Sign in again is an ordinary same-installation link that reloads the account screen. The tool does not automatically try either password, repeat the password change or create another workspace. If neither password works, stop and use the existing [local-account recovery guidance](../README.md#forgotten-local-owner-password); do not replace your database or rerun setup to recover an existing workspace.
 
 ## Privacy and boundaries
