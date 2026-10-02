@@ -682,5 +682,6 @@
   "Last verified local status, not backup, privacy or provider-policy certification.": "Laatst bevestigde lokale status, geen bevestiging van back-ups, privacy of naleving van platformregels.",
   "Safety settings may have changed. Refresh Settings before another safety change.": "De veiligheidsinstellingen kunnen zijn gewijzigd. Vernieuw de instellingen voordat je de veiligheid opnieuw wijzigt.",
   "Last loaded provider: {provider} — {url}.": "Laatst geladen platform: {provider} — {url}.",
-  "Your provider edits are kept on this page. Refresh only reads saved settings; it does not save these edits.": "Je platformwijzigingen blijven op deze pagina bewaard. Vernieuwen leest alleen opgeslagen instellingen; het slaat deze wijzigingen niet op."
+  "Your provider edits are kept on this page. Refresh only reads saved settings; it does not save these edits.": "Je platformwijzigingen blijven op deze pagina bewaard. Vernieuwen leest alleen opgeslagen instellingen; het slaat deze wijzigingen niet op.",
+  "Your local password change is not confirmed. It may have signed out your sessions. Do not repeat it here. Use Sign in again to check the new password first, then the previous password if needed. Leaving this page clears these password fields.": "De wijziging van je lokale wachtwoord is niet bevestigd. Je sessies kunnen zijn afgemeld. Herhaal de wijziging hier niet. Kies Opnieuw aanmelden en probeer eerst het nieuwe wachtwoord, en zo nodig daarna het vorige wachtwoord. Als je deze pagina verlaat, worden deze wachtwoordvelden gewist."
 }

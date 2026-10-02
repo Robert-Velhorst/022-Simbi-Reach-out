@@ -1,5 +1,7 @@
 # Browser compatibility and reproducible acceptance
 
+New local-password preparation adds a separate isolated native helper after bootstrap and before the original main entry. Local Chromium151/Firefox153 each pass both locales, fourteen selected scans/eight UI password requests/six real fictional password changes, retained original fields, explicit same-owner recovery and independent-session revocation. These are local preparation results, not exact-source/PR/main publication or full Windows WebKit acceptance. See [the password guide](PASSWORD_RECOVERY.md) and [its dated ledger](PRODUCTION_READINESS.md#personal-local-password-confirmation-preparation-2026-10-02); following publication openings retain preceding evidence.
+
 Current PR112 source0ad545c and merged-mainf843042 share tested tree24f6fd15. Source37013065591/consolidated attempt2 and PR37013070404/attempt1 each completes four successful jobs with all8 accepted completed logs inspected: full retained Linux Chromium151/Firefox153/WebKit26.5 entries include the new provider-input recovery helper. It requires16 English-desktop/Dutch-mobile scans/six deliberate fictional writes, retains all earlier scenarios/working field elements/values/request bodies/old records/audits and rejects duplicate Settings rows before save confirmation or recovery unlock. Native Shift+Tab from a known disabled last submitter prevents forward traversal leaving WebKit's document, without clicks/injected focus or relaxed bounds. Current local bounded helpers pass all three installed engines; final untraced WebKitMHcZS9 passes16/six/zero app errors. This is not full Windows WebKit acceptance: its separate full bootstrap command fails before main. The initial exact-source unchanged-prospect-replay timeout is preserved/unexplained; only that failed WebKit job reruns once. Independent merge-main and later README publication checks remain separate in [the current ledger](PRODUCTION_READINESS.md#provider-input-recovery-preparation-2026-10-02). Following PR111/older publication openings are preceding evidence.
 
 This is a personal, single-owner tool. Browser checks use fresh fictional local workspaces, never Robert's database or Simbi account. The frontend-testing guidance requires rendered interaction and screenshot evidence, not just a successful build.
@@ -60,7 +62,7 @@ Each test child must successfully bind its own loopback port before readiness is
 
 ## Run the full suite
 
-Run from the repository root in PowerShell, after the [README dependency installation](../README.md). The backend must be installed into `.venv` (the Windows harness defaults to `.venv/Scripts/python.exe`); the frontend must be installed from its frozen lockfile. The exact Playwright version is pinned in `frontend/package.json` and `frontend/pnpm-lock.yaml`. `test:e2e:run` runs selector contracts, bilingual bootstrap, complete main workflow, both retirement locales, then both complete-response fixtures; a failing earlier command prevents later commands from running. Build and install matching browser runtimes before invoking it:
+Run from the repository root in PowerShell, after the [README dependency installation](../README.md). The backend must be installed into `.venv` (the Windows harness defaults to `.venv/Scripts/python.exe`); the frontend must be installed from its frozen lockfile. The exact Playwright version is pinned in `frontend/package.json` and `frontend/pnpm-lock.yaml`. `test:e2e:run` runs selector contracts, bilingual bootstrap, bilingual local-password recovery, complete main workflow, both retirement locales, then both complete-response fixtures; a failing earlier command prevents later commands from running. Build and install matching browser runtimes before invoking it:
 
 ```powershell
 pnpm.cmd --dir frontend build
@@ -79,16 +81,17 @@ try {
 }
 ```
 
-The main suite defaults to4173, retirement to4178, separate keyboard bootstrap to4179 and response backend to4180 (its proxy binds an OS-selected ephemeral loopback port). Choose unused unprivileged ports through `SIMBI_E2E_PORT`, `SIMBI_RETIREMENT_E2E_PORT`, `SIMBI_AUTH_E2E_PORT` and `SIMBI_RESPONSE_E2E_PORT` if needed. Each helper verifies its own child's bind before fixture writes. For example, set these variables and run the full-suite block above in that same separate temporary PowerShell window:
+The main suite defaults to4173, retirement to4178, separate keyboard bootstrap to4179, response backend to4180 (its proxy binds an OS-selected ephemeral loopback port) and local-password helper to4181. Choose unused unprivileged ports through `SIMBI_E2E_PORT`, `SIMBI_RETIREMENT_E2E_PORT`, `SIMBI_AUTH_E2E_PORT`, `SIMBI_RESPONSE_E2E_PORT` and `SIMBI_PASSWORD_E2E_PORT` if needed. Each helper verifies its own child's bind before fixture writes. For example, set these variables and run the full-suite block above in that same separate temporary PowerShell window:
 
 ```powershell
 $env:SIMBI_E2E_PORT = '4185'
 $env:SIMBI_RETIREMENT_E2E_PORT = '4186'
 $env:SIMBI_AUTH_E2E_PORT = '4196'
 $env:SIMBI_RESPONSE_E2E_PORT = '4197'
+$env:SIMBI_PASSWORD_E2E_PORT = '4198'
 ```
 
-Close that window afterward so its port choices do not leak into ordinary checks. Run sequentially as above; simultaneous suites must use distinct sets of all four backend ports. These browser harnesses create distinct fresh folders; backend pytest uses a separate shared `backend/tests/.runtime` fixture directory and should not run concurrently with another backend pytest suite. No test server should be stopped merely to free a port belonging to someone else.
+Close that window afterward so its port choices do not leak into ordinary checks. Run sequentially as above; simultaneous suites must use distinct sets of all five backend ports. These browser harnesses create distinct fresh folders; backend pytest uses a separate shared `backend/tests/.runtime` fixture directory and should not run concurrently with another backend pytest suite. No test server should be stopped merely to free a port belonging to someone else.
 
 Linux CI keeps Chromium in the existing full verification job and runs the complete browser suite in independent Firefox/WebKit matrix jobs, with the exact runtime installed using `--with-deps`. The Windows standalone build/smoke remains a separate job. A passing engine selector unit test is not rendered-browser proof. Consult the exact commit's CI jobs and [dated acceptance ledger](PRODUCTION_READINESS.md#cross-browser-personal-workflow-acceptance-2026-10-01), not an older badge.
 

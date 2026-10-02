@@ -6,11 +6,13 @@ import { validSafetyMutation } from './safetyMutations'
 export class ApiError extends Error {
   code: string
   details: unknown
+  status?: number
 
-  constructor(code: string, message: string, details?: unknown) {
+  constructor(code: string, message: string, details?: unknown, status?: number) {
     super(message)
     this.code = code
     this.details = details
+    this.status = status
   }
 }
 
@@ -70,7 +72,7 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
         const confirmedRefusal = ['privacy_backup_failed', 'retirement_maintenance_busy'].includes(code)
         const message = writes && response.status >= 500 && (!confirmedRefusal || typeof error.message !== 'string' || !error.message)
           ? unknownWrite : typeof error.message === 'string' && error.message ? error.message : 'The request failed'
-        throw new ApiError(code, message, error.details)
+        throw new ApiError(code, message, error.details, response.status)
       }
       if (payload === null || typeof payload !== 'object') {
         throw new ApiError('response_unverified', writes ? unknownWrite : 'The local service returned an unreadable response. Reload the current records; no result was verified.')
@@ -86,6 +88,12 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
       }
       if (!validSafetyMutation(path, method, options.body, payload)) {
         throw new ApiError('response_unverified', unknownWrite)
+      }
+      if (path.split('?')[0] === '/auth/password' && method.toUpperCase() === 'POST') {
+        const confirmation = payload as Record<string, unknown>
+        if (confirmation.changed !== true || confirmation.reauthenticate !== true) {
+          throw new ApiError('response_unverified', unknownWrite)
+        }
       }
       const creationPath = path.split('?')[0]
       // CSV preview is read-only and does not consume a creation reference.

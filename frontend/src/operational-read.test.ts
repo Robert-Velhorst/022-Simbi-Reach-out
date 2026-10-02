@@ -114,6 +114,6 @@ describe('operational read contracts through the actual shared client', () => {
   })
   it('retains confirmed authentication refusal and does not treat it as a malformed successful session', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => Response.json({ error: { code: 'authentication_required', message: 'Sign in to continue' } }, { status: 401 })))
-    await expect(api('/me')).rejects.toEqual(new ApiError('authentication_required', 'Sign in to continue', undefined))
+    await expect(api('/me')).rejects.toEqual(new ApiError('authentication_required', 'Sign in to continue', undefined, 401))
   })
 })

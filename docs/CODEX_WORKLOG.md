@@ -1,5 +1,13 @@
 # Codex worklog
 
+## 2026-10-02 — personal local-password confirmation and deliberate recovery preparation
+
+- Reproduce four false-success receipts and synchronous duplicate POSTs through the actual Settings/shared client. Preserve one-variable red/green progression; uncertain repeat and500/pre-write-code cases also fail before repair. Check exact backend403/422 pre-write paths and unchanged transaction/session/audit behavior.
+- Add complete password confirmation, synchronous pending/completion/uncertainty latches, disabled original fields and bilingual deliberate sign-in guidance. No provider credential, backend/schema, dependency or durable secret storage change. Preserve existing401 refusal equality by adding its actual status;945 frontend/40files and lint/TypeScript/build pass, as do seven account-backend tests. Full backend/retained browser/publication proof stays separate.
+- Add the isolated bilingual native helper without removing any retained password path. Fix fictional fixture model/key mistakes before UI execution. Actual Chromium151/Firefox153 each pass14 scans/eight password requests/six committed changes/eight native login requests, damaged/lost real responses, original masked fields, independent-session revocation and unchanged prior records/audits. Inspect English/Dutch screenshots; no real account/provider access or full Windows WebKit claim.
+- Write [the recovery guide](PASSWORD_RECOVERY.md), browser ports/order and [exact preparation ledger](PRODUCTION_READINESS.md#personal-local-password-confirmation-preparation-2026-10-02). Prior README97432d1 has its own completed four-job CI37019245423/logs; it does not accept this delta. Original personal scope remains partial; source merges still precede the separately published README.
+- Complete local484 backend/Ruff/three workers/audits/728 matching keys and the entire compiled Chromium entry, including all retained paths and new14-scan password proof. Fresh reader finds no material contradiction; adopt its direct offline-recovery anchor.256 local targets/25 documents pass. The unsafe-automation guard catches fixed fictional test literals; use fresh randomUUID fixtures and keep the guard/assertions intact. Final945 frontend/40files passes again; exact source/PR/main checks remain separate.
+
 ## 2026-10-02 — distinguish Windows WebKit native link-tab policy from product acceptance
 
 - Revalidate clean/live main `cf79648`; its independent documentation CI37016494400 completes four successful attempt1 jobs and all four completed logs are inspected.484 backend/936 frontend39files/full Linux three-engine retained/new workflows/Windows package/storage pass. Subsequent Markdown publication needs its own exact check.
