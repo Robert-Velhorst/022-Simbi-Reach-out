@@ -1,5 +1,5 @@
 import { useI18n } from '../i18n'
-import { useState, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent } from 'react'
 import { AlertOctagon, DatabaseBackup, Download, ShieldCheck, UserPlus } from 'lucide-react'
 import { api, ApiError, post } from '../api'
 import { Button, Field, Input, Notice, Panel, Select } from '../components/ui'
@@ -11,6 +11,7 @@ import { parseTimestamp } from '../timestamps'
 import RetirementControls, { type RetirementReceipt } from '../components/RetirementControls'
 import { useResource } from '../useResource'
 import { DataState } from '../components/DataState'
+import { PendingForm } from '../components/PendingForm'
 
 type SettingsData = {
   workspace: { name: string; compliance_ack_at: string | null; paused_at: string | null; retention_days: number }
@@ -29,7 +30,10 @@ export default function SettingsPage({ member, onMemberChange, onRetired = () =>
   const resource = useResource<SettingsData>('/settings')
   const { data, loading, error } = resource
   const [message, setMessage] = useState<{ tone: 'success' | 'danger'; text: string } | null>(null)
-  const [passwordBusy, setPasswordBusy] = useState(false)
+  const passwordAction = usePendingMutation()
+  const [passwordUncertain, setPasswordUncertain] = useState(false)
+  const [passwordError, setPasswordError] = useState<string | null>(null)
+  const passwordRetryBlocked = useRef(false)
   const [complianceBusy, setComplianceBusy] = useState(false)
   const safetyAction = usePendingMutation()
   const [safetyUncertain, setSafetyUncertain] = useState(false)
@@ -108,14 +112,27 @@ export default function SettingsPage({ member, onMemberChange, onRetired = () =>
 
   async function changePassword(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (passwordBusy) return
+    if (passwordRetryBlocked.current || !passwordAction.begin(event.currentTarget)) return
     const form = event.currentTarget
-    setMessage(null); setPasswordBusy(true)
+    setMessage(null)
+    setPasswordError(null)
     try {
       await post('/auth/password', Object.fromEntries(new FormData(form)))
+      passwordRetryBlocked.current = true
       form.reset(); setReauthenticate(true)
-    } catch (cause) { setMessage({ tone: 'danger', text: cause instanceof Error ? cause.message : 'Password could not be changed' }) }
-    finally { setPasswordBusy(false) }
+    } catch (cause) {
+      const refusedBeforeWrite = cause instanceof ApiError && (
+        (cause.code === 'current_password_invalid' && cause.status === 403)
+        || (cause.code === 'validation_failed' && cause.status === 422)
+      )
+      const text = cause instanceof Error ? cause.message : 'Password could not be changed'
+      if (refusedBeforeWrite) setPasswordError(text)
+      else {
+        passwordRetryBlocked.current = true; setPasswordUncertain(true)
+        setMessage({ tone: 'danger', text })
+      }
+    }
+    finally { passwordAction.end() }
   }
 
   if (reauthenticate) return <div className="page"><Panel title={t("Password changed")}><Notice tone="success">{t("All your sessions have been signed out. Sign in with your new password to continue.")}</Notice><a className="button button-primary" href="/">{t("Sign in again")}</a></Panel></div>
@@ -126,7 +143,17 @@ export default function SettingsPage({ member, onMemberChange, onRetired = () =>
     <DataState label={t('settings')} loading={loading} error={error} hasData={Boolean(data)} retry={readSettings}><div className="settings-grid">
       {member.role === 'owner' && data ? <PrivacyControls retentionDays={data.workspace.retention_days} onSaved={async () => { await load() }} /> : null}
       {member.role === 'owner' && data ? <AuditPrivacyControls /> : null}
-      <Panel title={t("Account password")}><p className="panel-intro">{t("Change your local workspace password. This signs out all your sessions, including this one; it never changes a provider password.")}</p><form className="form-stack" onSubmit={changePassword}><Field label={t("Current password")}><Input name="current_password" type="password" required autoComplete="current-password" /></Field><Field label={t("New password")}><Input name="new_password" type="password" required minLength={12} maxLength={200} autoComplete="new-password" /></Field><Button disabled={passwordBusy}>{t("Change password")}</Button></form></Panel>
+      <Panel title={t("Account password")}>
+        <p className="panel-intro">{t("Change your local workspace password. This signs out all your sessions, including this one; it never changes a provider password.")}</p>
+        {passwordError ? <Notice tone="danger">{formatMessage(passwordError)}</Notice> : null}
+        {passwordUncertain ? <Notice tone="warning">{t('Your local password change is not confirmed. It may have signed out your sessions. Do not repeat it here. Use Sign in again to check the new password first, then the previous password if needed. Leaving this page clears these password fields.')}</Notice> : null}
+        <PendingForm className="form-stack" busy={passwordAction.busy} onSubmit={changePassword}>
+          <Field label={t("Current password")}><Input name="current_password" type="password" required maxLength={200} disabled={passwordUncertain} autoComplete="current-password" /></Field>
+          <Field label={t("New password")}><Input name="new_password" type="password" required minLength={12} maxLength={200} disabled={passwordUncertain} autoComplete="new-password" /></Field>
+          <Button disabled={passwordAction.busy || passwordUncertain}>{t("Change password")}</Button>
+        </PendingForm>
+        {passwordUncertain ? <a className="button button-primary" href="/">{t('Sign in again')}</a> : null}
+      </Panel>
       <Panel title={t("Compliance acknowledgement")}>
         <p className="panel-intro">{t("Simbi's current terms prohibit unsolicited messages, harvesting, scraping, automated searches and automated agents. Re-check policy before each operational launch.")}</p>
         {!safetyUncertain && !safetyAction.busy && data?.workspace.compliance_ack_at ? <Notice tone="success"><ShieldCheck size={18} />{t('Acknowledged at {date}.', { date: formatDate(data.workspace.compliance_ack_at) })}</Notice> : null}

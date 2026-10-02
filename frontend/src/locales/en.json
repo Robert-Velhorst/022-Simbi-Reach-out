@@ -682,5 +682,6 @@
   "Last verified local status, not backup, privacy or provider-policy certification.": "Last verified local status, not backup, privacy or provider-policy certification.",
   "Safety settings may have changed. Refresh Settings before another safety change.": "Safety settings may have changed. Refresh Settings before another safety change.",
   "Last loaded provider: {provider} — {url}.": "Last loaded provider: {provider} — {url}.",
-  "Your provider edits are kept on this page. Refresh only reads saved settings; it does not save these edits.": "Your provider edits are kept on this page. Refresh only reads saved settings; it does not save these edits."
+  "Your provider edits are kept on this page. Refresh only reads saved settings; it does not save these edits.": "Your provider edits are kept on this page. Refresh only reads saved settings; it does not save these edits.",
+  "Your local password change is not confirmed. It may have signed out your sessions. Do not repeat it here. Use Sign in again to check the new password first, then the previous password if needed. Leaving this page clears these password fields.": "Your local password change is not confirmed. It may have signed out your sessions. Do not repeat it here. Use Sign in again to check the new password first, then the previous password if needed. Leaving this page clears these password fields."
 }
