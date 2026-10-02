@@ -1,3 +1,5 @@
+import { CreationRetryNotice } from '../components/CreationRetryNotice'
+import { useCreationAttempt } from '../components/useCreationAttempt'
 import { useI18n } from '../i18n'
 import { useRef, useState, type FormEvent } from 'react'
 import { BellPlus, Check, ExternalLink, MessageSquarePlus, RefreshCw, ShieldCheck } from 'lucide-react'
@@ -19,22 +21,24 @@ export function RepliesPage({ canEdit }: { canEdit: boolean }) {
   const { page, load, loading, error } = usePage<Reply>('/replies')
   const items = page?.items ?? []
   const draftPage = usePage<Draft>('/drafts')
-  const drafts = (draftPage.page?.items ?? []).filter((draft) => ['sent', 'ambiguous', 'handoff_created'].includes(draft.state))
+  const attempt = useCreationAttempt()
+  const drafts = (draftPage.page?.items ?? []).filter((draft) => ['sent', 'ambiguous', 'handoff_created'].includes(draft.state) || (attempt.reference !== null && draft.state === 'replied'))
   const [open, setOpen] = useState(false)
   const action = usePendingMutation()
   const [message, setMessage] = useState('')
   async function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (!canEdit || !action.begin(event.currentTarget)) return; setMessage('')
     const values = Object.fromEntries(new FormData(event.currentTarget))
-    try { await post('/replies', { draft_id: Number(values.draft_id), body: values.body }); setOpen(false); await Promise.all([load(), draftPage.load(0)]) }
+    try { await attempt.submit('/replies', { draft_id: Number(values.draft_id), body: values.body }); setOpen(false); await Promise.all([load(), draftPage.load(0)]) }
     catch (cause) { setMessage(cause instanceof ApiError ? cause.message : 'Reply could not be recorded') }
     finally { action.end() }
   }
   return <OperationPage title={t("Replies")} detail={t("Record replies manually after checking the provider. A reply closes open follow-up reminders for that draft.")} action={canEdit ? <Button onClick={() => { setMessage(''); setOpen(true); void draftPage.load(0) }}><MessageSquarePlus size={17} />{t("Record reply")}</Button> : null}>
+    {!open ? <CreationRetryNotice reference={attempt.reference} action="Record reply" /> : null}
     <PageNavigation page={page} loading={loading} load={load} />
     {!canEdit ? <Notice>{t("Your viewer role has read-only access. Ask an owner, admin or editor to make changes.")}</Notice> : null}
     {message && !open ? <Notice tone="danger">{formatMessage(message)}</Notice> : null}{draftPage.error ? <Notice tone="danger">{formatMessage(draftPage.error)}</Notice> : null}<Panel><DataState label={t("replies")} loading={loading} error={error} hasData={Boolean(items.length)} retry={load}>{items.length ? <div className="conversation-list">{items.map((reply) => <article key={reply.id}><header><div><strong>{reply.prospect_name}</strong><small>{reply.campaign_name}</small></div><time>{formatDate(reply.received_at)}</time></header><p>{reply.body}</p></article>)}</div> : <EmptyState title={t("No replies recorded")} detail={t("When someone responds, record the message or a concise summary here.")} />}</DataState></Panel>
-    {canEdit && open ? <Modal title={t("Record provider reply")} closeDisabled={action.busy} onClose={() => { if (!action.pending()) setOpen(false) }}>{message ? <Notice tone="danger">{formatMessage(message)}</Notice> : <Notice>{t("Only record information needed for the outreach workflow. Avoid copying unrelated sensitive content.")}</Notice>}{draftPage.error ? <Notice tone="danger">{formatMessage(draftPage.error)}<Button variant="quiet" onClick={() => void draftPage.load()}>{t("Retry conversations")}</Button></Notice> : null}<PendingForm busy={action.busy} className="form-stack" onSubmit={create}><PageNavigation page={draftPage.page} loading={draftPage.loading} load={draftPage.load} /><Field label={t("Conversation")}><Select key={draftPage.page?.offset} name="draft_id" disabled={draftPage.loading || Boolean(draftPage.error)} required defaultValue=""><option value="" disabled>{t("Select conversation")}</option>{drafts.map((draft) => <option value={draft.id} key={draft.id}>{draft.prospect_name} — {draft.campaign_name} ({formatCode(draft.state)})</option>)}</Select></Field><Field label={t("Reply or concise summary")}><Textarea name="body" required rows={8} maxLength={5000} /></Field><div className="modal-actions"><Button type="button" variant="quiet" onClick={() => setOpen(false)}>{t("Cancel")}</Button><Button disabled={draftPage.loading || Boolean(draftPage.error)}>{t("Record reply")}</Button></div></PendingForm></Modal> : null}
+    {canEdit && open ? <Modal title={t("Record provider reply")} closeDisabled={action.busy} onClose={() => { if (!action.pending()) setOpen(false) }}><CreationRetryNotice reference={attempt.reference} action="Record reply" />{message ? <Notice tone="danger">{formatMessage(message)}</Notice> : <Notice>{t("Only record information needed for the outreach workflow. Avoid copying unrelated sensitive content.")}</Notice>}{draftPage.error ? <Notice tone="danger">{formatMessage(draftPage.error)}<Button variant="quiet" onClick={() => void draftPage.load()}>{t("Retry conversations")}</Button></Notice> : null}<PendingForm busy={action.busy} className="form-stack" onSubmit={create}><PageNavigation page={draftPage.page} loading={draftPage.loading} load={draftPage.load} /><Field label={t("Conversation")}><Select key={draftPage.page?.offset} name="draft_id" disabled={draftPage.loading || Boolean(draftPage.error)} required defaultValue=""><option value="" disabled>{t("Select conversation")}</option>{drafts.map((draft) => <option value={draft.id} key={draft.id}>{draft.prospect_name} — {draft.campaign_name} ({formatCode(draft.state)})</option>)}</Select></Field><Field label={t("Reply or concise summary")}><Textarea name="body" required rows={8} maxLength={5000} /></Field><div className="modal-actions"><Button type="button" variant="quiet" onClick={() => setOpen(false)}>{t("Cancel")}</Button><Button disabled={draftPage.loading || Boolean(draftPage.error)}>{t("Record reply")}</Button></div></PendingForm></Modal> : null}
   </OperationPage>
 }
 

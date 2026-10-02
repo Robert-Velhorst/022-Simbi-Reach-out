@@ -15,6 +15,28 @@ const reminderResult = { ...reminderInput, prospect_id: null, id: 6, status: 'op
 
 describe('core creation response contracts', () => {
   it.each([
+    ['/campaigns', campaign, { ...campaign, id: 1, status: 'draft' }],
+    ['/prospects', prospect, { ...prospect, id: 1, created_at: '2026-10-01T12:00:00Z' }],
+    ['/templates', template, { ...template, id: 1, version: 1 }],
+    ['/drafts', draftInput, draftResult],
+    ['/replies', replyInput, replyResult],
+    ['/reminders', reminderInput, reminderResult],
+    ['/prospects/import', { csv_text: 'fictional', commit: true }, { valid: 2, errors: [], inserted: 1, duplicates: 1, committed: true }],
+  ])('keyed %s confirmations require both matching reference and boolean replay status', async (path, submitted, result) => {
+    const key = 'fictional-creation-reference-0001'
+    for (const receipt of [{}, { creation_key: 'another-reference', replayed: false },
+      { creation_key: key }, { creation_key: key, replayed: 'true' }]) {
+      const fetchMock = vi.fn().mockResolvedValue(Response.json({ ...result, ...receipt }))
+      vi.stubGlobal('fetch', fetchMock)
+      await expect(post(String(path), submitted, { 'Idempotency-Key': key })).rejects.toMatchObject({ code: 'response_unverified' })
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+    }
+    for (const replayed of [false, true]) {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ ...result, creation_key: key, replayed })))
+      await expect(post(String(path), submitted, { 'Idempotency-Key': key })).resolves.toMatchObject({ creation_key: key, replayed })
+    }
+  })
+  it.each([
     ['/replies', replyInput, { ...replyResult, received_at: '0001-01-01T00:00:00+00:01' }],
     ['/replies', replyInput, { ...replyResult, received_at: '9999-12-31T23:59:59-00:01' }],
     ['/replies', replyInput, { ...replyResult, received_at: ' 2026-10-01T12:00:00Z ' }],

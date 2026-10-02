@@ -246,7 +246,7 @@ def audit(
     entity_type: str,
     entity_id: int | str,
     details: dict[str, Any] | None = None,
-) -> None:
+) -> int:
     # Keep these events useful without duplicating private operational text.
     # This applies only to new writes: existing history is never rewritten.
     if event_type == "prospect.suppressed":
@@ -262,7 +262,7 @@ def audit(
                 {check for check in checks if isinstance(check, str) and check in APPROVAL_CHECKS}
             )
         }
-    connection.execute(
+    cursor = connection.execute(
         "INSERT INTO audit_events "
         "(workspace_id, actor_user_id, event_type, entity_type, entity_id, details, created_at) "
         "VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -276,6 +276,7 @@ def audit(
             now(),
         ),
     )
+    return int(cursor.lastrowid)
 
 
 def database_size() -> int:
