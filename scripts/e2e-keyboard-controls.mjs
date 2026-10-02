@@ -11,9 +11,13 @@ export async function tabTo(page, target) {
   }
   // Backward traversal reaches earlier controls without relying on browser-chrome
   // forward wrap; BODY keeps native forward continuation after disabled controls.
-  const key = await target.evaluate((element) => element.compareDocumentPosition(document.activeElement) & Node.DOCUMENT_POSITION_FOLLOWING ? 'Shift+Tab' : 'Tab')
   for (let step = 0; step < 180; step++) {
     if (await target.evaluate((element) => element === document.activeElement)) return
+    // A successful Retry can remove the focused button. Firefox then resumes
+    // native traversal from that removed position while activeElement is BODY.
+    // Re-observe after each key, rather than keeping a forward direction that
+    // would wrap into browser chrome and skip earlier controls indefinitely.
+    const key = await target.evaluate((element) => element.compareDocumentPosition(document.activeElement) & Node.DOCUMENT_POSITION_FOLLOWING ? 'Shift+Tab' : 'Tab')
     await page.keyboard.press(key)
   }
   assert.fail(`Not reachable through sequential Tab: ${await target.evaluate((element) => element.outerHTML)}`)

@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { afterEach, expect, it, vi } from 'vitest'
 import { I18nProvider } from '../i18n'
 import { RemindersPage } from './Operations'
+import { coreReadRows } from '../test/page-records'
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals() })
 
@@ -15,7 +16,7 @@ it.each(['en', 'nl'] as const)('retains the %s reminder key and form after uncer
       if (requests.length === 1) return new Response('<interrupted confirmation>', { status: 201 })
       return Response.json({ id: 41, prospect_id: null, status: 'open', ...body, creation_key: key, replayed: true })
     }
-    const items = url.includes('/drafts') ? [{ id: 1, prospect_name: 'Fictional person', campaign_name: 'Fictional campaign' }] : []
+    const items = url.includes('/drafts') ? [{ ...coreReadRows.drafts, id: 1, prospect_name: 'Fictional person', campaign_name: 'Fictional campaign' }] : []
     return Response.json({ items, total: items.length, offset: 0, limit: 50 })
   }))
   const labels = locale === 'en' ? { open: 'New reminder', title: 'Reminder', conversation: 'Conversation', due: 'Due', submit: 'Create reminder', warning: /may already have changed local records/, reference: /Reminder retry reference:/ }

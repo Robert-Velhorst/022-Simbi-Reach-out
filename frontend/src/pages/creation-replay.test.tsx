@@ -9,12 +9,13 @@ import { CampaignsPage, ProspectsPage, TemplatesPage } from './Resources'
 import { RepliesPage } from './Operations'
 import ReviewQueue from './ReviewQueue'
 import type { Member } from '../types'
+import { coreReadRows } from '../test/page-records'
 
 const member: Member = { user_id: 1, workspace_id: 1, email: 'fictional@example.test', display_name: 'Fictional owner', workspace_name: 'Fictional workspace', role: 'owner', mode: 'assisted', compliance_ack_at: '2026-10-01', paused_at: null, environment: 'test', demo_mode: false }
 const rows = {
-  campaigns: [{ id: 1, name: 'Fictional campaign', status: 'active' }],
-  prospects: [{ id: 1, name: 'Fictional person', organization: '', provider: 'simbi', source_url: 'https://simbi.com/fictional', consent_status: 'contextual', contact_handle: '', notes: '' }],
-  templates: [{ id: 1, name: 'Fictional template' }],
+  campaigns: [{ ...coreReadRows.campaigns, id: 1, name: 'Fictional campaign', status: 'active' }],
+  prospects: [{ ...coreReadRows.prospects, id: 1, name: 'Fictional person', organization: '', provider: 'simbi', source_url: 'https://simbi.com/fictional', consent_status: 'contextual', contact_handle: '', notes: '' }],
+  templates: [{ ...coreReadRows.templates, id: 1, name: 'Fictional template' }],
   drafts: [{ id: 1, campaign_id: 1, prospect_id: 1, template_id: 1, prospect_name: 'Fictional person', organization: '', source_url: 'https://simbi.com/fictional', consent_status: 'contextual', campaign_name: 'Fictional campaign', template_name: 'Fictional template', state: 'ambiguous', body: 'A fictional draft body', subject: '', updated_at: '2026-10-01', quality_score: 80, safety_flags: [], content_hash: 'a'.repeat(64), edit_version: 'b'.repeat(64) }],
 }
 const cases = [

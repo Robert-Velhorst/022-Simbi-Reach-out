@@ -12,7 +12,7 @@ import type { Member } from '../types'
 const member: Member = { user_id: 1, workspace_id: 1, email: 'fictional@example.test', display_name: 'Fictional owner', workspace_name: 'Fictional workspace', role: 'owner', mode: 'assisted', compliance_ack_at: '2026-10-01', paused_at: null, environment: 'test', demo_mode: false }
 const rows = {
   campaigns: [{ id: 1, name: 'Fictional campaign', status: 'active', purpose: 'Fictional exchange', lawful_basis: 'Fictional request', description: '', daily_limit: 10, cooldown_minutes: 1440 }],
-  prospects: [{ id: 1, name: 'Fictional person', organization: '', provider: 'simbi', source_url: 'https://simbi.com/fictional', consent_status: 'contextual', contact_handle: '', notes: '' }],
+  prospects: [{ id: 1, name: 'Fictional person', organization: '', provider: 'simbi', source_url: 'https://simbi.com/fictional', consent_status: 'contextual', contact_handle: '', notes: '', created_at: '2026-10-02T12:00:00Z' }],
   templates: [{ id: 1, name: 'Fictional template', provider: 'simbi', body: 'A fictional template body', subject: '', version: 1 }],
   drafts: [{ id: 1, campaign_id: 1, prospect_id: 1, template_id: 1, prospect_name: 'Fictional person', organization: '', source_url: 'https://simbi.com/fictional', consent_status: 'contextual', campaign_name: 'Fictional campaign', template_name: 'Fictional template', state: 'ambiguous', body: 'A fictional draft body', subject: '', updated_at: '2026-10-01', quality_score: 80, safety_flags: [], content_hash: 'a'.repeat(64), edit_version: 'b'.repeat(64) }],
 }
