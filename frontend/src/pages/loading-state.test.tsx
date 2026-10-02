@@ -3,11 +3,12 @@ import { renderWithRouter } from '../test/router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import AppShell from '../components/AppShell'
 import type { Member } from '../types'
+import { operationalReads } from '../test/operational-reads'
 
 const member: Member = { user_id: 1, email: 'qa@example.test', display_name: 'QA', workspace_id: 1, workspace_name: 'QA workspace', role: 'owner', mode: 'assisted', compliance_ack_at: '2026-10-01', paused_at: null, environment: 'test', demo_mode: false }
 const emptyPage = { items: [], total: 0, limit: 50, offset: 0 }
-const overview = { counts: { reviews: 0, due: 0, replies: 0, prospects: 0 }, queue: [], campaigns: [], reminders: [], events: [] }
-const report = { funnel: { total: 0 }, campaigns: [], generated_at: '2026-10-01', local_only: true }
+const overview = operationalReads['/overview']
+const report = operationalReads['/reports/summary']
 const routes = [
   ['/', '/overview', 'overview', 'Your queue is clear', overview],
   ['/prospects', '/prospects', 'prospects', 'No prospects', emptyPage],
@@ -61,7 +62,7 @@ it('labels retained report values as stale during refresh and after failure, the
   let resolve!: (value: Response) => void
   let reads = 0
   vi.stubGlobal('fetch', vi.fn(() => ++reads === 1
-    ? Promise.resolve(Response.json({ ...report, funnel: { total: 7 } }))
+    ? Promise.resolve(Response.json({ ...report, funnel: { ...report.funnel, total: 7, needs_review: 7, approved: 0, prepared: 0, sent: 0, replied: 0, suppressed: 0 } }))
     : new Promise<Response>((finish) => { resolve = finish })))
   show('/reports')
   await waitFor(() => expect(document.querySelector('.metric-rail strong')).toHaveTextContent('7'))

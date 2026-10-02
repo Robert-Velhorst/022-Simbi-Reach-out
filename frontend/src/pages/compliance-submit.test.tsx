@@ -24,7 +24,7 @@ function service() {
 }
 
 async function form() {
-  const button = screen.getByRole('button', { name: 'Record acknowledgement' })
+  const button = await screen.findByRole('button', { name: 'Record acknowledgement' })
   await waitFor(() => expect(screen.getByText('Retention window: 365 days. Suppression records are retained so opt-outs are not forgotten.')).toBeInTheDocument())
   const form = button.closest('form')!
   const boxes = names.map((name) => form.querySelector<HTMLInputElement>(`[name=${name}]`)!)
@@ -108,7 +108,7 @@ describe('compliance confirmation submission', () => {
   it.each(['en', 'nl'] as const)('shows a localized pending state and freezes the four choices in %s', async (locale) => {
     const fixture = service()
     render(<I18nProvider initialLocale={locale}><SettingsPage member={member} onMemberChange={() => {}} /></I18nProvider>)
-    const button = screen.getByRole('button', { name: translate(locale, 'Record acknowledgement') })
+    const button = await screen.findByRole('button', { name: translate(locale, 'Record acknowledgement') })
     const form = button.closest('form')!
     const boxes = names.map((name) => form.querySelector<HTMLInputElement>(`[name=${name}]`)!)
     boxes.forEach((box) => fireEvent.click(box))

@@ -16,6 +16,7 @@ import { conversationRecordsWorkflow } from './e2e-conversation-records.mjs'
 import { reminderReplayWorkflow } from './e2e-reminder-replay.mjs'
 import { creationReplayWorkflow } from './e2e-creation-replay.mjs'
 import { pageRecordsWorkflow } from './e2e-page-records.mjs'
+import { operationalReadsWorkflow } from './e2e-operational-reads.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const require = createRequire(join(root, 'frontend', 'package.json'))
@@ -625,6 +626,7 @@ try {
   assert.equal(creationAborts, 12, 'Exactly one real response abort per core creation/locale')
   assert.equal(creationConflicts, 12, 'Exactly one real changed-payload refusal per core creation/locale')
   await pageRecordsWorkflow(page, origin, axe, screenshots)
+  await operationalReadsWorkflow(page, origin, axe, screenshots)
   await conversationRecordsWorkflow(page, origin, root, runtime, python, axe, screenshots)
   await navigationWorkflow(page, origin, axe, screenshots)
   await page.addScriptTag({ content: axe.source })
@@ -677,6 +679,7 @@ try {
     core_creation_replay: 'passed; six creation paths in English desktop/Dutch mobile, twelve real commit/response aborts plus twelve changed-values refusals, original same-key recovery without replay mutation, 24 selected accessibility scans; separate local manual handoff uncertainty enables reply fixture, no provider activity or durable browser-copy claim',
     legacy_conversation_chronology: 'passed; 52 valid plus three unsupported fictional dates per table/locale, offset/day-boundary/microsecond ordering, keyboard next/previous/final pages, English desktop/Dutch mobile unrecognized-date labels with exact raw API values, unchanged old rows and nine exported tables, zero HTTP writes and eight selected accessibility scans',
     core_page_record_validation: 'passed; all seven core resources in English desktop/Dutch mobile, damaged actual successful reads rejected before rendering, native keyboard explicit retry recovers actual records, 28 selected scans, zero automatic read retries or HTTP writes, nine exported tables unchanged; no generic schema or owner/provider acceptance claim',
+    operational_read_validation: 'passed; actual dashboard/report/settings/bootstrap/session GETs damaged then recovered through native explicit Retry/Try again in English desktop/Dutch mobile, 20 selected scans, zero automatic retries or HTTP writes, nine exported tables unchanged; no backup/privacy certification or provider/owner acceptance claim',
     password_change_reauthentication: 'passed',
     viewer_download_permissions: 'passed',
     viewer_read_only_routes_and_handoff_history: 'passed',

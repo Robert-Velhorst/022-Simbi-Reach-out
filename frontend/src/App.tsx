@@ -8,7 +8,7 @@ import type { Member } from './types'
 import type { RetirementReceipt } from './components/RetirementControls'
 import RetiredScreen from './components/RetiredScreen'
 
-type AuthStatus = { setup_required: boolean; installation_retired?: boolean; setup_token_required?: boolean; environment: string; demo_mode: boolean }
+type AuthStatus = { setup_required: boolean; installation_retired?: boolean | 0 | 1; setup_token_required?: boolean; environment: string; demo_mode: boolean }
 
 export default function App() {
   const { t, formatMessage } = useI18n()

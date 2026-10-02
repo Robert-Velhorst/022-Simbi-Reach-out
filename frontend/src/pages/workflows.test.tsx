@@ -229,6 +229,7 @@ describe('resource loading and settings', () => {
     const settings = { workspace: { name: 'Test', compliance_ack_at: null, paused_at: null, retention_days: 365 }, providers: [{ provider: 'simbi', base_url: 'https://simbi.com/', mode: 'assisted', verified_at: null }], members: [], environment: 'test', demo_mode: false }
     vi.stubGlobal('fetch', vi.fn(async (url: string) => response(url.endsWith('/team') ? { id: 2 } : settings)))
     render(<SettingsPage member={member} onMemberChange={() => {}} />)
+    await screen.findByLabelText('Name')
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'New member' } })
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'new@example.test' } })
     fireEvent.change(screen.getByLabelText('Temporary password'), { target: { value: 'long-test-password' } })
@@ -244,6 +245,7 @@ describe('resource loading and settings', () => {
       return response({ workspace: { name: 'Test', compliance_ack_at: null, paused_at: null, retention_days: 365 }, providers: [], members: [], environment: 'test', demo_mode: false })
     }))
     render(<SettingsPage member={member} onMemberChange={() => {}} />)
+    await screen.findByLabelText('Current password')
     fireEvent.change(screen.getByLabelText('Current password'), { target: { value: 'old-test-password' } })
     fireEvent.change(screen.getByLabelText('New password'), { target: { value: 'new-test-password' } })
     fireEvent.submit(screen.getByLabelText('Current password').closest('form')!)
