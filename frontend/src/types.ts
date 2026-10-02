@@ -54,13 +54,13 @@ export type Draft = {
   id: number
   campaign_id: number
   prospect_id: number
-  template_id: number
+  template_id: number | null
   prospect_name: string
   organization: string
   source_url: string
   consent_status: string
   campaign_name: string
-  template_name: string
+  template_name: string | null
   subject: string
   body: string
   state: string

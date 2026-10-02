@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { I18nProvider } from '../i18n'
 import PrivacyControls from './PrivacyControls'
+import { coreReadRows } from '../test/page-records'
 
 const plan = { kind: 'retention', plan_id: 'a'.repeat(32), expires_at: '2030-01-01T00:00:00Z', cutoff: '2025-01-01T00:00:00Z', retention_days: 365, counts: { prospects: 1, drafts: 2, handoffs: 1, replies: 3, reminders: 1 }, contacts: [{ id: 7, name: 'Fictional Person' }], protected_contacts: 4, remaining_eligible_contacts: 2, after_id: 0, scanned_contacts: 7, oversized_contacts: 0, has_more_contacts: false, next_after_id: null }
 const response = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
@@ -166,7 +167,7 @@ describe('personal cleanup controls', () => {
     const scopedPlan = { ...plan, kind, contacts: [], records: [{ id: 7, name: 'Fictional Record' }], restricted_contacts: kind === 'campaign' ? [{ id: 8, name: 'Fictional Retained Contact' }] : [], counts: { prospects: 0, drafts: 0, handoffs: 0, replies: 0, reminders: 0, [kind === 'campaign' ? 'campaigns' : 'templates']: 1, ...(kind === 'template' ? { template_links: 2 } : { restricted_contacts: 1 }) } }
     vi.stubGlobal('fetch', vi.fn(async (url: string, options?: RequestInit) => {
       requests.push({ url, body: options?.body ? JSON.parse(String(options.body)) : null })
-      return response(url.endsWith('/confirm') ? { ...receipt, kind, counts: scopedPlan.counts } : url.endsWith('/preview') ? scopedPlan : { items: [{ id: 7, name: 'Fictional Record' }], total: 1 })
+      return response(url.endsWith('/confirm') ? { ...receipt, kind, counts: scopedPlan.counts } : url.endsWith('/preview') ? scopedPlan : { items: [{ ...(kind === 'campaign' ? coreReadRows.campaigns : coreReadRows.templates), id: 7, name: 'Fictional Record' }], total: 1 })
     }))
     render(<PrivacyControls retentionDays={365} onSaved={vi.fn()} />)
     fireEvent.change(screen.getByLabelText('Cleanup scope'), { target: { value: kind } })
@@ -191,7 +192,7 @@ describe('personal cleanup controls', () => {
   })
 
   it('clears stale campaign selections and search on switching to templates', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => response({ items: [{ id: 7, name: 'Fictional Campaign' }], total: 1 })))
+    vi.stubGlobal('fetch', vi.fn(async () => response({ items: [{ ...coreReadRows.campaigns, id: 7, name: 'Fictional Campaign' }], total: 1 })))
     render(<PrivacyControls retentionDays={365} onSaved={vi.fn()} />)
     fireEvent.change(screen.getByLabelText('Cleanup scope'), { target: { value: 'campaign' } })
     fireEvent.change(screen.getByLabelText('Search campaigns for removal'), { target: { value: 'Fictional' } })
@@ -295,7 +296,7 @@ describe('personal cleanup controls', () => {
     const requests: string[] = []
     vi.stubGlobal('fetch', vi.fn(async (url: string) => {
       requests.push(url)
-      return response(url.includes('/prospects') ? { items: [{ id: 7, name: 'Fictional Person', source_url: 'https://simbi.com/fictional' }], total: 70 } : { ...plan, kind: 'prospect' })
+      return response(url.includes('/prospects') ? { items: [{ ...coreReadRows.prospects, id: 7, name: 'Fictional Person', source_url: 'https://simbi.com/fictional' }], total: 70 } : { ...plan, kind: 'prospect' })
     }))
     render(<PrivacyControls retentionDays={365} onSaved={vi.fn()} />)
     fireEvent.change(screen.getByLabelText('Cleanup scope'), { target: { value: 'prospect' } })

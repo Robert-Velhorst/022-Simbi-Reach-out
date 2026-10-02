@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — core paged record contracts (2026-10-02)
+
+- Reject malformed consumed record fields and duplicate/unsafe page IDs on the seven core GET lists before they become UI state. Preserve legitimate nullable historical links, extra server fields and old date/status strings; do not repair or filter records.
+- Explain rejection in English/Dutch with in-page read Retry, without browser reload or repeating a write. Preserve the last verified page and existing generation/unmount/metadata/error guards; no automatic request or private response cache.
+- Add 192 API, 14 bilingual screen and seven preserved-page regressions; retain earlier tests with complete backend-shaped fictional fixtures. Add all-seven-resource actual-read damage/recovery checks, 28 selected scans and unchanged nine-table/no-write assertions to the full browser workflow.
+- Diagnose a reproducible Firefox test-helper direction error after Retry removes its focused button. Re-observe after each native Tab key without changing app focus, traversal bounds or acceptance assertions. Exact completed/failed results are in the readiness ledger. No backend, schema, dependency, personal database or provider operation change; full personal-production gates remain open.
+
 ## Unreleased — strict stored-date display and confirmation (2026-10-01)
 
 - Interpret stored timestamps using one strict frontend parser matching the backend's four-digit-year, calendar-valid, seconds/timezone-explicit, at-most-six-fraction contract. Do not use browser string-date heuristics. Preserve microseconds in confirmation comparisons and refuse UTC year overflow or whitespace-padded values.

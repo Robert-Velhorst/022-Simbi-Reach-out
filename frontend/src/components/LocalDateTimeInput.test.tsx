@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { I18nProvider, LanguagePicker } from '../i18n'
 import { RemindersPage } from '../pages/Operations'
 import { LocalDateTimeInput, localDateTimeISO } from './LocalDateTimeInput'
+import { coreReadRows } from '../test/page-records'
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals() })
 
@@ -45,7 +46,7 @@ it('labels invalid text without throwing away the value when native entry cannot
 async function reminderForm() {
   const writes: unknown[] = []
   vi.stubGlobal('fetch', vi.fn(async (url: string, options: RequestInit) => {
-    const body = url.includes('/drafts') ? { items: [{ id: 7, prospect_name: 'Fictional person', campaign_name: 'Fictional campaign' }], total: 1, limit: 50, offset: 0 } : { items: [], total: 0, limit: 50, offset: 0 }
+    const body = url.includes('/drafts') ? { items: [{ ...coreReadRows.drafts, id: 7, prospect_name: 'Fictional person', campaign_name: 'Fictional campaign' }], total: 1, limit: 50, offset: 0 } : { items: [], total: 0, limit: 50, offset: 0 }
     if (options.method === 'POST') {
       const submitted = JSON.parse(String(options.body))
       writes.push(submitted)
