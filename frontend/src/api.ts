@@ -95,6 +95,15 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
           throw new ApiError('response_unverified', unknownWrite)
         }
       }
+      if (/^\/handoffs\/[^/]+\/outcome$/.test(path.split('?')[0]) && method.toUpperCase() === 'POST') {
+        let requested: unknown
+        try { requested = typeof options.body === 'string' ? JSON.parse(options.body)?.outcome : undefined } catch { /* An unreadable request cannot bind a confirmation. */ }
+        const states: Record<string, string> = { sent: 'sent', ambiguous: 'ambiguous', cancelled: 'approved' }
+        const receipt = payload as Record<string, unknown>
+        if (typeof requested !== 'string' || !Object.hasOwn(states, requested) || receipt.status !== requested || receipt.draft_state !== states[requested]) {
+          throw new ApiError('response_unverified', unknownWrite)
+        }
+      }
       const creationPath = path.split('?')[0]
       // CSV preview is read-only and does not consume a creation reference.
       const keyedCreation = ['/campaigns', '/prospects', '/templates', '/drafts', '/replies', '/reminders'].includes(creationPath)

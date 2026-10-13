@@ -36,6 +36,12 @@ export default function ReviewQueue({ member }: { member: Member; onMemberChange
   const attempt = useCreationAttempt()
   const [message, setMessage] = useState('')
   const [handoff, setHandoff] = useState<Handoff | null>(null)
+  const outcomeAction = usePendingMutation()
+  const outcomeBlocked = useRef(new Set<number>())
+  const [outcomeIssues, setOutcomeIssues] = useState<Set<number>>(() => new Set())
+  const [outcomeRead, setOutcomeRead] = useState<{ id: number; status: string } | null>(null)
+  const outcomeUncertain = Boolean(handoff && outcomeIssues.has(handoff.id))
+  const outcomeFinal = Boolean(handoff && !['prepared', 'opened', 'ambiguous'].includes(handoff.status))
   const [reviewChecks, setReviewChecks] = useState<{ key: string; values: string[] }>({ key: '', values: [] })
   const [edited, setEdited] = useState<{ key: string; id: number; version: string; subject: string; body: string } | null>(null)
   const [savedSnapshot, setSavedSnapshot] = useState<{ previousVersion: string; draft: Draft } | null>(null)
@@ -173,22 +179,52 @@ export default function ReviewQueue({ member }: { member: Member; onMemberChange
         setMessage('No handoff record was found. Check the audit log before changing this draft.')
         return
       }
-      setCopyMessage(''); setHandoff(result.items[0])
+      const current = result.items[0]
+      if (!outcomeIssues.has(current.id)) outcomeBlocked.current.delete(current.id)
+      setCopyMessage(''); setHandoff(current)
     } catch (cause) {
       setMessage(cause instanceof ApiError ? cause.message : 'Handoff could not be loaded')
     } finally { setBusy(false) }
   }
 
   async function outcome(value: 'sent' | 'ambiguous' | 'cancelled') {
-    if (!canEdit || !handoff || busy) return
-    setMessage(''); setBusy(true)
-    try { await post(`/handoffs/${handoff.id}/outcome`, { outcome: value }); handoffKeys.current.clear(); setHandoff(null); await load() }
-    catch (cause) { setMessage(cause instanceof ApiError ? cause.message : 'Outcome could not be recorded') }
-    finally { setBusy(false) }
+    if (!canEdit || !handoff || busy || outcomeFinal || outcomeBlocked.current.has(handoff.id) || !outcomeAction.begin()) return
+    setMessage(''); setOutcomeRead(null); setBusy(true)
+    try {
+      await post(`/handoffs/${handoff.id}/outcome`, { outcome: value })
+      // Latch before clearing the dialog: already queued events cannot reuse its old closure.
+      outcomeBlocked.current.add(handoff.id)
+      handoffKeys.current.clear(); setHandoff(null); await load()
+    } catch (cause) {
+      outcomeBlocked.current.add(handoff.id)
+      setOutcomeIssues(previous => new Set(previous).add(handoff.id))
+      setMessage(cause instanceof ApiError ? cause.message : 'Outcome could not be recorded')
+    }
+    finally { setBusy(false); outcomeAction.end() }
+  }
+
+  async function checkSavedOutcome() {
+    if (!handoff || busy || !outcomeAction.begin()) return
+    setBusy(true); setMessage('')
+    try {
+      const result = await api<{ items: Handoff[] }>(`/handoffs?draft_id=${handoff.draft_id}&limit=1`)
+      const current = result.items.find(item => item.id === handoff.id)
+      if (!current || !['prepared', 'opened', 'ambiguous', 'sent', 'cancelled'].includes(current.status)
+        || current.subject !== handoff.subject || current.body !== handoff.body) {
+        throw new ApiError('response_unverified', 'The saved outcome could not be verified. Keep this handoff open and retry only the read.')
+      }
+      setHandoff(current)
+      setOutcomeRead({ id: current.id, status: current.status })
+      setOutcomeIssues(previous => { const next = new Set(previous); next.delete(current.id); return next })
+      outcomeBlocked.current.delete(current.id)
+    } catch (cause) {
+      setMessage(cause instanceof Error ? cause.message : 'The saved outcome could not be verified. Keep this handoff open and retry only the read.')
+    }
+    finally { setBusy(false); outcomeAction.end() }
   }
 
   async function copyHandoff() {
-    if (!canEdit || !handoff || busy || handoff.can_open_provider !== true) return
+    if (!canEdit || !handoff || busy || outcomeBlocked.current.has(handoff.id) || handoff.can_open_provider !== true) return
     setBusy(true); setMessage(''); setCopyMessage('')
     try {
       const current = await revalidateHandoff()
@@ -216,7 +252,7 @@ export default function ReviewQueue({ member }: { member: Member; onMemberChange
   }
 
   async function openProvider() {
-    if (!canEdit || !handoff || busy || handoff.can_open_provider !== true) return
+    if (!canEdit || !handoff || busy || outcomeBlocked.current.has(handoff.id) || handoff.can_open_provider !== true) return
     setBusy(true); setMessage('')
     try {
       const current = await revalidateHandoff()
@@ -267,6 +303,17 @@ export default function ReviewQueue({ member }: { member: Member; onMemberChange
       </Panel> : null}
     </div> : <Panel><EmptyState title={t("No drafts to review")} detail={t("Prepare a draft after you have a campaign, an authorized prospect record and a reusable template.")} action={canEdit ? <Button onClick={() => setCreateOpen(true)}><Sparkles size={17} />{t("Prepare first draft")}</Button> : null} /></Panel>}</DataState>
     {canEdit && createOpen ? <Modal title={t("Prepare a deterministic draft")} closeDisabled={creation.busy} onClose={() => { if (!creation.pending()) setCreateOpen(false) }}><CreationRetryNotice reference={attempt.reference} action="Prepare draft" />{message ? <Notice tone="danger">{formatMessage(message)}</Notice> : <Notice>{t("Template placeholders are rendered locally. The result always starts in the review queue.")}</Notice>}<PendingForm busy={creation.busy} className="form-stack" onSubmit={createDraft}><div><PageNavigation page={campaigns.page} loading={campaigns.loading} load={campaigns.load} /><Field label={t("Campaign")}><Select key={campaigns.page?.offset} name="campaign_id" disabled={campaigns.loading || Boolean(campaigns.error)} required defaultValue=""><option value="" disabled>{t("Select campaign")}</option>{data.campaigns.filter((campaign) => campaign.status !== 'archived').map((campaign) => <option value={campaign.id} key={campaign.id}>{campaign.name} ({formatCode(campaign.status)})</option>)}</Select></Field></div><div><PageNavigation page={prospects.page} loading={prospects.loading} load={prospects.load} /><Field label={t("Prospect")}><Select key={prospects.page?.offset} name="prospect_id" disabled={prospects.loading || Boolean(prospects.error)} required defaultValue=""><option value="" disabled>{t("Select prospect")}</option>{data.prospects.filter((prospect) => !['opted_out', 'blocked'].includes(prospect.consent_status)).map((prospect) => <option value={prospect.id} key={prospect.id}>{prospect.name}{prospect.organization ? ` — ${prospect.organization}` : ''}</option>)}</Select></Field></div><div><PageNavigation page={templates.page} loading={templates.loading} load={templates.load} /><Field label={t("Template")}><Select key={templates.page?.offset} name="template_id" disabled={templates.loading || Boolean(templates.error)} required defaultValue=""><option value="" disabled>{t("Select template")}</option>{data.templates.map((template) => <option value={template.id} key={template.id}>{template.name}</option>)}</Select></Field></div><div className="modal-actions"><Button type="button" variant="quiet" onClick={() => setCreateOpen(false)}>{t("Cancel")}</Button><Button disabled={busy || [campaigns, prospects, templates].some((source) => source.loading || Boolean(source.error))}>{t("Prepare draft")}</Button></div></PendingForm></Modal> : null}
-    {handoff ? <Modal title={t("Manual provider handoff")} returnFocusRef={handoffTrigger} onClose={() => { if (!busy) setHandoff(null) }}>{message ? <Notice tone="danger">{formatMessage(message)}</Notice> : null}{copyMessage ? <Notice>{formatMessage(copyMessage)}</Notice> : null}<Notice tone="warning">{t("The app has not sent anything. Verify what happened on the provider before recording an outcome; do not send again blindly.")}</Notice><Field label={t("Approved message")}><Textarea readOnly rows={12} value={`${handoff.subject ? `${handoff.subject}\n\n` : ''}${handoff.body}`} /></Field>{canEdit && handoff.can_open_provider === true ? <div className="handoff-actions"><Button variant="secondary" disabled={busy} onClick={copyHandoff}><Clipboard size={17} />{t("Copy message")}</Button><Button disabled={busy} onClick={openProvider}>{t("Open provider")}{' '}<ArrowUpRight size={17} /></Button><small>{t("Opens in this tab after checking permission. Use browser Back to return and resolve this handoff.")}</small></div> : <Notice tone="warning">{canEdit ? t("Review permissions changed. Copying and opening the provider are disabled. You may record the historical outcome only.") : t("Your viewer role can read this handoff history but cannot copy, open or record an outcome.")}</Notice>}{canEdit ? <div className="outcome-box"><strong>{t("After checking the provider, record the outcome:")}</strong><div><Button variant="secondary" disabled={busy} onClick={() => outcome('cancelled')}>{t("Not sent")}</Button><Button variant="danger" disabled={busy} onClick={() => outcome('ambiguous')}>{t("Unsure — needs verification")}</Button><Button disabled={busy} onClick={() => outcome('sent')}>{t("Sent manually")}</Button></div></div> : null}</Modal> : null}
+    {handoff ? <Modal title={t("Manual provider handoff")} returnFocusRef={handoffTrigger} closeDisabled={busy || outcomeAction.busy} onClose={() => { if (!busy && !outcomeAction.pending()) setHandoff(null) }}>
+      {message ? <Notice tone="danger">{formatMessage(message)}</Notice> : null}
+      {copyMessage ? <Notice>{formatMessage(copyMessage)}</Notice> : null}
+      <Notice tone="warning">{t("The app has not sent anything. Verify what happened on the provider before recording an outcome; do not send again blindly.")}</Notice>
+      {outcomeAction.busy ? <Notice>{t('Checking or recording the local outcome…')}</Notice> : null}
+      {outcomeUncertain ? <Notice tone="warning">{t('This local outcome is not confirmed. It may already be recorded. Do not repeat it or send again. Check saved outcome before making another decision.')}<Button type="button" variant="secondary" disabled={busy} onClick={checkSavedOutcome}>{t('Check saved outcome')}</Button></Notice> : null}
+      {outcomeRead?.id === handoff.id ? <Notice>{t('Saved handoff status: {status}. This is a local record, not proof of delivery.', { status: formatCode(outcomeRead.status) })}</Notice> : null}
+      {outcomeFinal ? <Notice>{t('This handoff is already finalized. No further outcome can be recorded here.')}</Notice> : null}
+      <Field label={t("Approved message")}><Textarea readOnly rows={12} value={`${handoff.subject ? `${handoff.subject}\n\n` : ''}${handoff.body}`} /></Field>
+      {canEdit && handoff.can_open_provider === true ? <div className="handoff-actions"><Button variant="secondary" disabled={busy || outcomeUncertain} onClick={copyHandoff}><Clipboard size={17} />{t("Copy message")}</Button><Button disabled={busy || outcomeUncertain} onClick={openProvider}>{t("Open provider")}{' '}<ArrowUpRight size={17} /></Button><small>{t("Opens in this tab after checking permission. Use browser Back to return and resolve this handoff.")}</small></div> : <Notice tone="warning">{canEdit ? t("Review permissions changed. Copying and opening the provider are disabled. You may record the historical outcome only.") : t("Your viewer role can read this handoff history but cannot copy, open or record an outcome.")}</Notice>}
+      {canEdit ? <div className="outcome-box"><strong>{t("After checking the provider, record the outcome:")}</strong><div><Button variant="secondary" disabled={busy || outcomeUncertain || outcomeFinal} onClick={() => outcome('cancelled')}>{t("Not sent")}</Button><Button variant="danger" disabled={busy || outcomeUncertain || outcomeFinal} onClick={() => outcome('ambiguous')}>{t("Unsure — needs verification")}</Button><Button disabled={busy || outcomeUncertain || outcomeFinal} onClick={() => outcome('sent')}>{t("Sent manually")}</Button></div></div> : null}
+    </Modal> : null}
   </div>
 }

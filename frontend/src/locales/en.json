@@ -1,4 +1,10 @@
 {
+  "Checking or recording the local outcome…": "Checking or recording the local outcome…",
+  "This local outcome is not confirmed. It may already be recorded. Do not repeat it or send again. Check saved outcome before making another decision.": "This local outcome is not confirmed. It may already be recorded. Do not repeat it or send again. Check saved outcome before making another decision.",
+  "Check saved outcome": "Check saved outcome",
+  "Saved handoff status: {status}. This is a local record, not proof of delivery.": "Saved handoff status: {status}. This is a local record, not proof of delivery.",
+  "This handoff is already finalized. No further outcome can be recorded here.": "This handoff is already finalized. No further outcome can be recorded here.",
+  "The saved outcome could not be verified. Keep this handoff open and retry only the read.": "The saved outcome could not be verified. Keep this handoff open and retry only the read.",
   "{action} retry reference: {reference}. Retry the original values to check the same attempt. Changed values cannot reuse a committed reference. Cancel clears the fields, not this reference. After navigation, reload, sign-out or closure, check saved records before creating again.": "{action} retry reference: {reference}. Retry the original values to check the same attempt. Changed values cannot reuse a committed reference. Cancel clears the fields, not this reference. After navigation, reload, sign-out or closure, check saved records before creating again.",
   "Creation retry references": "Creation retry references",
   "This retry reference belongs to different submitted values or a different creation. Check the saved records or retry the original values; nothing new was created.": "This retry reference belongs to different submitted values or a different creation. Check the saved records or retry the original values; nothing new was created.",
