@@ -6,7 +6,7 @@ RUN pnpm install --frozen-lockfile
 COPY frontend/ ./
 RUN pnpm build
 
-FROM python:3.13-slim AS runtime
+FROM python:3.14-slim AS runtime
 LABEL org.opencontainers.image.title="Simbi Reach-Out" \
       org.opencontainers.image.description="Local-first, review-gated outreach operations" \
       org.opencontainers.image.source="https://github.com/Robert-Velhorst/022-Simbi-Reach-out"
