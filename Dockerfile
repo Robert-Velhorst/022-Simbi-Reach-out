@@ -1,7 +1,32 @@
-FROM node:26.12.0-alpine@sha256:6f08a523443ddedf52941874c203475b0ad503e859ad70cb26ab8be9a517dbd5 AS frontend
+FROM node:26.12.0-alpine@sha256:6f08a523443ddedf52941874c203475b0ad503e859ad70cb26ab8be9a517dbd AS frontend
 WORKDIR /build/frontend
 RUN npm install --global corepack@0.36.0 && corepack enable
 COPY frontend/package.json frontend/pnpm-lock.yaml frontend/pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 COPY frontend/ ./
 RUN pnpm build
+
+FROM python:3.15-slim AS runtime
+LABEL org.opencontainers.image.title="Simbi Reach-Out" \
+      org.opencontainers.image.description="Local-first, review-gated outreach operations" \
+      org.opencontainers.image.source="https://github.com/Robert-Velhorst/022-Simbi-Reach-out"
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app/backend \
+    SIMBI_ENV=production \
+    SIMBI_DATABASE_PATH=/app/data/simbi.db \
+    SIMBI_COOKIE_SECURE=true \
+    SIMBI_BACKUP_PATH=/app/backups
+WORKDIR /app
+RUN addgroup --system simbi && adduser --system --ingroup simbi simbi
+COPY pyproject.toml ./
+COPY backend ./backend
+COPY --from=frontend /build/frontend/dist ./frontend/dist
+RUN pip install --no-cache-dir .
+RUN mkdir -p /app/data /app/backups /app/hai && chown -R simbi:simbi /app
+USER simbi
+EXPOSE 8000
+STOPSIGNAL SIGTERM
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD python -c "import os,urllib.parse,urllib.request; host=urllib.parse.urlparse(os.environ['SIMBI_FRONTEND_ORIGIN']).hostname; request=urllib.request.Request('http://127.0.0.1:8000/api/health/ready', headers={'Host': host}); urllib.request.urlopen(request, timeout=3)"
+CMD ["python", "-m", "app.server"]
