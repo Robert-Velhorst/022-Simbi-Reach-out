@@ -14,14 +14,14 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
           cache: pip
       - uses: pnpm/action-setup@v4
         with:
-          version: 11.16.0
-      - uses: actions/setup-node@v4
+          version: 12.14.0
+      - uses: actions/setup-node@v7
         with:
           node-version: "24"
           cache: pnpm
@@ -93,14 +93,14 @@ jobs:
       SIMBI_E2E_BROWSER: ${{ matrix.browser }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
           cache: pip
       - uses: pnpm/action-setup@v4
         with:
-          version: 11.16.0
-      - uses: actions/setup-node@v4
+          version: 12.14.0
+      - uses: actions/setup-node@v7
         with:
           node-version: "24"
           cache: pnpm
@@ -121,14 +121,14 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
           cache: pip
       - uses: pnpm/action-setup@v4
         with:
-          version: 11.16.0
-      - uses: actions/setup-node@v4
+          version: 12.14.0
+      - uses: actions/setup-node@v7
         with:
           node-version: "24"
           cache: pnpm
@@ -154,7 +154,7 @@ jobs:
       - name: Isolated executable readiness and shutdown smoke
         shell: pwsh
         run: .\scripts\smoke-windows.ps1
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: simbi-reach-out-windows
           path: dist/Simbi Reach-Out
