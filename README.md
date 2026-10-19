@@ -10,7 +10,7 @@ Simbi Reach-Out helps you keep track of whom you want to contact, why the contac
 
 Sending is a separate human action. The app provides approved text to copy and a link to the provider's website. You decide whether to open that website, sign in there, and send the message yourself. Replies are entered manually too.
 
-The application uses **React and TypeScript** in the browser, **FastAPI and Python** for the backend, and **SQLite** for storage. It includes a maintenance worker, operator commands, Docker deployment, a Windows standalone package builder, an ngrok launcher, and a file-based connector for HAI.
+The application uses **React and TypeScript** in the browser, **FastAPI and Python** for the backend, and **SQLite** for storage. It includes a maintenance worker, operator commands, Docker deployment, a Windows standalone package builder, and a file-based connector for HAI.
 
 > **Current scope:** an assisted outreach application, not an official Simbi integration. It has no provider scraper, automatic login, form filler, message sender, inbox synchronization, or Simbi-credit management. No AI service or provider API key is needed. Older commits and the historical repository description refer to a previous automation project; this README describes the replacement application on `main`.
 
@@ -31,7 +31,6 @@ The application uses **React and TypeScript** in the browser, **FastAPI and Pyth
 - [Local Docker installation](#local-docker-installation)
 - [Windows development installation](#windows-development-installation)
 - [Windows standalone application](#windows-standalone-application)
-- [Temporary remote access with ngrok](#temporary-remote-access-with-ngrok)
 - [Hosted deployment with Docker and Caddy](#hosted-deployment-with-docker-and-caddy)
 - [HAI integration](#hai-integration)
 - [Configuration reference](#configuration-reference)
@@ -52,7 +51,7 @@ The intended operator is the repository owner organizing his own service-related
 
 For example, you might have permission to respond to someone's request for project help. You record the request's source, create a campaign describing the exchange, prepare a personalized draft, review it, and manually contact the person. Later, you record their reply or a decision to stop. The app organizes this process; it does not find people for you or establish permission to contact them.
 
-“Local” means the application runs on your computer or a server you control. Its interface opens in a normal web browser. A hosted installation stores information on that host, not on each visitor's computer. Once installed, local preparation and record keeping do not require an external AI or messaging service. Opening provider pages, downloading dependencies, and using ngrok require connectivity.
+“Local” means the application runs on your computer or a server you control. Its interface opens in a normal web browser. A hosted installation stores information on that host, not on each visitor's computer. Once installed, local preparation and record keeping do not require an external AI or messaging service. Opening provider pages and downloading dependencies require connectivity.
 
 ## Features
 
@@ -71,7 +70,7 @@ For example, you might have permission to respond to someone's request for proje
 | Settings | Verified initial workspace/provider/member read, refresh and an explicit retry after an unverified read. The three safety actions share repeated-submission protection and show pending/uncertain state beside the stop control; uncertainty disables them until a successful explicit recovery read. Local password changes have a separate confirmation, repeated-submission guard and deliberate sign-in recovery; ordinary Settings Refresh cannot clear password uncertainty. Privacy/retirement controls retain their own rules. |
 | Team | Local owner, admin, editor, and viewer accounts. |
 | Data operations | Workspace JSON export, diagnostics, owner-only paged contact/history and campaign/template cleanup, historical known-field audit minimization, and separate sole-owner installation retirement. Exact confirmations, verified recovery copies, safe retry and older-receipt lookup; CLI backup/restore/reconciliation/limited operational cleanup. |
-| Deployment | Docker, Windows package building, temporary ngrok access, Caddy TLS deployment, and optional HAI feed export. |
+| Deployment | Docker, Windows package building, Hetzner deployment with Caddy TLS, and optional HAI feed export. |
 | Languages | English/Dutch interface selection before sign-in and in the application, including forms, safety instructions, statuses, notices and dates. Stored content is not translated. |
 
 Records start empty. The app does not populate live contacts, import a provider account, or fabricate activity. The image in `docs/design/` is a design concept, not a current application screenshot or evidence of real user data.
@@ -270,17 +269,16 @@ The schema supports workspace memberships and isolation, but shipped onboarding 
 
 ## Choose a deployment
 
-For the confirmed personal-use target, the Windows standalone application is the primary local option on this workspace's Windows computer. Keep it on loopback unless you deliberately choose remote access. Docker remains an alternative; ngrok, public-domain hosting and HAI are optional and need their respective acceptance checks only when used. Personal use does not require a public website or additional team accounts.
+For the confirmed personal-use target, the Windows standalone application is the primary local option on this workspace's Windows computer. Keep it on loopback for local use. Remote access is provided by the documented Hetzner deployment; there is no workstation tunnel mode. HAI remains an optional read-only feed.
 
 | Mode | Requirements | Default address | Worker | Automatic backups by default |
 |---|---|---|---|---|
 | Local Docker | Docker with Compose | `http://127.0.0.1:8000` | Separate Compose service | No |
 | Windows development | Python, Node, pnpm, PowerShell 7.2+ | UI `:5173`, API `:8000`, on loopback | Supervised by launcher | No, unless enabled |
 | Windows standalone | Built package and browser | `http://127.0.0.1:8765` | Included in executable | Yes, while running |
-| ngrok | Source installation, compiled UI, authenticated ngrok, PowerShell 7.2+ | Reported HTTPS URL | Supervised by launcher | Yes, while running |
 | Docker + Caddy | Docker host, domain, available TLS ports | Your HTTPS domain | Separate Compose service | Yes, while running |
 
-`127.0.0.1` means the computer on which the browser is running. Local URLs are not remotely accessible without deliberate deployment. ngrok exposes an app on your computer; it does not move it into a cloud server or keep it running during sleep.
+`127.0.0.1` means the computer on which the browser is running. Local URLs are not remotely accessible without deliberate deployment.
 
 ## Get the source
 
@@ -424,28 +422,9 @@ The current source supports operator commands directly through the executable. O
 
 With no arguments, the executable starts the app normally. Commands use the same standalone data location and inherited overrides as the app and then exit without starting a web server. To restore, stop the app first, choose an existing backup, and run `& '.\Simbi Reach-Out.exe' restore 'C:\SimbiBackups\actual-backup.db' --confirm`. The [restore safeguards](#backup-and-restore) apply. A command does not require Python or the source checkout.
 
-## Temporary remote access with ngrok
+## Deployment to Hetzner
 
-ngrok makes the app running on your Windows computer reachable through an HTTPS tunnel. The computer must remain on, awake, and connected. ngrok is a separate service with its own account, configuration, terms, and possible charges.
-
-Before launching:
-
-1. Install source dependencies and build with `pnpm.cmd --dir frontend build`.
-2. Complete owner setup locally against the database to expose, then stop that API.
-3. Install a real authenticated ngrok executable on `PATH`. A zero-byte WindowsApps alias is insufficient.
-4. Choose an unused origin port. The launcher refuses occupied ports before starting a tunnel. It identifies its own HTTPS tunnel from that ngrok process's JSON startup logs and exact loopback upstream; it does not select an arbitrary tunnel from the shared port-4040 API.
-
-From a fresh PowerShell window:
-
-```powershell
-.\scripts\start-ngrok.ps1 -Port 8000
-```
-
-The launcher configures production mode, exact public origin/hostname, secure cookies, loopback proxy trust, backups, and required maintenance in its child processes. It waits for local app/worker readiness using the public host header, then opens the reported HTTPS URL unless `-NoBrowser` is supplied. This is not an independent public-edge/TLS acceptance test. Cleanup stops only its owned app, worker, and ngrok process trees. The tunnel exposes Simbi, not HAI.
-
-**The launcher includes maintenance.** Supply custom database/backup/HAI settings in the calling environment before launch; both child processes inherit them consistently. Do not run another worker against the same database. An OS lock rejects duplicate workers. Closing the launcher stops maintenance; backups and feed refresh do not continue while the computer sleeps or the app is stopped.
-
-The public URL is an Internet entry point protected by the application's login, not a secret that replaces authentication. This launcher is for supervised access; it is not a service manager or verified unattended cloud deployment.
+Public deployment for this repository targets Hetzner. Use the production Docker Compose stack with Caddy as the HTTPS edge; do not expose a developer workstation through a third-party tunnel. Follow the repository-root `DEPLOYMENT_TARGET.md` and the hosted Docker and Caddy procedure below. Complete owner bootstrap with ingress restricted before opening the public HTTPS endpoint.
 
 ## Hosted deployment with Docker and Caddy
 
@@ -729,7 +708,7 @@ Vite provides development serving and compilation. In compiled/package/container
 | `backend/app/server.py`, `windows.py` | Container and standalone launchers. |
 | `backend/migrations/`, `backend/tests/` | SQL changes and backend regression tests. |
 | `frontend/src/` test files | Tests beside frontend modules, components, and pages. |
-| `scripts/` | Development, verification, browser testing, capacity, ngrok, Windows packaging. |
+| `scripts/` | Development, verification, browser testing, capacity, Windows packaging. |
 | `Dockerfile`, `docker-compose.yml` | Multi-stage image and local app/worker deployment. |
 | `compose.production.yaml`, `Caddyfile` | Hosted deployment and HTTPS edge. |
 | `simbi-windows.spec` | PyInstaller package contents. |
@@ -906,7 +885,7 @@ Browser coverage includes setup/sign-in, resources, review, interrupted/cancelle
 
 English Settings/Stop contact verifies minimized new audit output and retained operational data. Both locales exercise historical exact-field preview/cancel, original backup verification, core/operational preservation, a deliberately substituted wrong-plan response after a real committed update, and idempotent retry/reload receipts. That audit scenario is unverified-response recovery, not a network abort; Dutch retention and retirement scenarios each abort an actual committed response. Both locales traverse protected 1,000-contact pages to exact 50+3 old-contact batches, verify original backups/restriction and unrelated-record preservation, retry the existing receipt and look up that exact reference after reload without operational/audit changes. English retention substitutes a wrong-count response to require truthful uncertainty. Deep/precision JSON protections and 1000-event scan continuation are backend regressions, not claimed as browser interactions. Controlled 503/401 and response probes are intentional. The harness verifies its own server bound and blocks unexpected external requests in owner/viewer/retirement contexts. Fictional outcomes do not prove delivery. Engine checks are not full security/screen-reader/branded-browser/physical-device certification; Playwright WebKit is not installed Safari. See [the browser guide](docs/BROWSER_COMPATIBILITY.md).
 
-Linux CI also audits dependencies, runs the capacity benchmark, checks for unsafe automation/secret patterns, builds Docker, verifies isolated production storage/maintenance and validates Compose/runtime readiness. Chromium runs in the full verification job; Firefox and WebKit have independent complete-workflow jobs, not reduced demo checks. Windows CI checks launcher/worker lifecycles, builds the standalone app, runs isolated executable readiness/backup/shutdown smoke and uploads the package. A newly built artifact proves those tested package paths—not a signed release, fresh-machine installation, personal-data migration, public TLS/ngrok reachability or receiving-side HAI ingestion. No paid AI/provider integration is exercised.
+Linux CI also audits dependencies, runs the capacity benchmark, checks for unsafe automation/secret patterns, builds Docker, verifies isolated production storage/maintenance and validates Compose/runtime readiness. Chromium runs in the full verification job; Firefox and WebKit have independent complete-workflow jobs, not reduced demo checks. Windows CI checks launcher/worker lifecycles, builds the standalone app, runs isolated executable readiness/backup/shutdown smoke and uploads the package. A newly built artifact proves those tested package paths—not a signed release, fresh-machine installation, personal-data migration, public TLS or receiving-side HAI ingestion. No paid AI/provider integration is exercised.
 
 A separately authorized live check on 2026-09-05 opened the real public Simbi homepage through a fictional app handoff, used browser Back, recovered that handoff and recorded **Not sent**. Provider writes were blocked; there was no login, clipboard copy or messaging. This is dated public-navigation proof only, not authenticated operation or delivery. See [A29 and its limitations](docs/ACCEPTANCE_TESTS.md#a29-operator-procedure-and-observed-result).
 
@@ -947,7 +926,7 @@ docker compose -f compose.production.yaml --env-file .env.production.example con
 
 Build before `test:e2e:run`; it does not build automatically. `SIMBI_E2E_BROWSER` selects exactly `chromium` (default), `firefox`, or `webkit`; invalid names fail rather than silently falling back. The [browser guide](docs/BROWSER_COMPATIBILITY.md#run-the-full-suite) provides fail-closed PowerShell commands to install matching runtimes and run all three engines, restoring the prior environment setting. Linux CI uses browser installation with `--with-deps`. Entry order is selector contracts → bilingual bootstrap → bilingual local-password recovery → complete main workflow → bilingual retirement → bilingual response recovery. Bootstrap uses port 4179, password 4181, main 4173, retirement 4178 and response backend 4180. Override them through `SIMBI_AUTH_E2E_PORT`, `SIMBI_PASSWORD_E2E_PORT`, `SIMBI_E2E_PORT`, `SIMBI_RETIREMENT_E2E_PORT` and `SIMBI_RESPONSE_E2E_PORT` with distinct unused ports 1024–65535 if necessary. The response proxy owns an OS-selected ephemeral loopback port. Each suite creates fresh engine-labelled `.e2e-runtime` folders and preserves earlier runs; named screenshots are outside the checkout under `../browser-qa/<engine>/`. The benchmark recreates `.benchmark-runtime`; backend tests use `backend/tests/.runtime`. Keep real data out of test folders and avoid concurrent suites sharing ports or fixture storage.
 
-Linux CI includes lint, tests, dependency audits, build, capacity checks, browser acceptance, a source guard, Docker build, Compose validation, worker lifecycle checks, and container readiness. Windows CI checks launcher/worker process contracts, builds the package, runs an isolated executable smoke, and uploads the artifact. The local `verify.ps1` does not itself build/launch-test the executable or perform a clean container build: run the separate smoke scripts or inspect commit-specific CI. Neither local checks nor CI prove live ngrok, public-domain, receiving-side HAI, or provider acceptance.
+Linux CI includes lint, tests, dependency audits, build, capacity checks, browser acceptance, a source guard, Docker build, Compose validation, worker lifecycle checks, and container readiness. Windows CI checks launcher/worker process contracts, builds the package, runs an isolated executable smoke, and uploads the artifact. The local `verify.ps1` does not itself build/launch-test the executable or perform a clean container build: run the separate smoke scripts or inspect commit-specific CI. Neither local checks nor CI prove live Hetzner, public-domain, receiving-side HAI, or provider acceptance.
 
 ### Performance scope
 
@@ -981,7 +960,6 @@ The current production JavaScript bundle is 561.77 kB (162.97 kB gzip, `index-kA
 | Login HTTP 429 | Wait for the lock window, check the login identifier, investigate repeated unexpected failures. |
 | No reminders/backups/feed updates | Confirm successful worker cycles, matching database settings and writable destinations. Supervised launchers include the worker; do not start a duplicate. An existing worker-generated reminder prevents another for that draft even after completion/cancellation; a completed manual reminder does not. |
 | HAI export failure | Complete setup, use a writable JSON path, and select workspace explicitly when necessary. Check shared mounts in containers. |
-| ngrok failure | Check real executable/account setup, unused origin port and the owned process's startup output. Readiness is checked at the local upstream; separately verify actual public HTTPS access. |
 | Public deployment fails | Check domain, DNS, TLS ports, production settings, proxy address, and subnet conflicts. |
 | Port conflict | Stop the conflicting process you own or choose a supported unused port. |
 | SQLite locked/unavailable | Inspect writers, duplicate workers, permissions, disk, and mounts. Preserve data before recovery. |
@@ -991,7 +969,7 @@ The current production JavaScript bundle is 561.77 kB (162.97 kB gzip, `index-kA
 - No official messaging integration, automated sending, scraping, inbox reading, delivery receipts, credit accounting, billing, or AI generation. Entered outcomes cannot independently verify provider events.
 - Local-password uncertainty blocks repeat submission only in the mounted page; ordinary Settings recovery reads cannot unlock it. No durable secret copy, crash recovery, cross-tab/global action lock, password-change idempotency or rollback guarantee is added. Deliberate sign-in checks the new password first; offline owner recovery remains a separate operator procedure. See [password boundaries](docs/PASSWORD_RECOVERY.md#privacy-and-boundaries).
 - The three safety POST confirmation/follow-up checks do not verify provider permission or the truth of compliance statements. Pending protection is page-local, not every action/tab; uncertainty is RAM-only, and recovery reads do not restore a lost confirmation. A new safety write remains a new audit event, not an idempotent replay. See [the precise contract](docs/SAFETY_MUTATIONS.md).
-- No managed hosting, signed installer, automatic updates, Windows service, or live public-domain/ngrok/HAI acceptance supplied by the repository itself.
+- No live Hetzner, public-domain, or receiving-side HAI acceptance is supplied by the repository itself.
 - No remote password reset, MFA/SSO, invitation email, workspace provisioning, member removal, or role-change workflows. Offline owner recovery is limited to a local personal installation; wider hosting still requires additional account administration.
 - Pagination does not establish large-scale simultaneous-user capacity. SQLite remains a single-host design; measure your workload and preserve the single-worker constraint.
 - Stored-date sorting/due counts and the shared localized browser formatter interpret only supported timezone-explicit instants. Unsupported nonempty values are labelled with their exact original text rather than guessed; old dates and inconsistent reminder relationships are not repaired. Minute display is not microsecond ordering/confirmation proof. Neither the formatter nor a sorted page validates every historical row, rendered date-bearing surface or server-assigned default time.
@@ -1017,7 +995,7 @@ Passing fictional tests is not a statement that Robert's installed copy or accou
 4. Resolve historical credential exposure through owner-controlled rotation/session review and any separately coordinated history response. Decide an explicit project license before authorizing general reuse or redistribution; none is currently supplied.
 5. Review the [goal matrix](docs/GOAL_COMPLETION_MATRIX.md) and [acceptance ledger](docs/PRODUCTION_READINESS.md) for remaining schemas/forms, durable working-copy, privacy/archive/external-copy and usability gates. Choose private-copy handling deliberately; this increment adds no persistent browser store and does not silently reduce the original scope.
 
-Public hosting, ngrok and receiving-side HAI acceptance are **optional**, needed only if those preserved modes are deliberately used. Multi-tenant signup, billing and expanded shared-team administration are not personal-release gates. No pending item above is claimed completed by publishing this README.
+Hetzner hosting and receiving-side HAI acceptance require their separate deployment and operator checks. Multi-tenant signup, billing and expanded shared-team administration are not personal-release gates. No pending item above is claimed completed by publishing this README.
 
 ## Contributing and documentation
 

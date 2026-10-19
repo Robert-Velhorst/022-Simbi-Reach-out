@@ -40,22 +40,8 @@ try {
         $blocked = $false
         try { Assert-SimbiPortAvailable -Port $listener.LocalEndpoint.Port } catch { $blocked = $true }
         if (-not $blocked) { throw 'An occupied application port was accepted.' }
-        $occupiedStart = [Diagnostics.ProcessStartInfo]::new((Get-Command pwsh).Source)
-        foreach ($argument in @('-NoProfile', '-File', "$Fixture/scripts/start-ngrok.ps1", '-Port', "$($listener.LocalEndpoint.Port)", '-NoBrowser')) { $occupiedStart.ArgumentList.Add($argument) }
-        $occupiedStart.RedirectStandardError = $true
-        $occupiedProcess = [Diagnostics.Process]::Start($occupiedStart)
-        $occupiedError = $occupiedProcess.StandardError.ReadToEnd()
-        $occupiedProcess.WaitForExit()
-        if ($occupiedProcess.ExitCode -eq 0 -or $occupiedError -notmatch 'already in use') { throw "Ngrok launcher did not reject the occupied port before dependency/start work: $occupiedError" }
     } finally { $listener.Stop() }
     Write-Host 'PASS: occupied ports are rejected before launch.'
-
-    $tunnelFixture = Start-SimbiProcess (Get-Command pwsh).Source @('-NoProfile', '-Command', 'Write-Output ''{"msg":"started tunnel","addr":"http://127.0.0.1:9999","url":"https://unrelated.example"}''; Write-Output ''{"msg":"started tunnel","addr":"http://127.0.0.1:8123","url":"https://owned.example"}''; Start-Sleep -Seconds 30') -CaptureOutput
-    try {
-        $url = Get-SimbiTunnelUrl -Process $tunnelFixture -Upstream 'http://127.0.0.1:8123'
-        if ($url -ne 'https://owned.example') { throw 'Tunnel discovery selected an unrelated upstream.' }
-    } finally { Stop-SimbiProcess $tunnelFixture }
-    Write-Host 'PASS: tunnel discovery reads the owned process and selects only its matching upstream.'
 
     $unrelated = Start-SimbiProcess (Get-Command pwsh).Source @('-NoProfile', '-Command', 'Start-Sleep -Seconds 30')
     $tree = Start-SimbiProcess (Get-Command pwsh).Source @('-NoProfile', '-Command', '$child = Start-Process (Get-Command pwsh).Source -ArgumentList @("-NoProfile", "-Command", "Start-Sleep -Seconds 30") -WindowStyle Hidden -PassThru; Write-Output $child.Id; Start-Sleep -Seconds 30') -CaptureOutput
