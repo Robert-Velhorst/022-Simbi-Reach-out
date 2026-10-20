@@ -116,7 +116,7 @@ function Shell({ member, onMemberChange, onSignedOut, onRetired }: { member: Mem
         <span className="local-indicator"><i />{t("Data stored locally")}</span>
         <Link className="help-link" to="/help"><BookOpenText size={17} />{t("Help")}</Link>
       </header>
-      <main ref={mainRef} id={mainId} className="content" tabIndex={-1} aria-label={t("Main content")}>
+      <main ref={mainRef} id={mainId} className="content" tabIndex={0} aria-label={t("Main content")}>
         <Routes>
           <Route path="/" element={<Dashboard member={member} />} />
           <Route path="/prospects" element={<ProspectsPage canEdit={canEdit} />} />
