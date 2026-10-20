@@ -11,6 +11,7 @@ export async function tabTo(page, target) {
   }
   // Backward traversal reaches earlier controls without relying on browser-chrome
   // forward wrap; BODY keeps native forward continuation after disabled controls.
+  const focusTrace = []
   for (let step = 0; step < 180; step++) {
     if (await target.evaluate((element) => element === document.activeElement)) return
     // A successful Retry can remove the focused button. Firefox then resumes
@@ -18,9 +19,12 @@ export async function tabTo(page, target) {
     // Re-observe after each key, rather than keeping a forward direction that
     // would wrap into browser chrome and skip earlier controls indefinitely.
     const key = await target.evaluate((element) => element.compareDocumentPosition(document.activeElement) & Node.DOCUMENT_POSITION_FOLLOWING ? 'Shift+Tab' : 'Tab')
+    focusTrace.push(`${key}: ${await page.evaluate(() => { const e = document.activeElement; return `${e?.tagName ?? 'none'}#${e?.id ?? ''}.${String(e?.className ?? '').slice(0, 80)}` })}`)
+    if (focusTrace.length > 12) focusTrace.shift()
     await page.keyboard.press(key)
   }
-  assert.fail(`Not reachable through sequential Tab: ${await target.evaluate((element) => element.outerHTML)}`)
+  const focusState = await page.evaluate(() => ({ hasFocus: document.hasFocus(), active: `${document.activeElement?.tagName ?? 'none'}#${document.activeElement?.id ?? ''}.${String(document.activeElement?.className ?? '').slice(0, 80)}` }))
+  assert.fail(`Not reachable through sequential Tab: ${await target.evaluate((element) => element.outerHTML)}; focus=${JSON.stringify(focusState)}; trace=${focusTrace.join(' > ')}`)
 }
 
 export async function activate(page, target, key = 'Enter') {
