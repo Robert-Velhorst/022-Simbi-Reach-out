@@ -89,9 +89,10 @@ HAI_PHASE2_FEED_FILES=simbi.json
 
 The file is written atomically. A repeated unchanged export does not rewrite it. If HAI is unavailable, Simbi continues normally and no outreach action is attempted.
 
-## ngrok incident boundary
+## Public deployment boundary
 
-The ngrok launcher is for temporary, explicitly supervised access. It must not expose HAI or a development-mode Simbi process. It supervises app, maintenance, and its owned tunnel; stop the launcher to stop all three. It refuses occupied origin ports and selects only its process's reported tunnel. If the URL was disclosed unexpectedly, stop it immediately, review audit events, change the application password to revoke that user's sessions, and rotate the ngrok credential if compromise is suspected. Restarting alone does not revoke database-backed sessions.
+Public access is provided only by the documented Hetzner deployment with its HTTPS reverse proxy. Keep local workstations loopback-bound; do not create an ad hoc tunnel. Complete first-owner setup with ingress restricted before opening the hosted endpoint.
+
 
 ## First-owner and password controls
 

@@ -35,21 +35,3 @@ function Stop-SimbiProcess {
         if (-not $Process.WaitForExit(10000)) { throw "Owned process $($Process.Id) did not stop." }
     }
 }
-
-function Get-SimbiTunnelUrl {
-    param([Parameter(Mandatory)]$Process, [Parameter(Mandatory)][string]$Upstream)
-    $deadline = [DateTime]::UtcNow.AddSeconds(30)
-    $lineTask = $Process.StandardOutput.ReadLineAsync()
-    while ([DateTime]::UtcNow -lt $deadline) {
-        if ($Process.HasExited) { throw 'ngrok exited before creating its tunnel.' }
-        if (-not $lineTask.IsCompleted) { Start-Sleep -Milliseconds 100; continue }
-        $line = $lineTask.GetAwaiter().GetResult()
-        if ($null -eq $line) { throw 'ngrok closed its startup output without creating a tunnel.' }
-        try { $entry = $line | ConvertFrom-Json } catch { $entry = $null }
-        if ($entry -and $entry.msg -eq 'started tunnel' -and $entry.addr -eq $Upstream -and $entry.url -match '^https://') {
-            return [string]$entry.url
-        }
-        $lineTask = $Process.StandardOutput.ReadLineAsync()
-    }
-    throw 'This ngrok process did not report its own HTTPS tunnel within 30 seconds.'
-}
