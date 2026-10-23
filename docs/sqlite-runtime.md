@@ -64,8 +64,11 @@ The container installs `requirements-runtime.lock` with required hashes;
 A build stage compiles SQLite and the final image verifies its version as
 UID 10001. Code and native libraries remain root-owned; only data, backups
 and HAI exchange directories are writable by the application user.
-The final image removes the unused package installer and the older distribution
-SQLite library; the verified project library supplies the active engine.
+The final image removes the unused package installer and upgrades the distribution
+SQLite package with the same verified 3.54.1 build. Its local Debian package
+retains the `libsqlite3-0` ABI dependency required by system utilities, records
+the source/runtime provenance and replaces the older package-owned library.
+The package database and actual engine are both checked during the image build.
 
 The Windows spec includes the verified native DLL, manifest and an early
 PyInstaller hook. It removes the older root-level DLL from collection.

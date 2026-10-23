@@ -11,9 +11,10 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 COPY sqlite-runtime.json ./
-COPY scripts/setup_sqlite_runtime.py ./scripts/setup_sqlite_runtime.py
+COPY scripts/setup_sqlite_runtime.py scripts/build_sqlite_deb.py ./scripts/
 COPY backend/app/__init__.py backend/app/sqlite_runtime.py ./backend/app/
 RUN python -I scripts/setup_sqlite_runtime.py
+RUN python -I scripts/build_sqlite_deb.py
 
 FROM python:3.15.1-slim-trixie@sha256:08275f764e022331c6d3e3ca55d8cce01fa4684b02111adf0445d71806fe7941 AS runtime
 LABEL org.opencontainers.image.title="Simbi Reach-Out" \
@@ -30,12 +31,15 @@ WORKDIR /app
 RUN addgroup --system --gid 10001 simbi && adduser --system --uid 10001 --ingroup simbi simbi
 COPY pyproject.toml requirements-runtime.lock sqlite-runtime.json ./
 COPY --from=sqlite-builder /app/.simbi-runtime ./.simbi-runtime
+COPY --from=sqlite-builder /tmp/simbi-libsqlite3.deb /tmp/simbi-libsqlite3.deb
 COPY runtime_bootstrap ./runtime_bootstrap
 COPY backend ./backend
 COPY --from=frontend /build/frontend/dist ./frontend/dist
 RUN python -m pip install --no-cache-dir --require-hashes -r requirements-runtime.lock
 RUN python -m pip uninstall -y pip \
-    && if dpkg-query -W libsqlite3-0 >/dev/null 2>&1; then apt-get purge -y --no-auto-remove libsqlite3-0; fi \
+    && dpkg -i /tmp/simbi-libsqlite3.deb && ldconfig \
+    && test "$(dpkg-query -W -f='${Version}' libsqlite3-0)" = '3.54.1-0simbi1' \
+    && rm -f /tmp/simbi-libsqlite3.deb \
     && rm -rf /var/lib/apt/lists/* /root/.cache/pip
 RUN mkdir -p /app/data /app/backups /app/hai && chown -R simbi:simbi /app/data /app/backups /app/hai
 USER simbi

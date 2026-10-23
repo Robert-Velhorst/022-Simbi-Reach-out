@@ -68,6 +68,25 @@ jobs:
         run: |
           ! grep -RniE "selenium|webdriver_manager|send_message\(|login_password|plaintext_password|password[[:space:]]*=[[:space:]]*['\"][^'\"]+" \
             backend frontend/src scripts Dockerfile docker-compose.yml pyproject.toml
+      - name: Upload native and test qualification
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: simbi-native-qualification
+          path: |
+            sqlite-runtime-proof.json
+            simbi-test-results.xml
+          if-no-files-found: error
+
+  installed-images:
+    name: Installed API and edge qualification
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.15.1"
       - name: Docker build
         run: docker build -t simbi-reach-out:ci .
       - name: Validate the pinned Hetzner edge offline
@@ -114,15 +133,12 @@ jobs:
       - name: Stop smoke environment
         if: always()
         run: docker compose down --volumes
-      - name: Upload native and test qualification
+      - name: Upload installed-image evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: simbi-native-qualification
-          path: |
-            sqlite-runtime-proof.json
-            simbi-test-results.xml
-            .qualification/reports
+          name: simbi-installed-image-qualification
+          path: .qualification/reports
           if-no-files-found: error
 
   browser-compatibility:

@@ -64,3 +64,19 @@ Fifteen actual Node tests pass, including rejection before dispatch of
 absolute/network-path/backslash/control targets and a real loopback body/query
 round trip. Hosted browser compatibility and CodeQL closure remain separate
 requirements; the alert has not been dismissed.
+
+## Container dependency correction
+
+The first image build failed when removing Debian's `libsqlite3-0`: `util-linux`
+needs `liblastlog2-2`, which depends on that library package. The prepared fix
+builds a local Debian package containing the verified SQLite 3.54.1 library,
+upgrades the package normally and refreshes the loader cache. It records the
+verified source/runtime provenance and preserves the system dependency graph.
+The image inventory gate now also requires package version `3.54.1-0simbi1`;
+an additional fixture rejects the older system package. All 13 focused native
+and image-policy cases pass locally. The actual image build and installed
+package scan must still qualify the correction.
+
+All image, edge, storage and Compose gates now run in an independent CI job,
+so a container failure is visible without waiting for the full browser suite.
+The full unit and browser gates remain enabled in their original jobs.

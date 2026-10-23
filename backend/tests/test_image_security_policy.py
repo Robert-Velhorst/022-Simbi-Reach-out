@@ -23,7 +23,8 @@ def fixture_report():
         packages.append({'Name':match[1], 'Version':match[2]})
     return {'SchemaVersion':2,'ArtifactType':'container_image',
         'Metadata':{'ImageID':IMAGE,'OS':{'Family':'debian','Name':'13.2','EOSL':False}},
-        'Results':[{'Class':'os-pkgs','Type':'debian','Packages':[{'Name':'libc6','Version':'synthetic'}]},
+        'Results':[{'Class':'os-pkgs','Type':'debian','Packages':[{'Name':'libc6','Version':'synthetic'},
+            {'Name':'libsqlite3-0','Version':'3.54.1-0simbi1'}]},
             {'Class':'lang-pkgs','Type':'python-pkg','Packages':packages}]}
 
 
@@ -43,7 +44,7 @@ def test_complete_image_report_passes(tmp_path):
 
 
 @pytest.mark.parametrize('mutation', ['wrong-image','missing-runtime','empty-results',
-    'no-os-packages','vulnerability','modified-finding','wrong-distribution'])
+    'no-os-packages','vulnerability','modified-finding','wrong-distribution','old-sqlite-package'])
 def test_incomplete_or_affected_image_report_fails(tmp_path, mutation):
     report = copy.deepcopy(fixture_report())
     if mutation == 'wrong-image':
@@ -58,6 +59,8 @@ def test_incomplete_or_affected_image_report_fails(tmp_path, mutation):
         report['Results'][0]['Vulnerabilities'] = [{'VulnerabilityID':'synthetic-CVE'}]
     elif mutation == 'modified-finding':
         report['Results'][0]['ExperimentalModifiedFindings'] = [{'Status':'accepted'}]
+    elif mutation == 'old-sqlite-package':
+        report['Results'][0]['Packages'][1]['Version'] = '3.46.1-7'
     else:
         report['Metadata']['OS']['Family'] = 'alpine'
     assert check(tmp_path, report).returncode != 0

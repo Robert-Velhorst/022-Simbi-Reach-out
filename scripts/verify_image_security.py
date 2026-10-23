@@ -41,6 +41,9 @@ for dependency in dependencies:
     assert match, 'Direct runtime dependency must be exactly pinned'
     name = re.sub(r'[-_.]+', '-', match[1].lower())
     assert match[2] in installed.get(name, set()), 'Missing exact installed runtime dependency: '+name
+if profile == 'api':
+    sqlite = json.loads((ROOT / 'sqlite-runtime.json').read_text(encoding='utf-8'))
+    assert installed.get('libsqlite3-0') == {sqlite['version']+'-0simbi1'}, 'The distribution SQLite package must also be upgraded'
 if profile == 'caddy':
     assert any(value.removeprefix('v') == '2.11.7' for value in installed.get('github-com/caddyserver/caddy/v2', set())), 'Missing exact Caddy module'
 print(json.dumps({'passed':True,'image_id':image_id,'os_packages':os_packages,
