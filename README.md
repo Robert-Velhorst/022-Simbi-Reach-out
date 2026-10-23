@@ -322,7 +322,7 @@ To enable automatic local backups, configure the worker with `SIMBI_AUTO_BACKUP=
 
 ### Install dependencies
 
-Use Python 3.15.0, Node.js 26.12.0, and pnpm 12.14.0 to match CI. The Python manifest declares 3.11 or later, but every newer interpreter/packaging combination is not necessarily tested. Docker is additionally required for the full verification script.
+Use Python 3.15.1, Node.js 26.12.1, and pnpm 12.14.0 to match CI. The Python manifest declares 3.11 or later, but every newer interpreter/packaging combination is not necessarily tested. Docker is additionally required for the full verification script.
 
 ```powershell
 python -m venv .venv
