@@ -104,8 +104,10 @@ jobs:
         shell: bash
         run: |
           mkdir -p .qualification/input .qualification/reports .qualification/cache
-          docker image inspect --format '{{.Id}}' simbi-reach-out:ci > .qualification/reports/image-id.txt
+          docker image inspect simbi-reach-out:ci > .qualification/reports/image-inspect.json
           docker image save simbi-reach-out:ci -o .qualification/input/image.tar
+          python scripts/archive_image_identity.py .qualification/input/image.tar .qualification/reports/image-inspect.json \
+            simbi-reach-out:ci .qualification/reports/image-identity.json .qualification/reports/image-id.txt
           docker run --rm --read-only --user "$(id -u):$(id -g)" --cap-drop ALL --security-opt no-new-privileges \
             --tmpfs /tmp:rw,noexec,nosuid,size=512m \
             -v "$PWD/.qualification/input:/inputs:ro" -v "$PWD/.qualification/reports:/reports" -v "$PWD/.qualification/cache:/cache" \

@@ -80,3 +80,27 @@ package scan must still qualify the correction.
 All image, edge, storage and Compose gates now run in an independent CI job,
 so a container failure is visible without waiting for the full browser suite.
 The full unit and browser gates remain enabled in their original jobs.
+
+## Edge and archive qualification follow-up
+
+The API image now builds and its isolated probe verifies Python 3.15.1,
+UID 10001, SQLite 3.54.1 and the identical upgraded system library. The edge's
+upstream executable capability caused `operation not permitted` under the
+offline restricted profile. `Dockerfile.caddy` removes that capability during
+the build, retains the upstream binary hash and copies it into pinned Alpine
+3.24.3. Offline version/configuration qualification then passed. Production
+Compose retains only the low-port binding capability for the edge.
+
+The subsequent image scan reported 164 findings (44 high, 58 medium, 61 low,
+one unknown). Its configuration ID differs from Docker's inspected descriptor
+ID, so exact-image attribution still needs byte-level archive reconciliation.
+The new gate verifies the saved configuration bytes, its descriptor ancestry,
+platform and filesystem against the inspected image, records the archive hash,
+then compares the scanner's configuration ID. Nineteen focused archive/native/
+image-policy cases pass locally; the hosted archive proof is still required.
+No findings are suppressed, and the installed-image gate remains failed.
+
+A possible next API base, pinned Python 3.15.1 on Alpine 3.24, was checked in
+the official registry. Alpine's current `sqlite-libs` is still 3.53.4-r0, so
+switching the base alone cannot preserve the required current SQLite version.
+No API rebase or passing replacement scan is claimed here.

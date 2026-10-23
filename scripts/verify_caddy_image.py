@@ -5,6 +5,8 @@ import re
 import subprocess
 import sys
 
+from archive_image_identity import archive_identity
+
 ROOT = Path(__file__).resolve().parents[1]
 reports = ROOT / '.qualification/reports'
 reports.mkdir(parents=True, exist_ok=True)
@@ -42,7 +44,10 @@ output.parent.mkdir(parents=True, exist_ok=True)
 output.write_text(json.dumps(report,indent=2)+'\n',encoding='utf-8')
 inputs = ROOT / '.qualification/input'
 inputs.mkdir(parents=True, exist_ok=True)
-image_id = run(['docker', 'image', 'inspect', '--format', '{{.Id}}', image]).stdout.strip()
-(output.parent / 'caddy-image-id.txt').write_text(image_id+'\n', encoding='ascii')
+inspection = run(['docker', 'image', 'inspect', image]).stdout
+(output.parent / 'caddy-image-inspect.json').write_text(inspection, encoding='utf-8')
 run(['docker', 'image', 'save', image, '-o', str(inputs / 'caddy.tar')])
+identity = archive_identity(inputs / 'caddy.tar', json.loads(inspection), image)
+(output.parent / 'caddy-image-identity.json').write_text(json.dumps(identity,indent=2)+'\n', encoding='utf-8')
+(output.parent / 'caddy-image-id.txt').write_text(identity['config_id']+'\n', encoding='ascii')
 print(json.dumps({'pinned_version':version,'actual_version':actual,'offline_config_validated':True,'live_tls_acceptance':False}))
