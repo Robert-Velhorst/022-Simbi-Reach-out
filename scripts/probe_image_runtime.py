@@ -12,13 +12,13 @@ runtime = runtime_evidence()
 assert os.getuid() == 10001
 assert sys.version_info[:3] == (3, 15, 1)
 assert runtime["version"] == "3.54.1"
-version = subprocess.check_output([
-    "dpkg-query", "-W", "-f=${Version}", "libsqlite3-0"], text=True).strip()
-assert version == "3.54.1-0simbi1"
-files = subprocess.check_output(["dpkg-query", "-L", "libsqlite3-0"], text=True).splitlines()
-libraries = [Path(name) for name in files if name.endswith("/libsqlite3.so.0")]
-assert len(libraries) == 1
-digest = hashlib.sha256(libraries[0].read_bytes()).hexdigest()
+version = "3.54.1-r0"
+packages = subprocess.check_output(["apk", "info", "-v", "sqlite-libs"], text=True).splitlines()
+assert "sqlite-libs-"+version in packages
+library = Path("/usr/lib/libsqlite3.so.0")
+owner = subprocess.check_output(["apk", "info", "--who-owns", str(library)], text=True)
+assert "sqlite-libs-"+version in owner
+digest = hashlib.sha256(library.read_bytes()).hexdigest()
 assert digest == runtime["binary_sha256"]
 print(json.dumps({"python":sys.version,"uid":os.getuid(),"sqlite":runtime,
     "system_package_version":version,"system_library_sha256":digest,

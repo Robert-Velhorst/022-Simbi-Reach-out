@@ -22,9 +22,9 @@ def fixture_report():
         assert match
         packages.append({'Name':match[1], 'Version':match[2]})
     return {'SchemaVersion':2,'ArtifactType':'container_image',
-        'Metadata':{'ImageID':IMAGE,'OS':{'Family':'debian','Name':'13.2','EOSL':False}},
-        'Results':[{'Class':'os-pkgs','Type':'debian','Packages':[{'Name':'libc6','Version':'synthetic'},
-            {'Name':'libsqlite3-0','Version':'3.54.1-0simbi1'}]},
+        'Metadata':{'ImageID':IMAGE,'OS':{'Family':'alpine','Name':'3.24.3','EOSL':False}},
+        'Results':[{'Class':'os-pkgs','Type':'alpine','Packages':[{'Name':'musl','Version':'synthetic'},
+            {'Name':'sqlite-libs','Version':'3.54.1-r0'}]},
             {'Class':'lang-pkgs','Type':'python-pkg','Packages':packages}]}
 
 
@@ -60,7 +60,7 @@ def test_incomplete_or_affected_image_report_fails(tmp_path, mutation):
     elif mutation == 'modified-finding':
         report['Results'][0]['ExperimentalModifiedFindings'] = [{'Status':'accepted'}]
     elif mutation == 'old-sqlite-package':
-        report['Results'][0]['Packages'][1]['Version'] = '3.46.1-7'
+        report['Results'][0]['Packages'][1]['Version'] = '3.53.4-r0'
     else:
-        report['Metadata']['OS']['Family'] = 'alpine'
+        report['Metadata']['OS']['Family'] = 'debian'
     assert check(tmp_path, report).returncode != 0

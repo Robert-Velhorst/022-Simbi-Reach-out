@@ -89,6 +89,14 @@ jobs:
           python-version: "3.15.1"
       - name: Docker build
         run: docker build -t simbi-reach-out:ci .
+      - name: Full backend qualification on the Alpine libc and native engine
+        shell: bash
+        run: |
+          docker build --target backend-qualification -t simbi-backend-qualification:ci .
+          mkdir -p .qualification/reports
+          qualification_container=$(docker create simbi-backend-qualification:ci)
+          docker cp "$qualification_container:/app/musl-backend-tests.xml" .qualification/reports/musl-backend-tests.xml
+          docker rm "$qualification_container"
       - name: Probe actual non-root API and system SQLite identity
         shell: bash
         run: |
@@ -108,20 +116,25 @@ jobs:
           docker image save simbi-reach-out:ci -o .qualification/input/image.tar
           python scripts/archive_image_identity.py .qualification/input/image.tar .qualification/reports/image-inspect.json \
             simbi-reach-out:ci .qualification/reports/image-identity.json .qualification/reports/image-id.txt
+          api_scan=0
           docker run --rm --read-only --user "$(id -u):$(id -g)" --cap-drop ALL --security-opt no-new-privileges \
             --tmpfs /tmp:rw,noexec,nosuid,size=512m \
             -v "$PWD/.qualification/input:/inputs:ro" -v "$PWD/.qualification/reports:/reports" -v "$PWD/.qualification/cache:/cache" \
             aquasec/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c image --cache-dir /cache --input /inputs/image.tar \
             --scanners vuln --list-all-pkgs --ignorefile /dev/null --format json \
-            --output /reports/image-security.json --exit-code 1
-          python scripts/verify_image_security.py .qualification/reports/image-security.json .qualification/reports/image-id.txt > .qualification/reports/verified-image.json
+            --output /reports/image-security.json --exit-code 1 || api_scan=$?
+          api_proof=0
+          python scripts/verify_image_security.py .qualification/reports/image-security.json .qualification/reports/image-id.txt > .qualification/reports/verified-image.json || api_proof=$?
+          edge_scan=0
           docker run --rm --read-only --user "$(id -u):$(id -g)" --cap-drop ALL --security-opt no-new-privileges \
             --tmpfs /tmp:rw,noexec,nosuid,size=512m \
             -v "$PWD/.qualification/input:/inputs:ro" -v "$PWD/.qualification/reports:/reports" -v "$PWD/.qualification/cache:/cache" \
             aquasec/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c image --cache-dir /cache --input /inputs/caddy.tar \
             --scanners vuln --list-all-pkgs --ignorefile /dev/null --format json \
-            --output /reports/caddy-security.json --exit-code 1
-          python scripts/verify_image_security.py .qualification/reports/caddy-security.json .qualification/reports/caddy-image-id.txt caddy > .qualification/reports/verified-caddy.json
+            --output /reports/caddy-security.json --exit-code 1 || edge_scan=$?
+          edge_proof=0
+          python scripts/verify_image_security.py .qualification/reports/caddy-security.json .qualification/reports/caddy-image-id.txt caddy > .qualification/reports/verified-caddy.json || edge_proof=$?
+          test "$api_scan" -eq 0 && test "$api_proof" -eq 0 && test "$edge_scan" -eq 0 && test "$edge_proof" -eq 0
       - name: Isolated production maintenance and storage smoke
         shell: pwsh
         run: ./scripts/smoke-container.ps1 -Image simbi-reach-out:ci

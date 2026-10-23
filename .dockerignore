@@ -7,7 +7,7 @@ data
 backups
 support-bundles
 legacy
-backend/tests
+backend/tests/.runtime
 **/__pycache__
 *.db
 *.log
@@ -15,3 +15,10 @@ backend/tests
 !.env.example
 
 .simbi-runtime
+
+.e2e-runtime
+.benchmark-runtime
+.qualification
+.pytest_cache
+build
+dist

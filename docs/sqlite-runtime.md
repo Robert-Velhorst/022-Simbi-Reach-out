@@ -64,11 +64,20 @@ The container installs `requirements-runtime.lock` with required hashes;
 A build stage compiles SQLite and the final image verifies its version as
 UID 10001. Code and native libraries remain root-owned; only data, backups
 and HAI exchange directories are writable by the application user.
-The final image removes the unused package installer and upgrades the distribution
-SQLite package with the same verified 3.54.1 build. Its local Debian package
-retains the `libsqlite3-0` ABI dependency required by system utilities, records
-the source/runtime provenance and replaces the older package-owned library.
-The package database and actual engine are both checked during the image build.
+The prepared final image uses pinned Python 3.15.1 on Alpine 3.24.3, refreshes
+the stable package repository's updates, removes the unused Python package
+installer and upgrades `sqlite-libs` with the same verified 3.54.1 build.
+The APK records source/runtime provenance and provides the shared-library ABI.
+An ephemeral builder key signs this one artifact; its public key is selected
+only for offline installation. The private key stays out of image layers and
+the normal repository trust store is unchanged. The package database, library
+ownership, binary hash and actual engine are checked separately.
+
+The `backend-qualification` build target runs the complete backend suite on
+the Alpine libc without network access. It contains development tools and is
+not the final application image. The application image remains UID 10001;
+its independent read-only runtime probe and installed-package scan must pass.
+This libc/base change requires fresh qualification before release.
 
 The Hetzner edge is built from `Dockerfile.caddy`: the exact upstream Caddy
 2.11.7 binary is checked by hash after copying into pinned Alpine 3.24.3.

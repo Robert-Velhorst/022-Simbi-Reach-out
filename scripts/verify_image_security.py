@@ -13,11 +13,8 @@ image_id = Path(sys.argv[2]).read_text(encoding='ascii').strip()
 assert re.fullmatch(r'sha256:[a-f0-9]{64}', image_id)
 assert report['SchemaVersion'] == 2 and report['ArtifactType'] == 'container_image'
 assert report['Metadata']['ImageID'] == image_id
-assert report['Metadata']['OS']['Family'] == ('debian' if profile == 'api' else 'alpine')
-if profile == 'api':
-    assert report['Metadata']['OS']['Name'].split('.')[0] == '13'
-else:
-    assert report['Metadata']['OS']['Name'] == '3.24.3'
+assert report['Metadata']['OS']['Family'] == 'alpine'
+assert report['Metadata']['OS']['Name'] == '3.24.3'
 assert report['Metadata']['OS'].get('EOSL', False) is False
 assert isinstance(report['Results'], list) and report['Results']
 installed = {}
@@ -28,7 +25,7 @@ for result in report['Results']:
         if key in result:
             assert isinstance(result[key], list) and not result[key], 'Unresolved or modified findings: '+key
     if result['Class'] == 'os-pkgs':
-        assert result['Type'] == ('debian' if profile == 'api' else 'alpine')
+        assert result['Type'] == 'alpine'
         os_packages += len(result['Packages'])
     for package in result['Packages']:
         assert package['Name'] and package['Version']
@@ -43,7 +40,7 @@ for dependency in dependencies:
     assert match[2] in installed.get(name, set()), 'Missing exact installed runtime dependency: '+name
 if profile == 'api':
     sqlite = json.loads((ROOT / 'sqlite-runtime.json').read_text(encoding='utf-8'))
-    assert installed.get('libsqlite3-0') == {sqlite['version']+'-0simbi1'}, 'The distribution SQLite package must also be upgraded'
+    assert installed.get('sqlite-libs') == {sqlite['version']+'-r0'}, 'The distribution SQLite package must also be upgraded'
 if profile == 'caddy':
     assert any(value.removeprefix('v') == '2.11.7' for value in installed.get('github-com/caddyserver/caddy/v2', set())), 'Missing exact Caddy module'
 print(json.dumps({'passed':True,'image_id':image_id,'os_packages':os_packages,

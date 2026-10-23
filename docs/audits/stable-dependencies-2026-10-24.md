@@ -104,3 +104,22 @@ A possible next API base, pinned Python 3.15.1 on Alpine 3.24, was checked in
 the official registry. Alpine's current `sqlite-libs` is still 3.53.4-r0, so
 switching the base alone cannot preserve the required current SQLite version.
 No API rebase or passing replacement scan is claimed here.
+
+## Alpine API candidate
+
+The subsequent hosted archive proof passed and attributed the same 164 findings
+to the exact exported Debian image: 88 OS packages, with no findings reported
+in its 20-package Python result. The scan gate remained failed.
+
+The new candidate now uses the digest-verified official Python 3.15.1 Alpine
+3.24 base, stable repository updates and the verified SQLite 3.54.1 library
+packaged as `sqlite-libs`. The package is signed with an ephemeral builder key
+and installed offline using only that key's temporary public-key directory.
+The private key is removed before the builder layer is committed; normal
+repository keys remain unchanged. No signature bypass is used.
+
+A separate build target runs the entire backend suite against the Alpine libc
+with networking disabled. Development tools and tests are excluded from the
+final application image. API and edge scans both execute and each scan/proof
+status must succeed; an API failure no longer prevents edge evidence collection.
+This is a prepared compatibility change, not a qualified replacement yet.
