@@ -1,0 +1,23 @@
+FROM caddy:2.11.7-alpine@sha256:eb4d35b7452d1ab6171fbdbe8d9275b2301dad6dad92115d91e19fb9b24d510f AS official
+# The upstream file capability prevents exec under an empty capability set.
+# Remove its xattr at build time; retain the exact upstream binary contents.
+RUN setcap -r /usr/bin/caddy && test -z "$(getcap /usr/bin/caddy)" \
+    && sha256sum /usr/bin/caddy > /caddy.sha256
+
+FROM alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+RUN apk add --no-cache ca-certificates mailcap \
+    && mkdir -p /config/caddy /data/caddy /etc/caddy /usr/share/caddy /srv \
+    && chmod 1777 /config/caddy /data/caddy
+COPY --from=official /usr/bin/caddy /usr/bin/caddy
+COPY --from=official /etc/caddy/Caddyfile /etc/caddy/Caddyfile
+COPY --from=official /usr/share/caddy /usr/share/caddy
+COPY --from=official /caddy.sha256 /usr/share/caddy/caddy.sha256
+RUN sha256sum -c /usr/share/caddy/caddy.sha256 && caddy version
+ENV XDG_CONFIG_HOME=/config XDG_DATA_HOME=/data
+LABEL org.opencontainers.image.title="Simbi Caddy edge" \
+      org.opencontainers.image.version="2.11.7" \
+      org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.source="https://github.com/Robert-Velhorst/022-Simbi-Reach-out"
+EXPOSE 80 443 443/udp 2019
+WORKDIR /srv
+CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]

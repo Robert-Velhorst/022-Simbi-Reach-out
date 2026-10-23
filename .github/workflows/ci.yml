@@ -97,7 +97,9 @@ jobs:
             --volume "$PWD/scripts/probe_image_runtime.py:/qualification.py:ro" \
             simbi-reach-out:ci python /qualification.py > .qualification/reports/api-runtime.json
       - name: Validate the pinned Hetzner edge offline
-        run: python scripts/verify_caddy_image.py
+        run: |
+          docker build -f Dockerfile.caddy -t simbi-reach-out-edge:2.11.7 .
+          python scripts/verify_caddy_image.py
       - name: Inventory and audit the exact installed image
         shell: bash
         run: |

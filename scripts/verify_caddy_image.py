@@ -8,10 +8,12 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 reports = ROOT / '.qualification/reports'
 reports.mkdir(parents=True, exist_ok=True)
-source = (ROOT / 'compose.production.yaml').read_text(encoding='utf-8')
-match = re.search(r'^\s+image: (caddy:([0-9]+\.[0-9]+\.[0-9]+)-alpine@sha256:[0-9a-f]{64})$', source, re.M)
+source = (ROOT / 'Dockerfile.caddy').read_text(encoding='utf-8')
+match = re.search(r'^FROM (caddy:([0-9]+\.[0-9]+\.[0-9]+)-alpine@sha256:[0-9a-f]{64}) AS official$', source, re.M)
 assert match, 'The edge image must be pinned to an exact stable version and digest'
-image, version = match.groups()
+source_image, version = match.groups()
+image = 'simbi-reach-out-edge:'+version
+assert 'image: simbi-reach-out-edge:${SIMBI_EDGE_IMAGE_TAG:-'+version+'}' in (ROOT / 'compose.production.yaml').read_text(encoding='utf-8')
 base = ['docker', 'run', '--rm', '--network', 'none', '--read-only', '--user', '10001:10001',
         '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges',
         '--tmpfs', '/data:rw,noexec,nosuid,size=16m,mode=1777',
@@ -32,7 +34,7 @@ build = run([*base, image, 'caddy', 'build-info']).stdout
 validation = run([*base, '--env', 'SIMBI_DOMAIN=simbi.example.test',
     '--volume', str(ROOT / 'Caddyfile')+':/etc/caddy/Caddyfile:ro',
     image, 'caddy', 'validate', '--config', '/etc/caddy/Caddyfile', '--adapter', 'caddyfile'])
-report = {'image':image,'version':actual,'build_info':build,'config_validation':validation.stdout.strip(),
+report = {'image':image,'source_image':source_image,'version':actual,'build_info':build,'config_validation':validation.stdout.strip(),
           'network':'none','ports_published':False,'operator_configuration_modified':False,
           'live_tls_acceptance':False,'all_bundled_modules_current':False}
 output = ROOT / '.qualification/reports/caddy-runtime.json'

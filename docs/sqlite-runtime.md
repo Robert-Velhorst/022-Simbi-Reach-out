@@ -70,6 +70,15 @@ retains the `libsqlite3-0` ABI dependency required by system utilities, records
 the source/runtime provenance and replaces the older package-owned library.
 The package database and actual engine are both checked during the image build.
 
+The Hetzner edge is built from `Dockerfile.caddy`: the exact upstream Caddy
+2.11.7 binary is checked by hash after copying into pinned Alpine 3.24.3.
+Its upstream executable capability is removed during the build, so offline
+non-root validation can run with an empty capability set and no new privileges.
+Production Compose grants only `NET_BIND_SERVICE` for the edge's low ports,
+keeps its root filesystem read-only and stores Caddy state in the existing
+dedicated volumes. These prepared settings still require image, configuration,
+package-inventory and eventual operator deployment qualification.
+
 The Windows spec includes the verified native DLL, manifest and an early
 PyInstaller hook. It removes the older root-level DLL from collection.
 Keep the entire generated standalone directory, including `_internal`.

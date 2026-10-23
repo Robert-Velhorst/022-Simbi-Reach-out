@@ -447,7 +447,7 @@ Deployment properties:
 - Volumes persist SQLite, backups, the optional private HAI feed, and Caddy state. App and worker share SQLite. The optional container HAI path is `/app/hai/simbi.json`; its volume is writable by the non-root app user and is not published over HTTP.
 - The fixed subnet is `172.30.0.0/24`; Caddy is trusted at `172.30.0.3`. If it conflicts with your network, change the subnet, addresses, and proxy trust together.
 - The worker cycles every 300 seconds. Daily backups and 30-day backup retention are enabled by default while it runs. Health requires the singleton worker lock and a successful cycle no older than the configured interval plus 60 seconds, with no later failure. App readiness also checks maintenance in supervised/production modes. Initial HAI export waits for first-owner setup; a database with multiple workspaces needs explicit export selection and is not silently merged.
-- `SIMBI_IMAGE_TAG` names the locally built image. No published image registry or managed hosting is implied.
+- `SIMBI_IMAGE_TAG` names the locally built API image. `SIMBI_EDGE_IMAGE_TAG` defaults to `2.11.7` for the locally built edge image; `Dockerfile.caddy` pins its upstream Caddy binary and Alpine 3.24.3 base by digest. No published image registry or managed hosting is implied.
 
 ```powershell
 docker compose --env-file .env.production -f compose.production.yaml ps
