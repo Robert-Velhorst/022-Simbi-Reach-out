@@ -46,7 +46,7 @@ def original_sqlite_extension():
     if _sdk_extension is None:
         module = importlib.util.find_spec("_sqlite3")
         if module is None or not isinstance(module.loader, importlib.machinery.ExtensionFileLoader):
-            raise RuntimeError("The macOS profile requires a relocatable CPython SQLite extension")
+            raise RuntimeError("The macOS profile requires a CPython SQLite extension")
         original = Path(module.origin).resolve()
         if not original.is_relative_to(Path(sys.base_prefix).resolve()):
             raise RuntimeError("The SQLite extension is outside the selected CPython installation")
@@ -106,6 +106,7 @@ def require_stable_sqlite():
         extension = target / original.name
         check_runtime_paths(target, extension)
         if (provenance.get("original_extension_sha256") != fingerprint
+                or provenance.get("cpython_source_sha256") != spec["cpython_source"]["sha256"]
                 or provenance.get("python_abi") != sysconfig.get_config_var("SOABI")
                 or hashlib.sha256(extension.read_bytes()).hexdigest() != provenance.get("extension_sha256")):
             raise RuntimeError("The project-local CPython SQLite extension failed integrity or ABI validation")

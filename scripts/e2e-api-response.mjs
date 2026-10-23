@@ -2,12 +2,13 @@ import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { mkdir, mkdtemp, readFile } from 'node:fs/promises'
-import { createServer, request } from 'node:http'
+import { createServer } from 'node:http'
 import { createRequire } from 'node:module'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { selectBrowser } from './e2e-browser.mjs'
 import { activate, choose, enter, tabTo } from './e2e-keyboard-controls.mjs'
+import { ownedResponseRequest } from './response-proxy.mjs'
 
 // An owned loopback proxy, not a production endpoint. It forwards the real
 // fictional write first, then damages its RESPONSE. Native streaming bodies
@@ -37,11 +38,15 @@ for (const locale of ['en', 'nl']) {
   let abortedBodies = 0
   const proxyErrors = []
   const proxy = createServer((incoming, outgoing) => {
+    if (typeof incoming.url !== 'string' || !incoming.url.startsWith('/')
+        || incoming.url.startsWith('//') || /[\\\r\n#]/.test(incoming.url)) {
+      outgoing.writeHead(400); outgoing.end('Invalid owned proxy request target'); return
+    }
     const path = new URL(incoming.url, backend).pathname
     const selected = fault && fault.method === incoming.method && path === '/api/templates' ? fault : null
     if (selected) fault = null
     if (incoming.method === 'POST' && path === '/api/templates') templateWrites++
-    const upstream = request(new URL(incoming.url, backend), { method: incoming.method, headers: incoming.headers }, (response) => {
+    const upstream = ownedResponseRequest(port, incoming, (response) => {
       if (!selected) { outgoing.writeHead(response.statusCode, response.headers); response.pipe(outgoing); return }
       if (response.statusCode < 200 || response.statusCode >= 300) {
         proxyErrors.push('Fault did not receive a real successful response')

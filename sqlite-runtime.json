@@ -31,5 +31,11 @@
     "archive_sha3_256": "58a563f64ba4c5df34c3ce667175678e2c1df503b264cd600200eb37aa334201",
     "library": "sqlite3.dll",
     "binary_sha256": "977f41c8ed57da24bb0490e0afc13fac6e617c5d78705f6bb62d453d4f24df99"
+  },
+  "cpython_source": {
+    "version": "3.15.1",
+    "url": "https://www.python.org/ftp/python/3.15.1/Python-3.15.1.tar.xz",
+    "sha256": "673ae7232d84c894729882c8257d300ef2d26523911bfd3917ec8ce7f526f99b",
+    "source": "https://www.python.org/downloads/release/python-3151/"
   }
 }

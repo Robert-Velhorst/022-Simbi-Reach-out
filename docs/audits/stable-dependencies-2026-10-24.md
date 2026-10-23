@@ -20,8 +20,11 @@ The native bootstrap checks SQLite before application imports and database
 access. It is connected to development launchers, tests, CI, the Linux image
 and Windows packaging. Missing, tampered, linked, incompatible or already
 initialized libraries stop startup. Windows uses official checksum-verified
-DLLs; Linux/macOS build checksum-verified official source. Mac profiles copy
-and relocate the selected SDK extension within the project. See the
+DLLs; Linux/macOS build checksum-verified official source. The first Mac ARM
+SDK survey found a statically embedded older engine and provisioning failed.
+Mac profiles now build the exact CPython standard-library SQLite module from
+verified source against the selected SDK, within the project. The original
+SDK remains unchanged. This correction still requires hosted qualification. See the
 [native runtime guide](../sqlite-runtime.md).
 
 ## Recorded local evidence and limits
@@ -49,3 +52,15 @@ must be resolved before release; configured checks alone are not passing proof.
 Hetzner remains the deployment target. No operator database was opened or
 migrated, no outreach was sent, and no provider or deployment was changed.
 This work is a review draft and requires separate merge approval.
+
+## Browser-test proxy security finding
+
+GitHub CodeQL alert 7 reports a request-forgery path in the fictional response
+proxy: resolving an incoming absolute URL against the backend base can select
+another authority. The prepared correction uses a literal loopback hostname,
+a separately validated numeric port and an origin-form-only request path.
+It replaces the forwarded Host header with the owned backend identity.
+Fifteen actual Node tests pass, including rejection before dispatch of
+absolute/network-path/backslash/control targets and a real loopback body/query
+round trip. Hosted browser compatibility and CodeQL closure remain separate
+requirements; the alert has not been dismissed.

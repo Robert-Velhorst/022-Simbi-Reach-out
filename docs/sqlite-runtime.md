@@ -37,14 +37,17 @@ checkout-local `.simbi-runtime` directory. First provision requires HTTPS
 access to sqlite.org. Windows library selection uses Python's compiled
 platform identity and works in a sanitized process environment.
 
-On macOS, provisioning copies the selected CPython SQLite extension into the
-project runtime, changes only that copy's SQLite dependency to the adjacent
-verified library, and applies an offline ad hoc signature. The system SDK and
-its original extension remain unchanged. The runtime path includes the Python
-version and original extension fingerprint, and startup checks the copy's hash
-and Python ABI. A statically linked or otherwise non-relocatable SDK is rejected;
-its hosted SDK survey and failing qualification must be resolved before use.
-ARM64 source and Intel source runs are qualified independently.
+The first Mac ARM hosted survey found SQLite 3.53.4 statically embedded in
+the Python.org 3.15.1 extension, so relocating a copied SDK binary failed.
+Mac provisioning now compiles the exact CPython 3.15.1 standard-library SQLite
+module from the checksum-pinned official source release, using the selected
+SDK headers and verified SQLite 3.54.1 header/library. It changes only the new
+module's dependency to the adjacent project library and applies an offline
+ad hoc signature. The original SDK and extension remain unchanged. First
+provision also requires HTTPS access to python.org and retains the CPython
+license beside the module. The runtime path includes the Python version and
+original extension fingerprint; startup checks source provenance, module hash
+and Python ABI. ARM64 and Intel builds require independent hosted qualification.
 
 The early bootstrap profile is required for developer tools that import
 `sqlite3` before application modules. Application imports also enforce the
