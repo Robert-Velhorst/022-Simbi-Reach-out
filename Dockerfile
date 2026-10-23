@@ -48,12 +48,12 @@ COPY --from=frontend /build/frontend/dist ./frontend/dist
 RUN python -m pip install --no-cache-dir --require-hashes -r requirements-runtime.lock
 RUN python -m pip uninstall -y pip \
     && apk --keys-dir /tmp/simbi-package-keys --no-network add /tmp/simbi-sqlite.apk \
-    && apk info -v sqlite-libs | grep -Fx 'sqlite-libs-3.54.1-r0' \
     && rm -f /tmp/simbi-sqlite.apk \
     && rm -rf /tmp/simbi-package-keys /root/.cache/pip
 RUN mkdir -p /app/data /app/backups /app/hai && chown -R simbi:simbi /app/data /app/backups /app/hai
 USER simbi
-RUN python -c "import os, sys, sqlite3; assert os.getuid() == 10001; assert sys.version_info[:3] == (3, 15, 1); assert sqlite3.sqlite_version == '3.54.1'"
+RUN --mount=type=bind,source=scripts/probe_image_runtime.py,target=/qualification.py,readonly \
+    python /qualification.py
 EXPOSE 8000
 STOPSIGNAL SIGTERM
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \

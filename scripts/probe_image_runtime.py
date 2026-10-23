@@ -13,11 +13,13 @@ assert os.getuid() == 10001
 assert sys.version_info[:3] == (3, 15, 1)
 assert runtime["version"] == "3.54.1"
 version = "3.54.1-r0"
-packages = subprocess.check_output(["apk", "info", "-v", "sqlite-libs"], text=True).splitlines()
-assert "sqlite-libs-"+version in packages
+query = ["apk", "--no-network", "query", "--from", "installed", "--installed",
+         "--format", "json", "--fields", "name,version"]
+packages = json.loads(subprocess.check_output([*query, "sqlite-libs"], text=True))
+assert packages == [{"name":"sqlite-libs", "version":version}]
 library = Path("/usr/lib/libsqlite3.so.0")
-owner = subprocess.check_output(["apk", "info", "--who-owns", str(library)], text=True)
-assert "sqlite-libs-"+version in owner
+owner = json.loads(subprocess.check_output([*query, "--match", "owner", str(library)], text=True))
+assert owner == packages
 digest = hashlib.sha256(library.read_bytes()).hexdigest()
 assert digest == runtime["binary_sha256"]
 print(json.dumps({"python":sys.version,"uid":os.getuid(),"sqlite":runtime,
