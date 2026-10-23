@@ -16,7 +16,7 @@ try {
     } finally {
         Pop-Location
     }
-    Invoke-SimbiNative $Python @('-m', 'pip', 'install', '-e', '.[dev]')
+    Initialize-SimbiRuntime -ProjectRoot $ProjectRoot
     Invoke-SimbiNative $Python @('-m', 'PyInstaller', '--noconfirm', '--clean', 'simbi-windows.spec')
     $Output = Join-Path $ProjectRoot "dist\Simbi Reach-Out\Simbi Reach-Out.exe"
     if (-not (Test-Path -LiteralPath $Output -PathType Leaf)) {

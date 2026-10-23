@@ -71,7 +71,7 @@ services:
         ipv4_address: 172.30.0.4
 
   caddy:
-    image: caddy:2.11.7-alpine
+    image: caddy:2.11.7-alpine@sha256:eb4d35b7452d1ab6171fbdbe8d9275b2301dad6dad92115d91e19fb9b24d510f
     environment:
       SIMBI_DOMAIN: ${SIMBI_DOMAIN:?Set SIMBI_DOMAIN in .env.production}
     ports:

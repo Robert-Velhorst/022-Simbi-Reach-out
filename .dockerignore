@@ -13,3 +13,5 @@ backend/tests
 *.log
 .env*
 !.env.example
+
+.simbi-runtime
