@@ -89,6 +89,13 @@ jobs:
           python-version: "3.15.1"
       - name: Docker build
         run: docker build -t simbi-reach-out:ci .
+      - name: Probe actual non-root API and system SQLite identity
+        shell: bash
+        run: |
+          mkdir -p .qualification/reports
+          docker run --rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges \
+            --volume "$PWD/scripts/probe_image_runtime.py:/qualification.py:ro" \
+            simbi-reach-out:ci python /qualification.py > .qualification/reports/api-runtime.json
       - name: Validate the pinned Hetzner edge offline
         run: python scripts/verify_caddy_image.py
       - name: Inventory and audit the exact installed image
