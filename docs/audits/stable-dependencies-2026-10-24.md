@@ -168,3 +168,15 @@ includes those entries. The builder compares both lockfiles before and after
 download and fails if either changes. This retains the exact-source boundary;
 the runtime comparison was not relaxed. All eight other jobs at `c6189c2`
 passed. The corrected head still requires its own hosted image and scan result.
+
+At `1af92c4`, API scan and native qualification pass with zero findings. The
+rebuilt edge's binary, all 160 locked modules, compile evidence and saved image
+identity verify. Its sole raw finding is GO-2026-5932; the seven affected
+OpenPGP package paths are absent from that exact hosted compile graph. A narrow
+not-affected classification proposal awaits approval. No rule or suppression
+was applied and the raw gate remains failed.
+
+Seven other jobs passed at that head. WebKit's job reached its 20-minute limit
+while still downloading native Ubuntu dependencies, before browser acceptance.
+Its complete flow remains enabled; the job now has a bounded 40-minute budget.
+The newer head needs fresh qualification, including WebKit.

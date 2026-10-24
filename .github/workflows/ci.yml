@@ -167,7 +167,9 @@ jobs:
 
   browser-compatibility:
     runs-on: ubuntu-26.04
-    timeout-minutes: 20
+    # WebKit's native dependency download exceeded 20 minutes on the runner's
+    # Ubuntu mirror. Preserve the complete browser flow with a bounded budget.
+    timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
