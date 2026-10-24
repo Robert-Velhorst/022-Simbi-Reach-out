@@ -322,11 +322,12 @@ To enable automatic local backups, configure the worker with `SIMBI_AUTO_BACKUP=
 
 ### Install dependencies
 
-Use Python 3.15.0, Node.js 26.12.0, and pnpm 12.14.0 to match CI. The Python manifest declares 3.11 or later, but every newer interpreter/packaging combination is not necessarily tested. Docker is additionally required for the full verification script.
+Use Python 3.15.1, Node.js 26.12.1, and pnpm 12.15.0 to match CI. The Python manifest selects the 3.15 stable line, with uv 0.13.5 frozen locks. Docker is additionally required for the full verification script.
 
 ```powershell
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -e ".[dev]"
+uv sync --frozen --extra dev --python 3.15.1
+.\.venv\Scripts\python.exe -I scripts/setup_sqlite_runtime.py
+$env:PYTHONPATH = "$PWD\runtime_bootstrap;$PWD\backend"
 pnpm.cmd --dir frontend install --frozen-lockfile
 ```
 
@@ -446,7 +447,7 @@ Deployment properties:
 - Volumes persist SQLite, backups, the optional private HAI feed, and Caddy state. App and worker share SQLite. The optional container HAI path is `/app/hai/simbi.json`; its volume is writable by the non-root app user and is not published over HTTP.
 - The fixed subnet is `172.30.0.0/24`; Caddy is trusted at `172.30.0.3`. If it conflicts with your network, change the subnet, addresses, and proxy trust together.
 - The worker cycles every 300 seconds. Daily backups and 30-day backup retention are enabled by default while it runs. Health requires the singleton worker lock and a successful cycle no older than the configured interval plus 60 seconds, with no later failure. App readiness also checks maintenance in supervised/production modes. Initial HAI export waits for first-owner setup; a database with multiple workspaces needs explicit export selection and is not silently merged.
-- `SIMBI_IMAGE_TAG` names the locally built image. No published image registry or managed hosting is implied.
+- `SIMBI_IMAGE_TAG` names the locally built API image. `SIMBI_EDGE_IMAGE_TAG` defaults to `2.11.7` for the locally built edge image; `Dockerfile.caddy` pins its upstream Caddy binary and Alpine 3.24.3 base by digest. No published image registry or managed hosting is implied.
 
 ```powershell
 docker compose --env-file .env.production -f compose.production.yaml ps
@@ -1030,3 +1031,7 @@ Develop on a branch from current `main`, preserve migrations and existing record
 Repository: [Robert-Velhorst/022-Simbi-Reach-out](https://github.com/Robert-Velhorst/022-Simbi-Reach-out). Project name: **022 - Simbi reach out**.
 
 No project license file is supplied. Do not assume public visibility grants an open-source license for reuse or redistribution; request an explicit license from the owner. Dependencies retain their own licenses. This project does not claim Simbi affiliation, endorsement, or messaging API authorization.
+
+## Native database setup
+
+Follow [verified SQLite runtime setup](docs/sqlite-runtime.md) before manual Python commands, tests or packaging. The supported Windows launchers and container provision the pinned SQLite 3.54.1 engine.

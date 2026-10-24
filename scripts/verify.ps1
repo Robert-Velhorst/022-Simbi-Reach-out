@@ -5,6 +5,7 @@ $Python = Join-Path $ProjectRoot ".venv\Scripts\python.exe"
 
 Push-Location $ProjectRoot
 try {
+    Initialize-SimbiRuntime -ProjectRoot $ProjectRoot
     Invoke-SimbiNative $Python @('-m', 'ruff', 'check', 'backend')
     Invoke-SimbiNative $Python @('-m', 'pytest')
     Invoke-SimbiNative $Python @('-m', 'pip_audit', '--skip-editable')
