@@ -158,3 +158,13 @@ binary only, not a waiver or proof for the later hosted container. The raw
 scanner and zero-finding gate remain unchanged. The source-built image still
 requires hosted build, offline runtime, exact archive and scan qualification;
 no passing replacement edge image or live TLS acceptance is claimed here.
+
+The first hosted source-built image (`c6189c2`) built successfully and passed
+its Go version, binary hash and intermediate evidence checks, then failed the
+exact `go.sum` comparison. `go mod download all` had added 742 checksum lines,
+without removing any original line. Local complete module download and
+verification reproduced exactly the hosted checksum set. The source lock now
+includes those entries. The builder compares both lockfiles before and after
+download and fails if either changes. This retains the exact-source boundary;
+the runtime comparison was not relaxed. All eight other jobs at `c6189c2`
+passed. The corrected head still requires its own hosted image and scan result.

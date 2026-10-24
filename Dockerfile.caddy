@@ -7,7 +7,9 @@ ENV GOTOOLCHAIN=local CGO_ENABLED=0 GOENV=off GOWORK=off \
     GOPROXY=https://proxy.golang.org GOSUMDB=sum.golang.org
 WORKDIR /src
 COPY edge/go.mod edge/go.sum ./
-RUN go mod download all && go mod verify
+RUN cp go.mod /tmp/locked.go.mod && cp go.sum /tmp/locked.go.sum \
+    && go mod download all && go mod verify \
+    && cmp go.mod /tmp/locked.go.mod && cmp go.sum /tmp/locked.go.sum
 COPY edge/main.go ./
 RUN --network=none go build -mod=readonly -trimpath \
       -ldflags '-s -w -X github.com/caddyserver/caddy/v2.CustomVersion=v2.11.7' \
