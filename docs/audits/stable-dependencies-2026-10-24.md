@@ -122,4 +122,39 @@ A separate build target runs the entire backend suite against the Alpine libc
 with networking disabled. Development tools and tests are excluded from the
 final application image. API and edge scans both execute and each scan/proof
 status must succeed; an API failure no longer prevents edge evidence collection.
-This is a prepared compatibility change, not a qualified replacement yet.
+This was initially a prepared compatibility change. The exact hosted result
+and subsequent edge source candidate are recorded below.
+
+## Verified Alpine API and current edge candidate
+
+At `8ea460112943524a3f387a4530f74b38f96c1c85`, hosted run
+40041873982 verified the API archive/configuration identity and reported zero
+findings across 33 Alpine OS packages and 20 Python distributions. The API
+configuration digest was
+`sha256:5ce42b08875519a42b3bcc33eaeeefb36a8cb049b18bb80eb3ea85a537a0edc8`.
+The network-disabled Alpine backend qualification passed 503 cases with no
+failures or skips. This supersedes the older Debian API result for that head.
+The main verification job, four added native platform jobs, Firefox/WebKit
+checks, and Windows standalone job also passed.
+
+The separate edge scan still reported 20 findings in the upstream Go binary;
+its Alpine OS result had none. The combined image gate failed. There was no
+advisory suppression or severity exclusion.
+
+The new edge candidate builds standard Caddy 2.11.7 from checksum-locked Go
+modules using the pinned Go 1.27.3 image. It uses x/net 0.61.0 and x/crypto
+0.58.0. Module download and verification are separate from the network-disabled
+compilation step. The final image retains upstream assets and module license
+notices, and includes hashed build information, module locks, compile package
+paths and build environment. The offline runtime verifier requires the exact
+Go version, matching binary hash, source lockfiles, and module checksums.
+
+Local Linux amd64 cross-compilation succeeded using Go 1.27.3: 160 modules and
+1,030 package paths were recorded. None of the seven affected OpenPGP package
+paths in the primary advisory
+[GO-2026-5932](https://vuln.go.dev/ID/GO-2026-5932.json) occur in that compile
+graph. Other x/crypto packages are included. This is evidence for that local
+binary only, not a waiver or proof for the later hosted container. The raw
+scanner and zero-finding gate remain unchanged. The source-built image still
+requires hosted build, offline runtime, exact archive and scan qualification;
+no passing replacement edge image or live TLS acceptance is claimed here.
