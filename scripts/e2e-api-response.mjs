@@ -38,15 +38,24 @@ for (const locale of ['en', 'nl']) {
   let abortedBodies = 0
   const proxyErrors = []
   const proxy = createServer((incoming, outgoing) => {
-    if (typeof incoming.url !== 'string' || !incoming.url.startsWith('/')
-        || incoming.url.startsWith('//') || /[\\\r\n#]/.test(incoming.url)) {
-      outgoing.writeHead(400); outgoing.end('Invalid owned proxy request target'); return
+    let target
+    try {
+      if (typeof incoming.url !== 'string' || !incoming.url.startsWith('/')
+          || incoming.url.startsWith('//') || /[\\\r\n#]/.test(incoming.url)) throw new Error('Invalid request target')
+      target = new URL(incoming.url, backend)
+      if (target.origin !== backend || target.username || target.password || target.hash) throw new Error('Invalid request target')
+    } catch {
+      outgoing.writeHead(400)
+      outgoing.end('Invalid owned proxy request target')
+      return
     }
-    const path = new URL(incoming.url, backend).pathname
+    const path = target.pathname
     const selected = fault && fault.method === incoming.method && path === '/api/templates' ? fault : null
     if (selected) fault = null
     if (incoming.method === 'POST' && path === '/api/templates') templateWrites++
-    const upstream = ownedResponseRequest(port, incoming, (response) => {
+    const upstream = ownedResponseRequest(port, {
+      url: target.pathname + target.search, method: incoming.method, headers: incoming.headers,
+    }, (response) => {
       if (!selected) { outgoing.writeHead(response.statusCode, response.headers); response.pipe(outgoing); return }
       if (response.statusCode < 200 || response.statusCode >= 300) {
         proxyErrors.push('Fault did not receive a real successful response')

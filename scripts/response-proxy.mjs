@@ -16,6 +16,8 @@ export function ownedResponseRequest(port, incoming, onResponse) {
     protocol: 'http:',
     hostname: '127.0.0.1',
     port: Number(value),
+    // Preserve transport isolation from a configured global HTTP agent.
+    agent: false,
     path,
     method: incoming.method,
     headers: { ...incoming.headers, host: `127.0.0.1:${Number(value)}` },
