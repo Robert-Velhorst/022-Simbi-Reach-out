@@ -20,22 +20,26 @@ OUT = WORK / 'evidence'
 IMAGE = 'golang:1.27.3-alpine3.24@sha256:b8c9b82affbbb82a020bbcf998dad2ba9516944ac7e883524642a481a9505e9c'
 UPSTREAM = '72dd0fb067f6d7826c7f79907670ba4a713bfe37'
 
-def command(args, name, *, cwd=None):
-    result = subprocess.run(args, cwd=cwd, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+def command(args, name, *, cwd=None, structured=False):
+    result = subprocess.run(args, cwd=cwd, text=True, stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE if structured else subprocess.STDOUT)
     (OUT / (name+'.log')).write_text(result.stdout, encoding='utf-8')
     print(result.stdout, flush=True)
+    if structured:
+        (OUT / (name+'.stderr.log')).write_text(result.stderr, encoding='utf-8')
+        print(result.stderr, flush=True)
     if result.returncode:
         raise subprocess.CalledProcessError(result.returncode, args)
     return result.stdout
 
-def go(args, name, *, directory='edge', workspace=False):
+def go(args, name, *, directory='edge', workspace=False, structured=False):
     return command(['docker','run','--rm','--user',f'{os.getuid()}:{os.getgid()}',
         '--volume',f'{WORK}:/work','--workdir','/work/'+directory,
         '--env','HOME=/work/home','--env','GOCACHE=/work/cache','--env','GOMODCACHE=/work/modcache',
         '--env','GOTOOLCHAIN=local','--env','GOENV=off','--env','CGO_ENABLED=0',
         '--env','GOWORK='+('/work/go.work' if workspace else 'off'),
         '--env','GOPROXY=https://proxy.golang.org','--env','GOSUMDB=sum.golang.org',
-        IMAGE,'go',*args],name)
+        IMAGE,'go',*args],name,structured=structured)
 
 def stream_json(text):
     decoder=json.JSONDecoder(); rows=[]; offset=0
@@ -44,7 +48,8 @@ def stream_json(text):
         row,offset=decoder.raw_decode(text,offset); rows.append(row)
     return rows
 
-def catalog(module):
+def catalog(item):
+    module,canonical=item
     name=module['Path']
     escaped=''.join('!'+c.lower() if c.isupper() else c for c in name)
     url='https://proxy.golang.org/'+quote(escaped,safe='/!')+'/@v/list'
@@ -53,8 +58,21 @@ def catalog(module):
     final=[v for v in versions if re.fullmatch(r'v\d+\.\d+\.\d+(?:\+incompatible)?',v)]
     key=lambda v:tuple(map(int,v.split('+')[0][1:].split('.')))
     highest=max(final,key=key) if final else None
-    return {'module':name,'installed':module.get('Version'),'highest_tagged_final':highest,
-            'source':url,'tagged_final_count':len(final)}
+    version=canonical.get('Version')
+    target=version if not canonical.get('Error') and re.fullmatch(r'v\d+\.\d+\.\d+(?:\+incompatible)?',version or '') else None
+    return {'module':name,'installed':module.get('Version'),'canonical_final_target':target,
+            'canonical_go_latest_query':canonical,'highest_numeric_tag_diagnostic_only':highest,
+            'source':url,'tagged_final_count':len(final),
+            'selection':'Go latest query, respecting retractions and module-version semantics; raw numeric maximum is not a target'}
+
+def catalogs(modules,label):
+    selected=[m for m in modules if not m.get('Main')]
+    queries=[m['Path']+'@latest' for m in selected]
+    latest=stream_json(go(['list','-e','-m','-json',*queries],label+'-canonical-latest',structured=True))
+    by_name={m['Path']:m for m in latest}
+    assert set(by_name)=={m['Path'] for m in selected}, 'Incomplete canonical module query scope'
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        return list(pool.map(catalog,[(m,by_name[m['Path']]) for m in selected]))
 
 def source_ledger():
     paths=subprocess.check_output(['git','-C',str(WORK/'caddy'),'ls-files','-z']).decode().split('\0')
@@ -76,15 +94,14 @@ if phase=='refresh':
     (OUT/'input-go.sum').write_bytes((WORK/'edge/go.sum').read_bytes())
     go(['mod','download','all'],'initial-normal-download')
     modules=stream_json(go(['list','-m','-json','all'],'original-module-graph'))
-    with ThreadPoolExecutor(max_workers=6) as pool:
-        targets=list(pool.map(catalog,[m for m in modules if not m.get('Main')]))
+    targets=catalogs(modules,'original-graph')
     (OUT/'stable-target-catalog.json').write_text(json.dumps(targets,indent=2)+'\n')
     for row in targets:
-        if row['highest_tagged_final'] and re.fullmatch(r'v\d+\.\d+\.\d+(?:\+incompatible)?',row['installed'] or ''):
+        if row['canonical_final_target'] and re.fullmatch(r'v\d+\.\d+\.\d+(?:\+incompatible)?',row['installed'] or ''):
             key=lambda v:tuple(map(int,v.split('+')[0][1:].split('.')))
-            assert key(row['highest_tagged_final'])>=key(row['installed']), 'Refusing a module downgrade'
-    updates=[r['module']+'@'+r['highest_tagged_final'] for r in targets
-        if r['highest_tagged_final'] and r['installed']!=r['highest_tagged_final']
+            assert key(row['canonical_final_target'])>=key(row['installed']), 'Refusing a module downgrade'
+    updates=[r['module']+'@'+r['canonical_final_target'] for r in targets
+        if r['canonical_final_target'] and r['installed']!=r['canonical_final_target']
         and re.fullmatch(r'v\d+\.\d+\.\d+(?:\+incompatible)?',r['installed'] or '')]
     # Ordinary module requests in our own wrapper; no replace/exclude/forced graph.
     if updates: go(['get',*updates],'normal-stable-refresh')
@@ -95,7 +112,7 @@ if phase=='refresh':
     assert not re.search(r'^\s*(replace|exclude)\b',(WORK/'edge/go.mod').read_text(),re.M)
     (OUT/'refresh-summary.json').write_text(json.dumps({'upstream_commit':UPSTREAM,
         'go_sdk_image':IMAGE,'normal_requests':updates,'whole_input_graph_modules':len(modules),
-        'unqualified_untagged_or_pseudo_modules':[r for r in targets if not r['highest_tagged_final']
+        'unqualified_untagged_or_pseudo_modules':[r for r in targets if not r['canonical_final_target']
              or not re.fullmatch(r'v\d+\.\d+\.\d+(?:\+incompatible)?',r['installed'] or '')],
         'application_or_operator_data_changed':False},indent=2)+'\n')
 elif phase=='build':
@@ -120,9 +137,8 @@ elif phase=='original':
     if result: raise result
 elif phase=='graph':
     modules=stream_json(go(['list','-m','-json','all'],'candidate-module-graph'))
-    with ThreadPoolExecutor(max_workers=6) as pool:
-        rows=list(pool.map(catalog,[m for m in modules if not m.get('Main')]))
-    gaps=[r for r in rows if r['installed']!=r['highest_tagged_final']]
+    rows=catalogs(modules,'candidate-graph')
+    gaps=[r for r in rows if r['installed']!=r['canonical_final_target']]
     (OUT/'complete-stable-graph-review.json').write_text(json.dumps({
         'captured_at':datetime.now(timezone.utc).isoformat(),'modules':rows,
         'noncurrent_or_unknown':gaps,'all_modules_current':not gaps,

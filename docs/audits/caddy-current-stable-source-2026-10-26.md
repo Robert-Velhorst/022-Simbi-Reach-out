@@ -44,3 +44,21 @@ suite is executed locally.
 No live deployment, TLS issuance, DNS, server, provider, real database, billing
 or operator-data change is part of this source qualification. All four portfolio
 requirements remain incomplete until their respective evidence qualifies.
+
+## Canonical Go release selection correction
+
+The first graph candidate used the maximum numeric final tag from the proxy
+version list. That is insufficient for Go: it can select obsolete incompatible
+tags (Prometheus v2.5.0+incompatible and Blackfriday v2.0.0+incompatible) and
+does not implement the Go client's retraction policy. Those148 raw differences
+are retained diagnostic evidence, not148 proven outdated runtime imports.
+
+The verifier now delegates each path's latest query to the actual Go1.27.3
+client with normal checksum/retraction/module semantics. Raw numeric maxima
+remain diagnostic fields only. Query errors, pseudo-versions and missing final
+targets remain unqualified; no downgrade, forced replacement or prerelease is
+selected. JSON stdout and diagnostic stderr are retained separately so a warning
+cannot corrupt the metadata stream or disappear from evidence. The corrected
+targets need fresh hosted resolution/compilation/original-case/graph evidence.
+This correction changes no application or original-case source and clears no
+advisory. [Go's version query rules](https://go.dev/ref/mod#version-queries).
