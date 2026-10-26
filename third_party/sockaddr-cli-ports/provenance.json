@@ -140,7 +140,8 @@
         "cmd/sockaddr/commands.go": "3078efb863f5cc44e6114e5defe66d85bc07e5210754113e4f065680758e4f5d",
         "cmd/sockaddr/main.go": "4017a35100c661477249fde883da0a6ced7320c1f0389f0d10fdc1a3fad68a85",
         "go.mod": "6d9069cc129280ee6bda5cd9ab58fb0583766f2afcf917bb73bec8dcaa4c6d53",
-        "LICENSE": "9b97ec15fc0ca7cfa85d944361c7e0c989592462edaacc5a1d4fc8f6210cf361"
+        "LICENSE": "9b97ec15fc0ca7cfa85d944361c7e0c989592462edaacc5a1d4fc8f6210cf361",
+        "ipaddrs.go": "6b68e360ef052ce1f61a020888c89bc3c31f05709a38d6545f223773fbbfc8de"
       },
       "actual_source_changes": [
         "cmd/sockaddr/command/dump.go",
@@ -151,7 +152,8 @@
         "cmd/sockaddr/command/version.go",
         "cmd/sockaddr/commands.go",
         "cmd/sockaddr/main.go",
-        "go.mod"
+        "go.mod",
+        "ipaddrs.go"
       ],
       "original_go_case_files": 13,
       "declaration_catalog": {
