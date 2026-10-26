@@ -1,0 +1,691 @@
+{
+  "modules": [
+    {
+      "label": "sockaddr",
+      "module": "github.com/hashicorp/go-sockaddr",
+      "version": "v1.0.7",
+      "upstream_git_url": "https://github.com/hashicorp/go-sockaddr",
+      "upstream_git_commit": "b74dd36f318ed2ac4e01c93f02ef99739f454ed6",
+      "published_original_sha256": {
+        ".gitignore": "2c18556880bbfa659e81587c783304aee564c66d8f7e04abe17ab5d4a345be21",
+        "GNUmakefile": "13baa42c7384338a4324514fa2374365cb02014852ea8dda374b6ad8833a1fb0",
+        "LICENSE": "9b97ec15fc0ca7cfa85d944361c7e0c989592462edaacc5a1d4fc8f6210cf361",
+        "README.md": "7be8c48b0c9e2bcd7eba32b0cb3ca566471bb1da1fd254c1e07c7bb47e00a208",
+        "cmd/sockaddr/.gitignore": "908188d5e62391bfa16ba70726139f9e0e0209df0150c97bb39a8417904aa754",
+        "cmd/sockaddr/GNUmakefile": "ea937a06c1deb40b78292eeab247a442f82ac8d0a2b7bd4a99be0a776dd464d2",
+        "cmd/sockaddr/README.md": "7d90649039391663f106394990803c336fa8e003fef2a5d45e7b15ba11f39d0e",
+        "cmd/sockaddr/command/autohelp.go": "f42e2daae0ca84cb87ab5de186be2b6f4bcc5cdaacca73c1faa9b8a374056f82",
+        "cmd/sockaddr/command/dump.go": "f81aaaf096bf9b95fb6254fbc22a5aeccc19f9db5565fe5c198ad5f72996dc75",
+        "cmd/sockaddr/command/eval.go": "ac7da7f5cabd42d55a33142cd8be5226287572f185951d1c57dd0d4672744ae2",
+        "cmd/sockaddr/command/multi_arg.go": "e2a5af67e8c8d4f5cb74d1f564829616da8e84f6e4edfccf80fd3a3153c17b6a",
+        "cmd/sockaddr/command/rfc.go": "5204521cc5a9764ff147f6c8085f3788dadf5423d85edb138309ca4d583e67bb",
+        "cmd/sockaddr/command/rfc_list.go": "2c9ddc5d087a2eee15e3297cb2a874dcff747dbeaea487d9a691ae12f9a29bf3",
+        "cmd/sockaddr/command/tech_support.go": "7d413376823096a35faf585972456fdd06b67d72ace56f0d8780f007ee40666a",
+        "cmd/sockaddr/command/version.go": "163ab6c3a7de789fd66e944d614264a85a9f9884b1e3a826a59bcb872682d154",
+        "cmd/sockaddr/commands.go": "a425f3bd511b155940952da122009e8e4006620a5822d62105d1c098e21d7837",
+        "cmd/sockaddr/main.go": "21f531e992ca325b24a95987fbd57781e1ba98605e63025166a7644f0e253558",
+        "cmd/sockaddr/regression/.gitignore": "e11bdd9ed876d6295e1167d8715c5e9af6d08184268e048a31dc0170edd7617e",
+        "cmd/sockaddr/regression/GNUmakefile": "9391f12f0cb9f2c4e820bb9577c630fd49438f654c8f69c5a2e74fc26cb8611a",
+        "cmd/sockaddr/regression/expected/sockaddr.out": "7cf495c1534228126e229acc72ccf1688e1c72d2c3f2cb9e7b5bd081b66cc666",
+        "cmd/sockaddr/regression/expected/sockaddr_-v.out": "7775ba7b6ae33deaa38bd37f78567c5dd4f7ac9e9764e1be8708a88713643fce",
+        "cmd/sockaddr/regression/expected/sockaddr_dump-00-help.out": "de9953cac7f1f1d016f152b0ab4132e5739bdabad8ab42870093685281d96d8c",
+        "cmd/sockaddr/regression/expected/sockaddr_dump-01.out": "e389bdb4ce75920faf706853484c061292f6ec6789bbf70e308e17eb77b129d0",
+        "cmd/sockaddr/regression/expected/sockaddr_dump-02.out": "3dd47d30e992a596c95016395c740545ca807280428a3bd692c5af617cf9fbf8",
+        "cmd/sockaddr/regression/expected/sockaddr_dump-03.out": "de256268001e0abfed9a554ce2f9b9cf9d82361f6305139fbc6d4be21202eff6",
+        "cmd/sockaddr/regression/expected/sockaddr_dump-04.out": "a6dc1b963aca42ab2446ce223867f541859a09f180ecb7aff1de2309c224fc28",
+        "cmd/sockaddr/regression/expected/sockaddr_dump-05.out": "f2409f3ad2def7c924e3aa62a9f039501df7a6cd59c2785fa9d05bd33325d64c",
+        "cmd/sockaddr/regression/expected/sockaddr_dump-06.out": "366f2ccc2361208596d7f09dbb31ee1b4ddae13f0a2483f6a3fb7f85a35e797b",
+        "cmd/sockaddr/regression/expected/sockaddr_dump-07.out": "ea89620e082da0271e1bd830cfae2fda3514a14f4300b0a6f54bcc8b9474e0da",
+        "cmd/sockaddr/regression/expected/sockaddr_dump-08.out": "a31c676451fc689d42673c60d5969424158fb36eee1d6dc19751880b56489d98",
+        "cmd/sockaddr/regression/expected/sockaddr_dump-09.out": "1ed6e800397948966dc0eaeac855c8d98bb276b45277ce4afe42628d01517818",
+        "cmd/sockaddr/regression/expected/sockaddr_dump-10.out": "2bd75e64a53fab45fb44a3c0139bff28919e9aeeb6637324688b9954b42f726c",
+        "cmd/sockaddr/regression/expected/sockaddr_dump-11.out": "9b0d819bc20d8743fd76a673a059eaf79da7fe02aa791d0ef081be48bef4c72a",
+        "cmd/sockaddr/regression/expected/sockaddr_dump-12.out": "3884432d93b8a0e8b0c617fbbc47b6b8765fe4e107bed7d52d477393c206ea1c",
+        "cmd/sockaddr/regression/expected/sockaddr_dump-13.out": "6a64866c8bf8e8d91ed6d35666081d1e1dabde9060a509fd88828acc6f8655b6",
+        "cmd/sockaddr/regression/expected/sockaddr_dump-14.out": "d7e82afc6241bea90680a883ba767297a9dd4136e5c2e7660118576b8e3d6981",
+        "cmd/sockaddr/regression/expected/sockaddr_eval-00-help.out": "997c8a595b8f7fbe80af01a1058e190a144ee91c7e7badaeab03637dd6b02e94",
+        "cmd/sockaddr/regression/expected/sockaddr_eval-01.out": "bbbd247f95b6a331759d7ef1b93b0e520037d32d37bd5655a2db9a2733c5bb07",
+        "cmd/sockaddr/regression/expected/sockaddr_eval-02.out": "ad9dde261d22ea822c456e03f75b8bc7bfb94c81062a71f213fc64a36c4e8b9e",
+        "cmd/sockaddr/regression/expected/sockaddr_eval-03.out": "612ff77247cb66cb264f6f0fb1c6a42a0f9666597f8744b83c4c945e3e6313e9",
+        "cmd/sockaddr/regression/expected/sockaddr_eval-04.out": "9f7bf92eb38c476c689926f88b9d2d5d4aaddc56f93d8831ee424b9f994eaf6b",
+        "cmd/sockaddr/regression/expected/sockaddr_eval-05.out": "01a2ba8350bf28542daa9e52f3e09dc855935a077b818c69c99684f0f38a785d",
+        "cmd/sockaddr/regression/expected/sockaddr_rfc-00.out": "6fc981020b7f64ea604c5f8f063e4ae00192c69d37cf12dc43b089805ad369f6",
+        "cmd/sockaddr/regression/expected/sockaddr_rfc-01.out": "6fc981020b7f64ea604c5f8f063e4ae00192c69d37cf12dc43b089805ad369f6",
+        "cmd/sockaddr/regression/expected/sockaddr_rfc_list-00.out": "672347412a3890cdb1f0f2b8f67ebdf54fb370d034568072bbc506d140f01622",
+        "cmd/sockaddr/regression/expected/sockaddr_rfc_list-01.out": "b4d6047fed7e3eb2328e3e09cf4070d87714673ce21a47c21b1925b5b9eb925e",
+        "cmd/sockaddr/regression/expected/sockaddr_rfc_list-02.out": "672347412a3890cdb1f0f2b8f67ebdf54fb370d034568072bbc506d140f01622",
+        "cmd/sockaddr/regression/expected/sockaddr_version-00.out": "7775ba7b6ae33deaa38bd37f78567c5dd4f7ac9e9764e1be8708a88713643fce",
+        "cmd/sockaddr/regression/expected/sockaddr_version-01.out": "7775ba7b6ae33deaa38bd37f78567c5dd4f7ac9e9764e1be8708a88713643fce",
+        "cmd/sockaddr/regression/run_all.sh": "f04eeccba495aca6160ed9ee005f0947d8def6298013ade9fb2398afdf13861c",
+        "cmd/sockaddr/regression/run_one.sh": "0671a4f3184ab968011d953ab4956e55abb6625bc02989009a839fb132730e25",
+        "cmd/sockaddr/regression/test_sockaddr.sh": "10ed2b3c90bb440943ad54408d89940f9bb122700962a08654fd3b1bd4168d4f",
+        "cmd/sockaddr/regression/test_sockaddr_dump-00-help.sh": "fd487ca240d10d0e7465c0814722b55da6d3d3b6f5d0c1c57e9835017c8ab56f",
+        "cmd/sockaddr/regression/test_sockaddr_dump-01.sh": "e71b00f6624f92a7aaedea6b52fe97f936808bf6beff4dfdbdaa1ff2ca502eba",
+        "cmd/sockaddr/regression/test_sockaddr_dump-02.sh": "694f67d0d2ad88c0d3d9564e193a152f4d2498de6b651c5f5b975610c28be7df",
+        "cmd/sockaddr/regression/test_sockaddr_dump-03.sh": "1e4b43111e8436d71d46bdbbb8f2d1f8be5c0af66ccdb474239f046ce1c64582",
+        "cmd/sockaddr/regression/test_sockaddr_dump-04.sh": "f9a83c2ed46a6e0f95d81d75c1b7f19c56a8125e9dea2dc2cd6be80a2313f365",
+        "cmd/sockaddr/regression/test_sockaddr_dump-05.sh": "2bb1bbf150f05353888011dcbccd23c7fd2cef06a0213777eaa867da98052821",
+        "cmd/sockaddr/regression/test_sockaddr_dump-06.sh": "1f442e30e1c780d485140f22be953a4640577f9e452d641c93602fb15e41e9a3",
+        "cmd/sockaddr/regression/test_sockaddr_dump-07.sh": "9cc84d88c8000bb5e5ecad02d3f8182468c23b57821a1dc4aa4c830768a9af8f",
+        "cmd/sockaddr/regression/test_sockaddr_dump-08.sh": "2bb455e279a1cce7273da0f81bd24bc4464c023b0554582c3cb5eccefb7f7cc6",
+        "cmd/sockaddr/regression/test_sockaddr_dump-09.sh": "3f780a8c4e0c390070319316ef64cd4b38fb76ed192988db24246f87c7c25b9e",
+        "cmd/sockaddr/regression/test_sockaddr_dump-10.sh": "2688209ce11e08292184e648ef6b4503c77a0a77ebd5b84f0e49b24f5c212fdf",
+        "cmd/sockaddr/regression/test_sockaddr_dump-11.sh": "448f22f8f010e063fbbe558c6caa48160d7f174a74e3499c118a859038bb1be8",
+        "cmd/sockaddr/regression/test_sockaddr_dump-12.sh": "c8afcde70fdeba5a96f8b7a19deb1dda880e86796de0fff3726df52220bf46fa",
+        "cmd/sockaddr/regression/test_sockaddr_dump-13.sh": "d9f302d9f4685789fb5ce5c370c6fcde78faa5780f0a3a2b3a43dea8eb35a723",
+        "cmd/sockaddr/regression/test_sockaddr_dump-14.sh": "09d0760254ffb4f2ada8c78b99c7751313441169387e3e79f398731072cbf70b",
+        "cmd/sockaddr/regression/test_sockaddr_eval-00-help.sh": "d0a455add67e0ec1bd19569fd9c63b5ede8cb15b03d670a3ee766900549bc258",
+        "cmd/sockaddr/regression/test_sockaddr_eval-01.sh": "b5b7736e202e99c65bdf00a6105c48b9dc9fe2f01b779a082c64dc4316d0fef0",
+        "cmd/sockaddr/regression/test_sockaddr_eval-02.sh": "8b5d178ec217a0d31ed5a5399f89a31743647678caa1b81396e24a382ba8d4c1",
+        "cmd/sockaddr/regression/test_sockaddr_eval-03.sh": "21b821969bb70170f24430fd6af6aac684c26482b3f93e339f441d5175fe0826",
+        "cmd/sockaddr/regression/test_sockaddr_eval-04.sh": "ca672f26a50e5b62a5efc1c9c60103c10b129f6001989b02edbfbd6f86a44638",
+        "cmd/sockaddr/regression/test_sockaddr_eval-05.sh": "10529b6e89942358936307bdb4675d80973e3fb7216e814f9ad0fac0a43b2cc9",
+        "cmd/sockaddr/regression/test_sockaddr_rfc-00.sh": "e42314b14aa5b4089048fc4793dcde3c2660cc9fbc9e28984d549230537878d1",
+        "cmd/sockaddr/regression/test_sockaddr_rfc-01.sh": "5d42969acecc5bc94fe8da72150168be561d22e571abbc12ab95f45cbede4ac2",
+        "cmd/sockaddr/regression/test_sockaddr_rfc_list-00.sh": "489514da824c569d7673295f97887e6a7f64dfc2c19135c2ebf398c9c53ff8fd",
+        "cmd/sockaddr/regression/test_sockaddr_rfc_list-01.sh": "4464b97707d2020b117b6357ef785dc315f4771d5d4c994b3ce375d597028b93",
+        "cmd/sockaddr/regression/test_sockaddr_rfc_list-02.sh": "2f0f7a864ec96d1dbf0b427aced1270ed025ef090e381b0d4294f43c05ec82d0",
+        "cmd/sockaddr/regression/test_sockaddr_version-00.sh": "630552353b30355fc71bd3dfa3e1085cdea31ec82a8cada5445c5ccb80853e9f",
+        "cmd/sockaddr/regression/test_sockaddr_version-01.sh": "630552353b30355fc71bd3dfa3e1085cdea31ec82a8cada5445c5ccb80853e9f",
+        "cmd/sockaddr/version.go": "52fcda6adb5268dd2f0ecba8cee9acac2be13044cd9291d055f9bf835e79ad43",
+        "doc.go": "ef22cc0cb1ad857a3e1c756aa9e1341935570bfe9dbb9b8ae1e5a4801dca3020",
+        "go.mod": "4211f73ac7f74479a5250c373e08ec93a5bdbf5b7565ef78379fdb997f9a3e83",
+        "go.sum": "8d24cd82c41360aafa52c38aae9c18745dbfe78005b90c77b7ad68c17b11c59e",
+        "ifaddr.go": "a157f32dfadf8dfcadbd4cec1e41fafcf70a6c1a59d60e9c9083f92fb5c736f9",
+        "ifaddr_test.go": "b4de8d6e3a983612d8a491a1e53d6e875103433b5d7bd4bf1ff5ffd394b3c273",
+        "ifaddrs.go": "69d92dce7cb9059ed8cba28b8ed596111b44105b7447125f8f1acf944b3e4ca2",
+        "ifaddrs_test.go": "849186364904a47be6fb8101e34f5f17a2a385b0024a5254ca316940c5a48cc5",
+        "ifattr.go": "926fa616231e2c04092a313a74d3782ac72ebc3127d2c1ae9c96eb63f336c6e2",
+        "ifattr_test.go": "2b1899beac9ee3498eb9f757ad17012c8b08ea53c3461cc1230d7de22b6bf8f4",
+        "ipaddr.go": "d2b0b540770e976c713ce28616e0781eca845907b8154a645ad6b04a1912570b",
+        "ipaddr_test.go": "5e43ea67e05680912a4554d8b10a6a7d7957407e08a8675cce94db427a09e910",
+        "ipaddrs.go": "fbdc1ae490501f93bcabe7f8b72f025d19147ae1a39567d363dc9f40e6aee662",
+        "ipaddrs_test.go": "60b1c7dbb515e2c5b1cf065c0b913a6ed03d4d29d22e356fa89fcd4bc0b06f9b",
+        "ipv4addr.go": "9655d8a01b9bc8e7a46f38335a144e2f3e57d2757d72fcb2cc00514ac2d65a48",
+        "ipv4addr_test.go": "70912aba47ac2a1050f7c123bf9f15480d3577efc21007a66361e45b9b3fa8ed",
+        "ipv6addr.go": "ff59a903ea308a82b9c6fe62a0a47ffa952d130e3268641b9a22dcf25f231fae",
+        "ipv6addr_test.go": "849c200d61c8964aa1bad4d0ce33625d65f7a7f609d71720edd8e87b8eb6dd76",
+        "rfc.go": "df66755d30a19355ca918fce9658a9e7115e728ea788fc023e44e4ac12c14da4",
+        "rfc_test.go": "14b14230d8352d2a4647c1805eb173e242f2f0eb42bdd8aec7fe1c4f0cb6e049",
+        "route_info.go": "2b30075356b65198aac888c58cc2cedcace1698999d8679d0de33bb64c7eb995",
+        "route_info_aix.go": "e2226ec8d9c4158a7a625455fdaecf76fe9503f16dd849bb3dae2f99db8253ba",
+        "route_info_android.go": "e93b9bfc2c55a85aa1e7eb50d2fbcf7e81ec07fe1b6d253a1486bbc61ddb68fd",
+        "route_info_bsd.go": "729003d9a6d1bf3ee2b59bc181f5d5737db07688cb53e8ba854a62bb64af8903",
+        "route_info_default.go": "ac9172bebcdc7827ef7e87ebe1e4a6ff1202863ea06a79cb04f0d98875eff061",
+        "route_info_linux.go": "84afc4064c753bebbbbd406a7011e7af4353bbd4184e42bacbd2719c45c6ecae",
+        "route_info_solaris.go": "5b9cee4e816fbefdf9675cd65f14e42d6691162ac04e0014d03e18e3df76e562",
+        "route_info_test.go": "ceae86218134efa0142f77ef22e30e73209b4a7aba17b4f2391dd65cccce1b6a",
+        "route_info_test_windows.go": "1470f7f8f4550bb89a340d58a3dd32516f5fbb4df8b8dc8bbedd3fada8023b55",
+        "route_info_windows.go": "ae828a31e261a46e558c4dd6586ea12841817f051d2c4c993e6d103bc5e0e87f",
+        "sockaddr.go": "ff0432d11513a8353df29e237bb18c7889a12bf8920163837740caf09a083768",
+        "sockaddr_test.go": "980b9f2cc8d44523c918b44d18defb0c2c26b48751bb84617ca0822b5d1aa8b3",
+        "sockaddrs.go": "3675fd8c019540245c844dac08bd37a2ad83bc13c54602f6be8c1dfbfa517a9f",
+        "sockaddrs_test.go": "66d1fd825bfba20f90866cbc8f5ccfb9d7a85c04bdd88355274d264e72fd8f17",
+        "template/GNUmakefile": "dc62366a7bea5c5915ba599abbd56bfa1fe200f5892d6b10a4d8d8c99e695707",
+        "template/README.md": "537649fe0f9a69122a51f4fed094ea84eab40608ce470a24de688635e7573f60",
+        "template/doc.go": "6cda8034a4237d35e065eae81d912c9de46ef0ca8ed5fce3d0cbc00f9d072284",
+        "template/template.go": "54d2936b4d32212a0f0a2ee4e4778d4edc00bc832eef05a1e0c759be1863fc15",
+        "template/template_test.go": "f59d5e0429611813b3c2e3e3089add9b8745d662dcaf2f0e3fecf0a33e9058a6",
+        "unixsock.go": "50dc4fc39fa2566a3b3c6908c30ab1b6cab1eb5d3359072105d0367bbd82c151",
+        "unixsock_test.go": "5d0f1747f8d28b3f623156ac975d56ffea0ebb5912930365a46f545977721a76"
+      },
+      "published_h1": "h1:G+pTkSO01HpR5qCxg7lxfsFEZaG+C0VssTy/9dbT+Fw=",
+      "overlay_sha256": {
+        "cmd/sockaddr/command/dump.go": "6b044cd57eed103ca810d071fc0325fde901e9a6c2a1cec8e615b44a561e2489",
+        "cmd/sockaddr/command/eval.go": "3dc31a0a1441eae929e3b973c8ac37e49a67214e1cf01d8fc7bdd509aa0ca5c8",
+        "cmd/sockaddr/command/rfc.go": "5e802ee9f940a4b39473ee99a70246037cd99b3376095cf870d3c664ca6cfbb7",
+        "cmd/sockaddr/command/rfc_list.go": "0d49585284480c06a6f549e29d3e192ddf18cc47e393636508768630eb8c4a68",
+        "cmd/sockaddr/command/tech_support.go": "aeb902529aa2e305d1699fa4a0a7a086a7c26f0fcf65e7667a8a4d4d9ed1bd42",
+        "cmd/sockaddr/command/version.go": "1b1a3d569e43ed99c55e439e72ff89e4422c57646d0fb68c79b18ebf4f718e67",
+        "cmd/sockaddr/commands.go": "3078efb863f5cc44e6114e5defe66d85bc07e5210754113e4f065680758e4f5d",
+        "cmd/sockaddr/main.go": "4017a35100c661477249fde883da0a6ced7320c1f0389f0d10fdc1a3fad68a85",
+        "go.mod": "6d9069cc129280ee6bda5cd9ab58fb0583766f2afcf917bb73bec8dcaa4c6d53",
+        "LICENSE": "9b97ec15fc0ca7cfa85d944361c7e0c989592462edaacc5a1d4fc8f6210cf361"
+      },
+      "actual_source_changes": [
+        "cmd/sockaddr/command/dump.go",
+        "cmd/sockaddr/command/eval.go",
+        "cmd/sockaddr/command/rfc.go",
+        "cmd/sockaddr/command/rfc_list.go",
+        "cmd/sockaddr/command/tech_support.go",
+        "cmd/sockaddr/command/version.go",
+        "cmd/sockaddr/commands.go",
+        "cmd/sockaddr/main.go",
+        "go.mod"
+      ],
+      "original_go_case_files": 13,
+      "declaration_catalog": {
+        "dario.cat/mergo": {
+          "source": "https://proxy.golang.org/dario.cat/mergo/@latest",
+          "metadata": {
+            "Version": "v1.0.2",
+            "Time": "2025-05-07T20:15:06Z",
+            "Origin": {
+              "VCS": "git",
+              "URL": "https://github.com/imdario/mergo",
+              "Hash": "7b33b2b01026fbbbbfcfbb1ee2c9c0a5e0c9a9f7",
+              "Ref": "refs/tags/v1.0.2"
+            }
+          }
+        },
+        "github.com/Masterminds/goutils": {
+          "source": "https://proxy.golang.org/github.com/!masterminds/goutils/@latest",
+          "metadata": {
+            "Version": "v1.1.1",
+            "Time": "2021-02-04T20:06:53Z"
+          }
+        },
+        "github.com/Masterminds/semver/v3": {
+          "source": "https://proxy.golang.org/github.com/!masterminds/semver/v3/@latest",
+          "metadata": {
+            "Version": "v3.5.0",
+            "Time": "2026-04-30T15:39:17Z",
+            "Origin": {
+              "VCS": "git",
+              "URL": "https://github.com/Masterminds/semver",
+              "Hash": "8b89c86cb53c57cfd5d07c13de12bc4d78954e99",
+              "Ref": "refs/tags/v3.5.0"
+            }
+          }
+        },
+        "github.com/Masterminds/sprig/v3": {
+          "source": "https://proxy.golang.org/github.com/!masterminds/sprig/v3/@latest",
+          "metadata": {
+            "Version": "v3.3.0",
+            "Time": "2024-08-29T20:12:44Z",
+            "Origin": {
+              "VCS": "git",
+              "URL": "https://github.com/Masterminds/sprig",
+              "Hash": "e708470d529a10ac1a3f02ab6fdd339b65958372",
+              "Ref": "refs/tags/v3.3.0"
+            }
+          }
+        },
+        "github.com/armon/go-radix": {
+          "source": "https://proxy.golang.org/github.com/armon/go-radix/@latest",
+          "metadata": {
+            "Version": "v1.0.0",
+            "Time": "2018-08-24T02:57:28Z"
+          }
+        },
+        "github.com/bgentry/speakeasy": {
+          "source": "https://proxy.golang.org/github.com/bgentry/speakeasy/@latest",
+          "metadata": {
+            "Version": "v0.2.0",
+            "Time": "2022-09-10T01:20:23Z",
+            "Origin": {
+              "VCS": "git",
+              "URL": "https://github.com/bgentry/speakeasy",
+              "Hash": "760eaf8b681647364e7a400b856e0921248728a5",
+              "Ref": "refs/tags/v0.2.0"
+            }
+          }
+        },
+        "github.com/fatih/color": {
+          "source": "https://proxy.golang.org/github.com/fatih/color/@latest",
+          "metadata": {
+            "Version": "v1.19.0",
+            "Time": "2026-03-20T08:53:23Z",
+            "Origin": {
+              "VCS": "git",
+              "URL": "https://github.com/fatih/color",
+              "Hash": "ca25f6e17f118a5a259f3c2c0d395949d1103a5a",
+              "Ref": "refs/tags/v1.19.0"
+            }
+          }
+        },
+        "github.com/google/uuid": {
+          "source": "https://proxy.golang.org/github.com/google/uuid/@latest",
+          "metadata": {
+            "Version": "v1.6.0",
+            "Time": "2024-01-23T18:54:04Z",
+            "Origin": {
+              "VCS": "git",
+              "URL": "https://github.com/google/uuid",
+              "Ref": "refs/tags/v1.6.0",
+              "Hash": "0f11ee6918f41a04c201eceeadf612a377bc7fbc"
+            }
+          }
+        },
+        "github.com/hashicorp/cli": {
+          "source": "https://proxy.golang.org/github.com/hashicorp/cli/@latest",
+          "metadata": {
+            "Version": "v1.1.7",
+            "Time": "2025-01-29T09:41:21Z",
+            "Origin": {
+              "VCS": "git",
+              "URL": "https://github.com/hashicorp/cli",
+              "Hash": "89d8cb579d5743d787fe3500594c9cf56abaefb5",
+              "Ref": "refs/tags/v1.1.7"
+            }
+          }
+        },
+        "github.com/hashicorp/errwrap": {
+          "source": "https://proxy.golang.org/github.com/hashicorp/errwrap/@latest",
+          "metadata": {
+            "Version": "v1.1.0",
+            "Time": "2020-07-14T15:51:01Z"
+          }
+        },
+        "github.com/hashicorp/go-multierror": {
+          "source": "https://proxy.golang.org/github.com/hashicorp/go-multierror/@latest",
+          "metadata": {
+            "Version": "v1.1.1",
+            "Time": "2021-03-11T20:17:12Z"
+          }
+        },
+        "github.com/huandu/xstrings": {
+          "source": "https://proxy.golang.org/github.com/huandu/xstrings/@latest",
+          "metadata": {
+            "Version": "v1.6.3",
+            "Time": "2026-10-20T05:24:45Z",
+            "Origin": {
+              "VCS": "git",
+              "URL": "https://github.com/huandu/xstrings",
+              "Hash": "28aabebffe3cd509e1c66eadba569ec8a187d5d3",
+              "Ref": "refs/tags/v1.6.3"
+            }
+          }
+        },
+        "github.com/mattn/go-colorable": {
+          "source": "https://proxy.golang.org/github.com/mattn/go-colorable/@latest",
+          "metadata": {
+            "Version": "v0.1.16",
+            "Time": "2026-10-06T09:17:33Z",
+            "Origin": {
+              "VCS": "git",
+              "URL": "https://github.com/mattn/go-colorable",
+              "Hash": "56c5db567780daeef4a4ffbb2c14d7d4b6b94b9b",
+              "Ref": "refs/tags/v0.1.16"
+            }
+          }
+        },
+        "github.com/mattn/go-isatty": {
+          "source": "https://proxy.golang.org/github.com/mattn/go-isatty/@latest",
+          "metadata": {
+            "Version": "v0.0.24",
+            "Time": "2026-07-23T16:45:22Z",
+            "Origin": {
+              "VCS": "git",
+              "URL": "https://github.com/mattn/go-isatty",
+              "Hash": "c44dc0b9c702c76577fdb7898032969e0611efc2",
+              "Ref": "refs/tags/v0.0.24"
+            }
+          }
+        },
+        "github.com/mitchellh/copystructure": {
+          "source": "https://proxy.golang.org/github.com/mitchellh/copystructure/@latest",
+          "metadata": {
+            "Version": "v1.2.0",
+            "Time": "2021-05-05T17:08:07Z"
+          }
+        },
+        "github.com/mitchellh/go-wordwrap": {
+          "source": "https://proxy.golang.org/github.com/mitchellh/go-wordwrap/@latest",
+          "metadata": {
+            "Version": "v1.0.1",
+            "Time": "2020-09-25T18:08:01Z"
+          }
+        },
+        "github.com/mitchellh/reflectwalk": {
+          "source": "https://proxy.golang.org/github.com/mitchellh/reflectwalk/@latest",
+          "metadata": {
+            "Version": "v1.0.2",
+            "Time": "2021-05-03T23:34:11Z"
+          }
+        },
+        "github.com/posener/complete": {
+          "source": "https://proxy.golang.org/github.com/posener/complete/@latest",
+          "metadata": {
+            "Version": "v1.2.3",
+            "Time": "2019-10-23T21:02:28Z"
+          }
+        },
+        "github.com/ryanuber/columnize": {
+          "source": "https://proxy.golang.org/github.com/ryanuber/columnize/@latest",
+          "metadata": {
+            "Version": "v2.1.2+incompatible",
+            "Time": "2020-08-19T15:58:40Z"
+          }
+        },
+        "github.com/shopspring/decimal": {
+          "source": "https://proxy.golang.org/github.com/shopspring/decimal/@latest",
+          "metadata": {
+            "Version": "v1.6.0",
+            "Time": "2026-10-18T15:33:05Z",
+            "Origin": {
+              "VCS": "git",
+              "URL": "https://github.com/shopspring/decimal",
+              "Hash": "447b833d1eea2d7720d37ae95fcf090d01fa866b",
+              "Ref": "refs/tags/v1.6.0"
+            }
+          }
+        },
+        "github.com/spf13/cast": {
+          "source": "https://proxy.golang.org/github.com/spf13/cast/@latest",
+          "metadata": {
+            "Version": "v1.10.0",
+            "Time": "2025-09-08T16:45:31Z",
+            "Origin": {
+              "VCS": "git",
+              "URL": "https://github.com/spf13/cast",
+              "Hash": "fc73346bfc4e6597bc520fb6eea04360299e77d2",
+              "Ref": "refs/tags/v1.10.0"
+            }
+          }
+        },
+        "golang.org/x/crypto": {
+          "source": "https://proxy.golang.org/golang.org/x/crypto/@latest",
+          "metadata": {
+            "Version": "v0.58.0",
+            "Time": "2026-10-09T16:24:17Z",
+            "Origin": {
+              "VCS": "git",
+              "URL": "https://go.googlesource.com/crypto",
+              "Hash": "8fdf07b3114278fb3b78c1cf1814e08bd851eb4c",
+              "Ref": "refs/tags/v0.58.0"
+            }
+          }
+        },
+        "golang.org/x/sys": {
+          "source": "https://proxy.golang.org/golang.org/x/sys/@latest",
+          "metadata": {
+            "Version": "v0.49.0",
+            "Time": "2026-10-06T18:35:47Z",
+            "Origin": {
+              "VCS": "git",
+              "URL": "https://go.googlesource.com/sys",
+              "Hash": "b6b8557e8e2974925aec7a136ba0e323eedc5f43",
+              "Ref": "refs/tags/v0.49.0"
+            }
+          }
+        }
+      },
+      "all_original_cases_fixtures_helpers_unchanged": true,
+      "private_source_port_not_unmodified_publisher_release": true
+    },
+    {
+      "label": "cli",
+      "module": "github.com/hashicorp/cli",
+      "version": "v1.1.7",
+      "upstream_git_url": "https://github.com/hashicorp/cli",
+      "upstream_git_commit": "89d8cb579d5743d787fe3500594c9cf56abaefb5",
+      "published_original_sha256": {
+        ".github/CODEOWNERS": "860d9456b8ec7132f4521d1f1e05e3036f9c863a84149e14f6dd7829fdaca166",
+        ".github/workflows/test.yml": "d8fe162506f6fc05763f16d4ad2b914752d0034c51c79ab458be90e1cdbd8d92",
+        "LICENSE": "bef1747eda88b9ed46e94830b0d978c3499dad5dfe38d364971760881901dadd",
+        "Makefile": "369c88fc03f65d8742798650d6e55ff1ab0c0f18ed159a674358e1f5bfb35c13",
+        "README.md": "eb2d9fea281e82af5869a8cce0c107aa93cba6c60a141ba7ac5c879bf120d67f",
+        "autocomplete.go": "b9e5a4cafb6b5dbb7af70ceac151d11a63d1fa5b2be4a788218ada1c4b1544c7",
+        "cli.go": "7e693d1f1c83e7123de3d3923bccd9267e3e862faa1c681e98cc171423378023",
+        "cli_test.go": "55d370527fb4d3797334487816530fc7983e066e7d53f1f65ff64764a836d4e1",
+        "command.go": "20afd99525edfaf28aed6ccd46b02c9bfcefda191468dc8cf20afe3127b98b22",
+        "command_mock.go": "c34c4edf48add2addd93ed7f1357243e383fa15aa7c4fe13f721c1dd9091769e",
+        "command_mock_test.go": "1e16ba6736e8fa02d3738bd516311f17ea73be44eb748caff2568aa98c9cb651",
+        "go.mod": "e69e1aaa2c688514b261cae005e6ecbbf7820da5bbec39e7d18c3c2376f80536",
+        "go.sum": "56cc29310c36a0d882b799cad1ee76a2c8405914651ddf188e628ebb0a77d041",
+        "help.go": "69ee8246fd0949de8251bd51bc6ea1b315ae7ee352b60b1e2ab8ff6e363a4bf5",
+        "ui.go": "d64026505a9d1f6958d8f979cc984a7cb4b2cda482140bb5228140a4102594de",
+        "ui_colored.go": "f5839a47823b0b0507202f968bd0a6f617ab322b595662e3008bbb4d8ca891ca",
+        "ui_common.go": "7122abdcb0d9e07468b249407bb8a36e085b540fba8c2b163fb84337634689c6",
+        "ui_concurrent.go": "88d37b11674525d2c09e176dab2b96aa128171fb6d03e4c397e945a1cf135e0e",
+        "ui_concurrent_test.go": "cd7f10e3d021b7eeec967f3728ac5e7c113a4bae80be5da79f3d69d42cb0bfd0",
+        "ui_js.go": "a5cc0c62deb6f98d27cec22c808818b8a6da65e336dbc4f77c50c534c4eb2e9d",
+        "ui_mock.go": "114984d7ac9f07ebf0e6510fa9c7f7bed2dfc263932a17b5b9c53bc78938a10f",
+        "ui_mock_test.go": "0205bd60d72159b10f61cd4d57d1c07df8d39577c77fbef3ac8c8948d33edc9a",
+        "ui_test.go": "58d84f3496767048d3ee09e601994b8573459b087386bad030005498cdc86f3c",
+        "ui_writer.go": "38746c12e929149dc127b6b6ceecba5ea12cb62d6cc6a4fa7d7d732d5409f813",
+        "ui_writer_test.go": "b27d3a9417058ed50618713e444a1f7caac1c9de45e81750d2a16237d3d68495"
+      },
+      "published_h1": "h1:/fZJ+hNdwfTSfsxMBa9WWMlfjUZbX8/LnUxgAd7lCVU=",
+      "overlay_sha256": {
+        "go.mod": "5f36b413ab3bc3640d1edf2ce2233d492478846d3524e02b7d223e84b418f632",
+        "LICENSE": "bef1747eda88b9ed46e94830b0d978c3499dad5dfe38d364971760881901dadd"
+      },
+      "actual_source_changes": [
+        "go.mod"
+      ],
+      "original_go_case_files": 6,
+      "declaration_catalog": {
+        "dario.cat/mergo": {
+          "source": "https://proxy.golang.org/dario.cat/mergo/@latest",
+          "metadata": {
+            "Version": "v1.0.2",
+            "Time": "2025-05-07T20:15:06Z",
+            "Origin": {
+              "VCS": "git",
+              "URL": "https://github.com/imdario/mergo",
+              "Hash": "7b33b2b01026fbbbbfcfbb1ee2c9c0a5e0c9a9f7",
+              "Ref": "refs/tags/v1.0.2"
+            }
+          }
+        },
+        "github.com/Masterminds/goutils": {
+          "source": "https://proxy.golang.org/github.com/!masterminds/goutils/@latest",
+          "metadata": {
+            "Version": "v1.1.1",
+            "Time": "2021-02-04T20:06:53Z"
+          }
+        },
+        "github.com/Masterminds/semver/v3": {
+          "source": "https://proxy.golang.org/github.com/!masterminds/semver/v3/@latest",
+          "metadata": {
+            "Version": "v3.5.0",
+            "Time": "2026-04-30T15:39:17Z",
+            "Origin": {
+              "VCS": "git",
+              "URL": "https://github.com/Masterminds/semver",
+              "Hash": "8b89c86cb53c57cfd5d07c13de12bc4d78954e99",
+              "Ref": "refs/tags/v3.5.0"
+            }
+          }
+        },
+        "github.com/Masterminds/sprig/v3": {
+          "source": "https://proxy.golang.org/github.com/!masterminds/sprig/v3/@latest",
+          "metadata": {
+            "Version": "v3.3.0",
+            "Time": "2024-08-29T20:12:44Z",
+            "Origin": {
+              "VCS": "git",
+              "URL": "https://github.com/Masterminds/sprig",
+              "Hash": "e708470d529a10ac1a3f02ab6fdd339b65958372",
+              "Ref": "refs/tags/v3.3.0"
+            }
+          }
+        },
+        "github.com/armon/go-radix": {
+          "source": "https://proxy.golang.org/github.com/armon/go-radix/@latest",
+          "metadata": {
+            "Version": "v1.0.0",
+            "Time": "2018-08-24T02:57:28Z"
+          }
+        },
+        "github.com/bgentry/speakeasy": {
+          "source": "https://proxy.golang.org/github.com/bgentry/speakeasy/@latest",
+          "metadata": {
+            "Version": "v0.2.0",
+            "Time": "2022-09-10T01:20:23Z",
+            "Origin": {
+              "VCS": "git",
+              "URL": "https://github.com/bgentry/speakeasy",
+              "Hash": "760eaf8b681647364e7a400b856e0921248728a5",
+              "Ref": "refs/tags/v0.2.0"
+            }
+          }
+        },
+        "github.com/fatih/color": {
+          "source": "https://proxy.golang.org/github.com/fatih/color/@latest",
+          "metadata": {
+            "Version": "v1.19.0",
+            "Time": "2026-03-20T08:53:23Z",
+            "Origin": {
+              "VCS": "git",
+              "URL": "https://github.com/fatih/color",
+              "Hash": "ca25f6e17f118a5a259f3c2c0d395949d1103a5a",
+              "Ref": "refs/tags/v1.19.0"
+            }
+          }
+        },
+        "github.com/google/uuid": {
+          "source": "https://proxy.golang.org/github.com/google/uuid/@latest",
+          "metadata": {
+            "Version": "v1.6.0",
+            "Time": "2024-01-23T18:54:04Z",
+            "Origin": {
+              "VCS": "git",
+              "URL": "https://github.com/google/uuid",
+              "Ref": "refs/tags/v1.6.0",
+              "Hash": "0f11ee6918f41a04c201eceeadf612a377bc7fbc"
+            }
+          }
+        },
+        "github.com/hashicorp/errwrap": {
+          "source": "https://proxy.golang.org/github.com/hashicorp/errwrap/@latest",
+          "metadata": {
+            "Version": "v1.1.0",
+            "Time": "2020-07-14T15:51:01Z"
+          }
+        },
+        "github.com/hashicorp/go-multierror": {
+          "source": "https://proxy.golang.org/github.com/hashicorp/go-multierror/@latest",
+          "metadata": {
+            "Version": "v1.1.1",
+            "Time": "2021-03-11T20:17:12Z"
+          }
+        },
+        "github.com/huandu/xstrings": {
+          "source": "https://proxy.golang.org/github.com/huandu/xstrings/@latest",
+          "metadata": {
+            "Version": "v1.6.3",
+            "Time": "2026-10-20T05:24:45Z",
+            "Origin": {
+              "VCS": "git",
+              "URL": "https://github.com/huandu/xstrings",
+              "Hash": "28aabebffe3cd509e1c66eadba569ec8a187d5d3",
+              "Ref": "refs/tags/v1.6.3"
+            }
+          }
+        },
+        "github.com/mattn/go-colorable": {
+          "source": "https://proxy.golang.org/github.com/mattn/go-colorable/@latest",
+          "metadata": {
+            "Version": "v0.1.16",
+            "Time": "2026-10-06T09:17:33Z",
+            "Origin": {
+              "VCS": "git",
+              "URL": "https://github.com/mattn/go-colorable",
+              "Hash": "56c5db567780daeef4a4ffbb2c14d7d4b6b94b9b",
+              "Ref": "refs/tags/v0.1.16"
+            }
+          }
+        },
+        "github.com/mattn/go-isatty": {
+          "source": "https://proxy.golang.org/github.com/mattn/go-isatty/@latest",
+          "metadata": {
+            "Version": "v0.0.24",
+            "Time": "2026-07-23T16:45:22Z",
+            "Origin": {
+              "VCS": "git",
+              "URL": "https://github.com/mattn/go-isatty",
+              "Hash": "c44dc0b9c702c76577fdb7898032969e0611efc2",
+              "Ref": "refs/tags/v0.0.24"
+            }
+          }
+        },
+        "github.com/mitchellh/copystructure": {
+          "source": "https://proxy.golang.org/github.com/mitchellh/copystructure/@latest",
+          "metadata": {
+            "Version": "v1.2.0",
+            "Time": "2021-05-05T17:08:07Z"
+          }
+        },
+        "github.com/mitchellh/reflectwalk": {
+          "source": "https://proxy.golang.org/github.com/mitchellh/reflectwalk/@latest",
+          "metadata": {
+            "Version": "v1.0.2",
+            "Time": "2021-05-03T23:34:11Z"
+          }
+        },
+        "github.com/posener/complete": {
+          "source": "https://proxy.golang.org/github.com/posener/complete/@latest",
+          "metadata": {
+            "Version": "v1.2.3",
+            "Time": "2019-10-23T21:02:28Z"
+          }
+        },
+        "github.com/shopspring/decimal": {
+          "source": "https://proxy.golang.org/github.com/shopspring/decimal/@latest",
+          "metadata": {
+            "Version": "v1.6.0",
+            "Time": "2026-10-18T15:33:05Z",
+            "Origin": {
+              "VCS": "git",
+              "URL": "https://github.com/shopspring/decimal",
+              "Hash": "447b833d1eea2d7720d37ae95fcf090d01fa866b",
+              "Ref": "refs/tags/v1.6.0"
+            }
+          }
+        },
+        "github.com/spf13/cast": {
+          "source": "https://proxy.golang.org/github.com/spf13/cast/@latest",
+          "metadata": {
+            "Version": "v1.10.0",
+            "Time": "2025-09-08T16:45:31Z",
+            "Origin": {
+              "VCS": "git",
+              "URL": "https://github.com/spf13/cast",
+              "Hash": "fc73346bfc4e6597bc520fb6eea04360299e77d2",
+              "Ref": "refs/tags/v1.10.0"
+            }
+          }
+        },
+        "github.com/stretchr/testify": {
+          "source": "https://proxy.golang.org/github.com/stretchr/testify/@latest",
+          "metadata": {
+            "Version": "v1.12.1",
+            "Time": "2026-08-17T08:24:05Z",
+            "Origin": {
+              "VCS": "git",
+              "URL": "https://github.com/stretchr/testify",
+              "Hash": "959dbdacf1533e155162811ea90c90117a420463",
+              "Ref": "refs/tags/v1.12.1"
+            }
+          }
+        },
+        "golang.org/x/crypto": {
+          "source": "https://proxy.golang.org/golang.org/x/crypto/@latest",
+          "metadata": {
+            "Version": "v0.58.0",
+            "Time": "2026-10-09T16:24:17Z",
+            "Origin": {
+              "VCS": "git",
+              "URL": "https://go.googlesource.com/crypto",
+              "Hash": "8fdf07b3114278fb3b78c1cf1814e08bd851eb4c",
+              "Ref": "refs/tags/v0.58.0"
+            }
+          }
+        },
+        "golang.org/x/sys": {
+          "source": "https://proxy.golang.org/golang.org/x/sys/@latest",
+          "metadata": {
+            "Version": "v0.49.0",
+            "Time": "2026-10-06T18:35:47Z",
+            "Origin": {
+              "VCS": "git",
+              "URL": "https://go.googlesource.com/sys",
+              "Hash": "b6b8557e8e2974925aec7a136ba0e323eedc5f43",
+              "Ref": "refs/tags/v0.49.0"
+            }
+          }
+        }
+      },
+      "all_original_cases_fixtures_helpers_unchanged": true,
+      "private_source_port_not_unmodified_publisher_release": true
+    }
+  ],
+  "go_sdk": "1.27.3",
+  "case_assertion_fixture_or_selection_changes": false,
+  "application_graph_adopted": false,
+  "local_compiler_or_case_execution": false,
+  "target_selection_scope": "Public proxy latest declaration candidates; hosted canonical Go queries and complete graph must independently verify them. No prerelease declaration selected."
+}

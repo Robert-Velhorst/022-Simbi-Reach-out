@@ -1,0 +1,25 @@
+name: Canonical CLI and Mergo parent source compatibility
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  original-parent-suites:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Qualify current declarations, full native production builds and both original suites
+        run: python scripts/qualify_sockaddr_cli_ports.py
+      - name: Retain every original source hash, case event, compiler and resolver result
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: simbi-sockaddr-cli-source-compatibility
+          path: ${{ runner.temp }}/simbi-sockaddr-cli-ports/evidence
+          if-no-files-found: error
