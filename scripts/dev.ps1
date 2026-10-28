@@ -5,15 +5,12 @@ $ProjectRoot = Split-Path -Parent $PSScriptRoot
 $Python = Join-Path $ProjectRoot '.venv/Scripts/python.exe'
 Assert-SimbiPortAvailable 8000
 Assert-SimbiPortAvailable 5173
-if (-not (Test-Path -LiteralPath $Python)) {
-    Invoke-SimbiNative python @('-m', 'venv', (Join-Path $ProjectRoot '.venv'))
-}
 $Api = $null
 $Worker = $null
 $Frontend = $null
 Push-Location $ProjectRoot
 try {
-    Invoke-SimbiNative $Python @('-m', 'pip', 'install', '-e', '.[dev]')
+    Initialize-SimbiRuntime -ProjectRoot $ProjectRoot
     Push-Location (Join-Path $ProjectRoot 'frontend')
     try { Invoke-SimbiNative pnpm.cmd @('install', '--frozen-lockfile') } finally { Pop-Location }
     $ChildEnvironment = @{SIMBI_ENV='local'; SIMBI_FRONTEND_ORIGIN='http://127.0.0.1:5173'; SIMBI_ALLOWED_HOSTS='127.0.0.1,localhost'; SIMBI_COOKIE_SECURE='false'; SIMBI_REQUIRE_MAINTENANCE='true'}

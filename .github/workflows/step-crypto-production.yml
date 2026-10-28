@@ -1,0 +1,25 @@
+name: Step Crypto canonical module production compilation
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  native-parent-production:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Compile the complete parent SDK with CGO enabled and original cases untouched
+        run: python scripts/qualify_step_crypto_production.py
+      - name: Retain all resolver, compiler, source and original-case evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: simbi-step-crypto-production-source
+          path: ${{ runner.temp }}/simbi-step-crypto-production/evidence
+          if-no-files-found: error

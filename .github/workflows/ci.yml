@@ -10,36 +10,62 @@ permissions:
 
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.15.0"
+          python-version: "3.15.1"
           cache: pip
-      - uses: pnpm/action-setup@v6
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
-          version: 12.14.0
-      - uses: actions/setup-node@v7
+          version: "0.13.5"
+          enable-cache: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
-          node-version: "26.12.0"
+          version: 12.15.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "26.12.1"
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
       - name: Install backend
-        run: pip install -e ".[dev]"
+        run: |
+          uv sync --frozen --extra dev --python 3.15.1
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+          .venv/bin/python -I scripts/setup_sqlite_runtime.py > sqlite-runtime-proof.json
+          cat sqlite-runtime-proof.json
+          echo "PYTHONPATH=$PWD/runtime_bootstrap:$PWD/backend" >> "$GITHUB_ENV"
       - name: Backend lint
         run: ruff check backend
+      - name: Verify production hash lock
+        run: python scripts/verify_runtime_lock.py
       - name: Backend tests
-        run: pytest
+        run: pytest --junitxml=simbi-test-results.xml
       - name: Isolated worker lifecycle contract
         run: python scripts/test-worker-process.py
       - name: Backend dependency audit
         run: pip-audit --skip-editable
       - name: Capacity benchmark
         run: python scripts/benchmark.py
+      - name: Verify policy output boundary
+        run: node .github/scripts/test-pnpm-policy-boundary.mjs
+      - name: Verify effective frontend dependency policy
+        run: node .github/scripts/verify-pnpm-policy.mjs before
       - name: Install frontend
         run: pnpm --dir frontend install --frozen-lockfile
+      - name: Verify frontend installation preserved dependency policy
+        if: always()
+        run: node .github/scripts/verify-pnpm-policy.mjs after
+      - name: Upload frontend dependency policy
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: pnpm-policy-${{ github.job }}-${{ strategy.job-index }}
+          path: artifacts/pnpm-policy
+          if-no-files-found: error
+          retention-days: 14
       - name: Frontend tests
         run: pnpm --dir frontend test
       - name: Frontend lint
@@ -57,8 +83,73 @@ jobs:
         run: |
           ! grep -RniE "selenium|webdriver_manager|send_message\(|login_password|plaintext_password|password[[:space:]]*=[[:space:]]*['\"][^'\"]+" \
             backend frontend/src scripts Dockerfile docker-compose.yml pyproject.toml
+      - name: Upload native and test qualification
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: simbi-native-qualification
+          path: |
+            sqlite-runtime-proof.json
+            simbi-test-results.xml
+          if-no-files-found: error
+
+  installed-images:
+    name: Installed API and edge qualification
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.15.1"
       - name: Docker build
         run: docker build -t simbi-reach-out:ci .
+      - name: Full backend qualification on the Alpine libc and native engine
+        shell: bash
+        run: |
+          docker build --target backend-qualification -t simbi-backend-qualification:ci .
+          mkdir -p .qualification/reports
+          qualification_container=$(docker create simbi-backend-qualification:ci)
+          docker cp "$qualification_container:/app/musl-backend-tests.xml" .qualification/reports/musl-backend-tests.xml
+          docker rm "$qualification_container"
+      - name: Probe actual non-root API and system SQLite identity
+        shell: bash
+        run: |
+          mkdir -p .qualification/reports
+          docker run --rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges \
+            --volume "$PWD/scripts/probe_image_runtime.py:/qualification.py:ro" \
+            simbi-reach-out:ci python /qualification.py > .qualification/reports/api-runtime.json
+      - name: Validate the pinned Hetzner edge offline
+        run: |
+          docker build -f Dockerfile.caddy -t simbi-reach-out-edge:2.11.7 .
+          python scripts/verify_caddy_image.py
+      - name: Inventory and audit the exact installed image
+        shell: bash
+        run: |
+          mkdir -p .qualification/input .qualification/reports .qualification/cache
+          docker image inspect simbi-reach-out:ci > .qualification/reports/image-inspect.json
+          docker image save simbi-reach-out:ci -o .qualification/input/image.tar
+          python scripts/archive_image_identity.py .qualification/input/image.tar .qualification/reports/image-inspect.json \
+            simbi-reach-out:ci .qualification/reports/image-identity.json .qualification/reports/image-id.txt
+          api_scan=0
+          docker run --rm --read-only --user "$(id -u):$(id -g)" --cap-drop ALL --security-opt no-new-privileges \
+            --tmpfs /tmp:rw,noexec,nosuid,size=512m \
+            -v "$PWD/.qualification/input:/inputs:ro" -v "$PWD/.qualification/reports:/reports" -v "$PWD/.qualification/cache:/cache" \
+            aquasec/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c image --cache-dir /cache --input /inputs/image.tar \
+            --scanners vuln --list-all-pkgs --ignorefile /dev/null --format json \
+            --output /reports/image-security.json --exit-code 1 || api_scan=$?
+          api_proof=0
+          python scripts/verify_image_security.py .qualification/reports/image-security.json .qualification/reports/image-id.txt > .qualification/reports/verified-image.json || api_proof=$?
+          edge_scan=0
+          docker run --rm --read-only --user "$(id -u):$(id -g)" --cap-drop ALL --security-opt no-new-privileges \
+            --tmpfs /tmp:rw,noexec,nosuid,size=512m \
+            -v "$PWD/.qualification/input:/inputs:ro" -v "$PWD/.qualification/reports:/reports" -v "$PWD/.qualification/cache:/cache" \
+            aquasec/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c image --cache-dir /cache --input /inputs/caddy.tar \
+            --scanners vuln --list-all-pkgs --ignorefile /dev/null --format json \
+            --output /reports/caddy-security.json --exit-code 1 || edge_scan=$?
+          edge_proof=0
+          python scripts/verify_image_security.py .qualification/reports/caddy-security.json .qualification/reports/caddy-image-id.txt caddy > .qualification/reports/verified-caddy.json || edge_proof=$?
+          test "$api_scan" -eq 0 && test "$api_proof" -eq 0 && test "$edge_scan" -eq 0 && test "$edge_proof" -eq 0
       - name: Isolated production maintenance and storage smoke
         shell: pwsh
         run: ./scripts/smoke-container.ps1 -Image simbi-reach-out:ci
@@ -81,10 +172,19 @@ jobs:
       - name: Stop smoke environment
         if: always()
         run: docker compose down --volumes
+      - name: Upload installed-image evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: simbi-installed-image-qualification
+          path: .qualification/reports
+          if-no-files-found: error
 
   browser-compatibility:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+    runs-on: ubuntu-26.04
+    # WebKit's native dependency download exceeded 20 minutes on the runner's
+    # Ubuntu mirror. Preserve the complete browser flow with a bounded budget.
+    timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
@@ -92,23 +192,46 @@ jobs:
     env:
       SIMBI_E2E_BROWSER: ${{ matrix.browser }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.15.0"
+          python-version: "3.15.1"
           cache: pip
-      - uses: pnpm/action-setup@v6
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
-          version: 12.14.0
-      - uses: actions/setup-node@v7
+          version: "0.13.5"
+          enable-cache: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
-          node-version: "26.12.0"
+          version: 12.15.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "26.12.1"
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
       - name: Install backend
-        run: pip install -e ".[dev]"
+        run: |
+          uv sync --frozen --extra dev --python 3.15.1
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+          .venv/bin/python -I scripts/setup_sqlite_runtime.py
+          echo "PYTHONPATH=$PWD/runtime_bootstrap:$PWD/backend" >> "$GITHUB_ENV"
+      - name: Verify policy output boundary
+        run: node .github/scripts/test-pnpm-policy-boundary.mjs
+      - name: Verify effective frontend dependency policy
+        run: node .github/scripts/verify-pnpm-policy.mjs before
       - name: Install frontend
         run: pnpm --dir frontend install --frozen-lockfile
+      - name: Verify frontend installation preserved dependency policy
+        if: always()
+        run: node .github/scripts/verify-pnpm-policy.mjs after
+      - name: Upload frontend dependency policy
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: pnpm-policy-${{ github.job }}-${{ strategy.job-index }}
+          path: artifacts/pnpm-policy
+          if-no-files-found: error
+          retention-days: 14
       - name: Frontend build
         run: pnpm --dir frontend build
       - name: Install exact browser runtime
@@ -120,26 +243,31 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: "3.15.0"
+          python-version: "3.15.1"
           cache: pip
-      - uses: pnpm/action-setup@v6
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
-          version: 12.14.0
-      - uses: actions/setup-node@v7
+          version: "0.13.5"
+          enable-cache: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
-          node-version: "26.12.0"
+          version: 12.15.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "26.12.1"
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
       - name: Create build environment
         shell: pwsh
         run: |
-          python -m venv .venv
-          if ($LASTEXITCODE -ne 0) { throw "Virtual environment creation failed." }
-          .\.venv\Scripts\python.exe -m pip install -e ".[dev]"
-          if ($LASTEXITCODE -ne 0) { throw "Backend installation failed." }
+          uv sync --frozen --extra dev --python 3.15.1
+          if ($LASTEXITCODE -ne 0) { throw "Frozen backend installation failed." }
+          .\.venv\Scripts\python.exe -I scripts/setup_sqlite_runtime.py
+          if ($LASTEXITCODE -ne 0) { throw "Verified SQLite provisioning failed." }
+          "$PWD\runtime_bootstrap;$PWD\backend" | ForEach-Object { "PYTHONPATH=$_" } | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
       - name: Windows launcher process contracts
         shell: pwsh
         run: .\scripts\test-launchers.ps1
@@ -148,14 +276,89 @@ jobs:
         run: |
           .\.venv\Scripts\python.exe scripts/test-worker-process.py
           if ($LASTEXITCODE -ne 0) { throw "Worker process tests failed." }
+      - name: Verify policy output boundary
+        run: node .github/scripts/test-pnpm-policy-boundary.mjs
+      - name: Verify effective frontend dependency policy
+        run: node .github/scripts/verify-pnpm-policy.mjs before
       - name: Build Windows standalone app
         shell: pwsh
         run: .\scripts\build-windows.ps1
+      - name: Verify frontend installation preserved dependency policy
+        if: always()
+        run: node .github/scripts/verify-pnpm-policy.mjs after
+      - name: Upload frontend dependency policy
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: pnpm-policy-${{ github.job }}-${{ strategy.job-index }}
+          path: artifacts/pnpm-policy
+          if-no-files-found: error
+          retention-days: 14
       - name: Isolated executable readiness and shutdown smoke
         shell: pwsh
         run: .\scripts\smoke-windows.ps1
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: simbi-reach-out-windows
           path: dist/Simbi Reach-Out
+          if-no-files-found: error
+
+  native-platforms:
+    name: Native SQLite (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-26.04-arm
+            architecture: arm64
+          - runner: macos-26
+            architecture: arm64
+          - runner: macos-26-intel
+            architecture: x64
+          - runner: windows-11-vs2026-arm
+            architecture: arm64
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.15.1"
+          architecture: ${{ matrix.architecture }}
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: "0.13.5"
+          enable-cache: false
+      - name: Survey the original interpreter without operator data
+        shell: bash
+        run: python -I scripts/survey_sqlite_sdk.py > sqlite-sdk.json
+      - name: Provision frozen native runtime (POSIX)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          uv sync --frozen --extra dev --python 3.15.1
+          .venv/bin/python -I scripts/setup_sqlite_runtime.py > sqlite-runtime-proof.json
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+          echo "PYTHONPATH=$PWD/runtime_bootstrap:$PWD/backend" >> "$GITHUB_ENV"
+      - name: Provision frozen native runtime (Windows ARM)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          uv sync --frozen --extra dev --python 3.15.1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          .\.venv\Scripts\python.exe -I scripts/setup_sqlite_runtime.py > sqlite-runtime-proof.json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          "$PWD\.venv\Scripts" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          "PYTHONPATH=$PWD\runtime_bootstrap;$PWD\backend" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Full backend and native upgrade qualification
+        run: python -m pytest --junitxml=simbi-native-tests.xml
+      - name: Upload native platform evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: simbi-native-${{ matrix.runner }}
+          path: |
+            sqlite-sdk.json
+            sqlite-runtime-proof.json
+            simbi-native-tests.xml
           if-no-files-found: error

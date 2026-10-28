@@ -35,3 +35,21 @@ function Stop-SimbiProcess {
         if (-not $Process.WaitForExit(10000)) { throw "Owned process $($Process.Id) did not stop." }
     }
 }
+
+function Initialize-SimbiRuntime {
+    param([Parameter(Mandatory)][string]$ProjectRoot)
+    $uv = Get-Command uv -ErrorAction Stop
+    $version = ([string](& $uv.Source --version)).Trim()
+    if ($LASTEXITCODE -ne 0 -or $version -notmatch '^uv 0\.13\.5(?:\s|$)') {
+        throw "Install uv 0.13.5 to provision Simbi's locked runtime."
+    }
+    $bootstrap = Join-Path $ProjectRoot 'runtime_bootstrap'
+    if ($env:PYTHONPATH) {
+        $env:PYTHONPATH = (@($env:PYTHONPATH -split [regex]::Escape([string][IO.Path]::PathSeparator) |
+            Where-Object { $_ -and $_.TrimEnd('\', '/') -ne $bootstrap.TrimEnd('\', '/') }) -join [IO.Path]::PathSeparator)
+    }
+    Invoke-SimbiNative $uv.Source @('sync', '--frozen', '--extra', 'dev', '--python', '3.15.1')
+    $python = Join-Path $ProjectRoot '.venv/Scripts/python.exe'
+    Invoke-SimbiNative $python @('-I', 'scripts/setup_sqlite_runtime.py')
+    $env:PYTHONPATH = $bootstrap + [IO.Path]::PathSeparator + (Join-Path $ProjectRoot 'backend')
+}

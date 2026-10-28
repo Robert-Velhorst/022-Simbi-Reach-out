@@ -28,3 +28,10 @@ support-bundles/
 uploads/
 .DS_Store
 Thumbs.db
+.simbi-runtime/
+.qualification/
+simbi-test-results.xml
+sqlite-runtime-proof.json
+sqlite-sdk.json
+simbi-native-tests.xml
+artifacts/pnpm-policy/

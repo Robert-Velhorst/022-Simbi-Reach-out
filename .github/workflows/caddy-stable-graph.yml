@@ -1,0 +1,35 @@
+name: Complete Caddy current stable graph and original source cases
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  stable-caddy-source:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Resolve the complete tagged stable graph normally
+        id: refresh
+        run: python scripts/qualify_caddy_stable_graph.py refresh
+      - name: Compile the full standard distribution and record linked packages
+        if: always() && steps.refresh.outcome == 'success'
+        run: python scripts/qualify_caddy_stable_graph.py build
+      - name: Run every original Caddy package with the selected graph
+        if: always() && steps.refresh.outcome == 'success'
+        run: python scripts/qualify_caddy_stable_graph.py original
+      - name: Require the full graph to match public final tags
+        if: always() && steps.refresh.outcome == 'success'
+        run: python scripts/qualify_caddy_stable_graph.py graph
+      - name: Retain original source hashes, resolver errors and all findings
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: simbi-caddy-complete-stable-source
+          path: ${{ runner.temp }}/simbi-caddy-stable-graph/evidence
+          if-no-files-found: error
