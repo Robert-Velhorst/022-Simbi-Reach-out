@@ -1,3 +1,9 @@
 overrides:
   source-map-js: 1.2.2
 strictPeerDependencies: true
+minimumReleaseAge: 1440
+minimumReleaseAgeStrict: true
+minimumReleaseAgeIgnoreMissingTime: false
+minimumReleaseAgeExclude: []
+trustLockfile: false
+verifyStoreIntegrity: true

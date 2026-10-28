@@ -34,3 +34,4 @@ simbi-test-results.xml
 sqlite-runtime-proof.json
 sqlite-sdk.json
 simbi-native-tests.xml
+artifacts/pnpm-policy/

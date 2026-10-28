@@ -49,8 +49,23 @@ jobs:
         run: pip-audit --skip-editable
       - name: Capacity benchmark
         run: python scripts/benchmark.py
+      - name: Verify policy output boundary
+        run: node .github/scripts/test-pnpm-policy-boundary.mjs
+      - name: Verify effective frontend dependency policy
+        run: node .github/scripts/verify-pnpm-policy.mjs before
       - name: Install frontend
         run: pnpm --dir frontend install --frozen-lockfile
+      - name: Verify frontend installation preserved dependency policy
+        if: always()
+        run: node .github/scripts/verify-pnpm-policy.mjs after
+      - name: Upload frontend dependency policy
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: pnpm-policy-${{ github.job }}-${{ strategy.job-index }}
+          path: artifacts/pnpm-policy
+          if-no-files-found: error
+          retention-days: 14
       - name: Frontend tests
         run: pnpm --dir frontend test
       - name: Frontend lint
@@ -200,8 +215,23 @@ jobs:
           echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
           .venv/bin/python -I scripts/setup_sqlite_runtime.py
           echo "PYTHONPATH=$PWD/runtime_bootstrap:$PWD/backend" >> "$GITHUB_ENV"
+      - name: Verify policy output boundary
+        run: node .github/scripts/test-pnpm-policy-boundary.mjs
+      - name: Verify effective frontend dependency policy
+        run: node .github/scripts/verify-pnpm-policy.mjs before
       - name: Install frontend
         run: pnpm --dir frontend install --frozen-lockfile
+      - name: Verify frontend installation preserved dependency policy
+        if: always()
+        run: node .github/scripts/verify-pnpm-policy.mjs after
+      - name: Upload frontend dependency policy
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: pnpm-policy-${{ github.job }}-${{ strategy.job-index }}
+          path: artifacts/pnpm-policy
+          if-no-files-found: error
+          retention-days: 14
       - name: Frontend build
         run: pnpm --dir frontend build
       - name: Install exact browser runtime
@@ -246,9 +276,24 @@ jobs:
         run: |
           .\.venv\Scripts\python.exe scripts/test-worker-process.py
           if ($LASTEXITCODE -ne 0) { throw "Worker process tests failed." }
+      - name: Verify policy output boundary
+        run: node .github/scripts/test-pnpm-policy-boundary.mjs
+      - name: Verify effective frontend dependency policy
+        run: node .github/scripts/verify-pnpm-policy.mjs before
       - name: Build Windows standalone app
         shell: pwsh
         run: .\scripts\build-windows.ps1
+      - name: Verify frontend installation preserved dependency policy
+        if: always()
+        run: node .github/scripts/verify-pnpm-policy.mjs after
+      - name: Upload frontend dependency policy
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: pnpm-policy-${{ github.job }}-${{ strategy.job-index }}
+          path: artifacts/pnpm-policy
+          if-no-files-found: error
+          retention-days: 14
       - name: Isolated executable readiness and shutdown smoke
         shell: pwsh
         run: .\scripts\smoke-windows.ps1
